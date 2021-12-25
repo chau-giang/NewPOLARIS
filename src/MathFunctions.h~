@@ -1834,7 +1834,7 @@ class CMathFunctions
  	
  	static inline double calc_X_0_super(double Td, double Ncl, double phi_sp)
  	{
- 		return 6.0726 * phi_sp * N_cl / Td;
+ 		return 6.0726 * phi_sp * Ncl / Td;
  	}
  	
  	static inline double calc_K_w_super(double Td, double Ncl, double phi_sp, double omega)
@@ -1890,7 +1890,7 @@ class CMathFunctions
         if(den == 0)
             return 1;
             
-    	double cons = 3.775e21;
+    	double cons = 3.775e19;
 
         return cons * s * phi_sp * Ncl * B / den;
     }
@@ -1931,7 +1931,7 @@ class CMathFunctions
         if(den == 0)
             return 1;
             
-    	double cons = 4.545e-10;
+    	double cons = 4.52e-10;
 
         return cons * s * n * fp * B / den ;
     }

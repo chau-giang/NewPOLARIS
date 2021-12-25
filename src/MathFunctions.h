@@ -1890,7 +1890,7 @@ class CMathFunctions
         if(den == 0)
             return 1;
             
-    	double cons = 3.775e21;
+    	double cons = 3.775e19;
 
         return cons * s * phi_sp * Ncl * B / den;
     }
@@ -1931,7 +1931,7 @@ class CMathFunctions
         if(den == 0)
             return 1;
             
-    	double cons = 4.545e-10;
+    	double cons = 4.52e-10;
 
         return cons * s * n * fp * B / den ;
     }

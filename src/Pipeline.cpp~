@@ -288,7 +288,6 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         rad.calcDisruptRadii();
         rad.calcMaxDisruptRadii();
         rad.calcSizeParamModify();
-        rad.calcBarnetRadii();
 
         //cout << "\n Second loop \n" << endl;
         //rad.calcMonteCarloRadiationField(param, param.getCommand(),
@@ -313,8 +312,10 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     }
         
     if(param.isRatSimulation())
+    {
     	rad.calcAlignedRadii();
-
+        //rad.calcBarnetRadii();
+    }
     cout << SEP_LINE;
 
     if(!grid->writeMidplaneFits(path_data + "output_", param, param.getOutMidDataPoints()))
