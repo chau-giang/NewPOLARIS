@@ -4628,10 +4628,12 @@ void CDustComponent::calcBarnetRadii(CGridBasic * grid, cell_basic * cell, uint 
     // alpha_1 ~ delta
     double alpha_1 = 1; // getDeltaRat();
 
-	double e = 1.6021766208e-19;  // charge of electron
-	double me = 9.10938356e-31;   // mass of electron
-	double c = 299792458;		  // speed of light 
-	double kb = 1.38064852e-23;   //Boltzman constant
+	// From this part, calculation is in the cgs unit :))
+
+	double e = 4.80325e-10;  // charge of electron
+	double me = 9.10938e-28;   // mass of electron
+	double c = 2.99792e10;		  // speed of light 
+	double kb = 1.38065e-16;   //Boltzman constant
 	double gamma_g = e / (me * c);
 	
     // Get thermal velocity

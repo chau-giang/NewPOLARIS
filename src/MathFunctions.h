@@ -1799,29 +1799,51 @@ class CMathFunctions
  
  	static inline double calc_X_0(double Td, double fp)
  	{
- 		// This part is to calculate the magnetic sucessbility at 0 frequency for paramagnetic grains
- 		// X_0 = np . u^2 . (3. kB . Td)
- 		// with np = n.fp, n: number of atmoic atom inside dust grains, fp: fraction of iron inside dust
- 		// u = ge . uB . sqrt(J . (J+1)) with ge = 2, uB: Bohr magneton
-
- 	    // number of atomic number inside dust
- 	    double rho_MgFeSiO4 = 3810; //(kg m-3)
-		double M_MgFeSiO4 = 172.2351*1.66053904e-27; //M_MgFeSiO4 = 172.2351u with u the atomic mass unit u = 1.66053904e-27 kg
+		//*****************************************************************************
+ 		//*    Input: Td: dust temperature (K)
+ 		//*		      fp: iron fraction inside dust grains
+ 		//*    Output: magnetic suscepbility at 0 frequency X(0)
+ 		//*    Equation: X_0 = np . u^2 / (3. kB . Td)
+ 		//*  
+		//*    Note: This calculation is in the CGS unit
+		//******************************************************************************
+		
+		
+ 	 	double rho_MgFeSiO4 = 3.81; //(g cm-3)
+ 	 	double u = 1.66054e-24; // atomic mass (g)
+		double M_MgFeSiO4 = 172.2351 * u; 
 	
 		double n_atomic = rho_MgFeSiO4 / M_MgFeSiO4;
- 	
- 		return 7.267e-23 * n_atomic * fp / Td;
+ 
+ 		double ge = 2;
+ 		double J = 2.5;
+ 		double uB = 9.27401e-21; 	// Bohr magneton
+ 		double kb = 1.38065e-16;    // Boltzman constant
+ 		
+ 		double constant = pow(ge, 2) * J * (J+1) * pow(uB, 2) / (3 * kb);
+ 		
+ 		return constant * n_atomic * fp / Td;
  	}
  	
  	static inline double calc_K_w(double Td, double fp, double omega)
  	{
- 	 	double rho_MgFeSiO4 = 3810; //(kg m-3)
-		double M_MgFeSiO4 = 172.2351*1.66053904e-27; //M_MgFeSiO4 = 172.2351u with u the atomic mass unit u = 1.66053904e-27 kg
+ 		//*******************************************************************************
+ 		//*    Input: Td: dust temperature (K)
+ 		//* 		  fp: iron fraction inside dust grains
+ 		//* 		  omega: angular speed of dust grains (rad/s)
+ 		//*     Output: the imagine part of the magnetic suscepbility at frequency w: K_2(w)/w
+ 		//*
+ 		//*     Note: Calculation here is in CGS unit
+ 		//********************************************************************************
+ 		
+ 	 	double rho_MgFeSiO4 = 3.81; //(g cm-3)
+ 	 	double u = 1.66054e-24; // atomic mass (g)
+		double M_MgFeSiO4 = 172.2351 * u; 
 	
 		double n_atomic = rho_MgFeSiO4 / M_MgFeSiO4;
 		
  		// spin-spin relaxation timescale
- 		double tel = 2.9e17 / (n_atomic * fp);
+ 		double tel = 2.727e11 / (n_atomic * fp);
  		
  		// magnetic suscepbility at 0 frequency
  		double X_0 = calc_X_0(Td, fp);
@@ -1832,15 +1854,42 @@ class CMathFunctions
  		return X_2_w / omega;
  	}
  	
- 	static inline double calc_X_0_super(double Td, double Ncl, double phi_sp)
+ 	static inline double calc_X_0_super(double Td, double Ncl, double phi_sp, double s)
  	{
- 		return 6.0726 * phi_sp * Ncl / Td;
+ 		//*****************************************************************************
+ 		//*    Input: Td: dust temperature (K)
+ 		//*		      Ncl: number of iron per cluster
+ 		//*			  phi_sp: volume filling factor of iron cluster
+ 		//*			  s: aspect ratio: ratio of minor and major axis of dust
+ 		//*    Output: magnetic suscepbility at 0 frequency X(0)
+ 		//*    Equation: X_0 = 3.5e23 . phi_sp . Ncl . u^2 / (4. pi. s. kB . Td)
+ 		//*  
+		//*    Note: This calculation is in the CGS unit
+		//*****************************************************************************
+		
+		double ge = 2;
+ 		double J = 2.5;
+ 		double uB = 9.27401e-21; 	// Bohr magneton
+ 		double kb = 1.38065e-16;    // Boltzman constant
+ 		
+ 		double constant = 3.5e23 * pow(ge, 2) * J * (J+1) * pow(uB, 2);
+ 		constant /= (4.0 * PI *  kb * s);
+ 		
+ 		return constant * phi_sp * Ncl / Td;
  	}
  	
- 	static inline double calc_K_w_super(double Td, double Ncl, double phi_sp, double omega)
+ 	static inline double calc_K_w_super(double Td, double Ncl, double phi_sp, double s, double omega)
  	{
+ 	 	//*******************************************************************************
+ 		//*    Input: Td: dust temperature (K)
+ 		//* 		  fp: iron fraction inside dust grains
+ 		//* 		  omega: angular speed of dust grains (rad/s)
+ 		//*     Output: the imagine part of the magnetic suscepbility at frequency w: K_2(w)/w
+ 		//*
+ 		//*     Note: Calculation here is in CGS unit
+ 		//********************************************************************************
  		// magnetic suscepbility at 0 frequency
- 		double X_0 = calc_X_0_super(Td, Ncl, phi_sp);
+ 		double X_0 = calc_X_0_super(Td, Ncl, phi_sp, s);
  		
  		// The rate of thermally activated magnetization of superparamagnetic inclusion
  		double tsp = 1e-9 *  exp(Ncl * 0.011 / Td);
@@ -1864,26 +1913,31 @@ class CMathFunctions
     
     static inline double calc_larm_limit_super(double B, double Td, double Tg, double ng, double s, double Ncl, double phi_sp)
     {
-    	// amax,sp,B [superparamagnetic grains] is calculated from the ratio tlarm,xp / tgas < 0, with 
-    	// 	+ tlarm,xp: larmor timescale due to the precession between the angular momentum of dust with magnetic field
-    	//	+ tgas,  gas damping timscale due to the gas evaboration from the grains surface.
+    	//*******************************************************************
+    	//*		 Input: B: magnetic field strength (T)
+    	//*	   		    Td: dust temperature (K)
+    	//*		        Tg: gas temperature (K)
+    	//*		        ng: gas density (m-3)
+    	//*		        s: aspect ratio = minor axis/major axis
+    	//*		        Ncl: number of iron per cluster
+    	//* 		   phi_sp: volumn filling factor of iron clusters 
+    	//* 
+    	//*		Output: the upper radius where dust can not aligned with B field
+    	//*					FOR SUPERPARAMAGNETIC GRAINS
+    	//*		Condition: tlarm <= tgas: tlarm: Larmor timescale, tgas: gas damping timescale
     	
-    	// - Larmor timscale for superparamagnetic grains: tlar = 2 * pi * I * w / (ub * B):
-    	// 	+ I = 8/15 * pi * rho * s * a**5 : inertia moment of dust
-    	// 	+ ub = X,sp(0) * V * hbar * w / (ge * uB): magnetic moment of dust with X,sp(0): magnetic suscessbility 
-    	//	at w = 0 for superparamagnetic grais [calc_mag_suses_super]
-    	// 	+ B: magnetic field strength 
-    	// [in the SI unit]  
+    	//*   - Larmor timescale for superparamagnetic grains: 
+    	//*  				tlar = 2 * pi * I * w / (ub * B):
+    	//*  	+ I										  : inertia moment of dust
+    	//* 	+ ub = X,sp(0) * V * hbar * w / (ge * uB) : magnetic moment of dust
+    	//*  + X,sp(0)								  : magnetic suscessbility at w = 0
 
-	// Gas damping timescale" tgas = 3/ (4*sqrt(pi)) * I / (1.2 * nH * mH * vth * a**4)
-	//	+ vth: thermal velocity of gas, vth = sqrt(2 * kb * Tgas / mH)  
+		//*   - Gas damping timescale:
+		//*			 tgas = 3/ (4*sqrt(pi)) * I / (1.2 * nH * mH * vth * a**4)
+		//*	    + vth: thermal velocity of gas, vth = sqrt(2 * kb * Tgas / mH)  
     	
-    	// In the input line:  B: magnetic field strength [T], 
-    	//			Td: dust temperature [K], 
-    	//			Tg: gas temperature [K], 
-    	// 			ng: gas density [m-3], 
-    	//			s: aspect ratio = minor axis/major axis, 
-    	//			Ncl: number of Fe inside the cluster
+		// 					Calculation in the SI unit
+		//**************************************************************************
     	
     	double den = ng * Td * sqrt(Tg);
 
@@ -1897,29 +1951,26 @@ class CMathFunctions
 
     static inline double calc_larm_limit_para(double B, double Td, double Tg, double ng, double s, double fp)
     {
-    	// amax,B [paramagnetic grains] is calculated from the ratio tlarm / tgas < 0, with 
-    	// 	+ tlarm: larmor timescale due to the precession between the angular momentum of dust with magnetic field
-    	//	+ tgas,  gas damping timscale due to the gas evaboration from the grains surface.
+        //*******************************************************************
+    	//*		 Input: B: magnetic field strength (T)
+    	//*	   		    Td: dust temperature (K)
+    	//*		        Tg: gas temperature (K)
+    	//*		        ng: gas density (m-3)
+    	//*		        s: aspect ratio = minor axis/major axis
+    	//*		        fp: iron fraction
+ 		//*
+    	//*		Output: the upper radius where dust can not aligned with B field
+    	//				FOR PARAMAGNETIC GRAINS
+    	//*		Condition: tlarm <= tgas: tlarm: Larmor timescale, tgas: gas damping timescale
     	
-    	// - Larmor timscale: tlar = 2 * pi * I * w / (ub * B):
-    	// 	+ I = 8/15 * pi * rho * s * a**5 : inertia moment of dust
-    	// 	+ ub = X(0) * V * hbar * w / (ge * uB): magnetic moment of dust with X(0): magnetic suscessbility 
-    	//	at w = 0 [calc_mag_suses]
-    	// 	+ B: magnetic field strength 
-    	// [in the SI unit]  
-
-		// Gas damping timescale" tgas = 3/ (4*sqrt(pi)) * I / (1.2 * nH * mH * vth * a**4)
-		//	+ vth: thermal velocity of gas, vth = sqrt(2 * kb * Tgas / mH)  
-	
-	  	
-    	// In the input line:  B: magnetic field strength [T], 
-    	//			Td: dust temperature [K], 
-    	//			Tg: gas temperature [K], 
-    	// 			ng: gas density [m-3], 
-    	//			s: aspect ratio = minor axis/major axis, 
-    	//			n: atomic density of material, 
-    	//			fp: fraction of Fe inside dust grains.
-    	//			phi_sp: volume filling factor of iron clusters inside grains
+    	//* - Larmor timescale for paramagnetic grains:
+    	//*				tlar = 2 * pi * I * w / (ub * B):
+    	//* 	+ I : inertia moment of dust
+    	//* 	+ ub = X(0) * V * hbar * w / (ge * uB): magnetic moment of dust
+    	//*		+ X(0): magnetic suscessbility at w = 0
+ 
+		// 					Calculation in the SI unit
+		//**************************************************************************
     	    	
     	double rho_MgFeSiO4 = 3810; //(kg m-3)
 		double M_MgFeSiO4 = 172.2351*1.66053904e-27; //M_MgFeSiO4 = 172.2351u with u the atomic mass unit u = 1.66053904e-27 kg
