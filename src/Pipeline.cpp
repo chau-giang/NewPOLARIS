@@ -286,8 +286,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         cout << "\n First loop\n" << endl;
   
         rad.calcDisruptRadii();
-        rad.calcMaxDisruptRadii();
-        rad.calcSizeParamModify();
+        //rad.calcMaxDisruptRadii();
+        //rad.calcSizeParamModify();
 
         //cout << "\n Second loop \n" << endl;
         //rad.calcMonteCarloRadiationField(param, param.getCommand(),
