@@ -4600,7 +4600,8 @@ void CDustComponent::calcBarnetRadii(CGridBasic * grid, cell_basic * cell, uint 
         
     if(getNumberDensity(grid, *cell, i_density) == 0)
     {
-        grid->setBarnetRadius(cell, i_density, a_eff[0]);
+        grid->setBarnetLowRadius(cell, i_density, a_eff[0]);
+        grid->setBarnetHighRadius(cell, i_density, a_eff[0]);
         return;
     }
 
@@ -4609,7 +4610,8 @@ void CDustComponent::calcBarnetRadii(CGridBasic * grid, cell_basic * cell, uint 
     double a_max = getSizeMax(grid, *cell); //m
 
     // default value of the alignment radius
-    double a_bar = a_max; //m
+    double a_bar_low_J = a_max; //m
+    double a_bar_high_J = a_max; //m
  
     // Aspect ratio of the grain
     double s = getAspectRatio();
@@ -4632,7 +4634,8 @@ void CDustComponent::calcBarnetRadii(CGridBasic * grid, cell_basic * cell, uint 
     double v_th = sqrt(2.0 * con_kB * T_gas / (mu * m_H)); // [m/s]
 
     // Loop over all considered grain sizes
-    double t_compare_old = 0;
+    double t_compare_old_low_J = 0;
+    double t_compare_old_high_J = 0;
     
     // Fraction of iron in paramagnetic grains
     double fp = getIronFraction();
@@ -4642,6 +4645,7 @@ void CDustComponent::calcBarnetRadii(CGridBasic * grid, cell_basic * cell, uint 
 	
 	// Check the dust temperature choice in the calculation:
 	uint temp_info = grid->getTemperatureFieldInformation();
+	uint cout;
 	
     for(uint a = 0; a < nr_of_dust_species; a++)
     {
@@ -4705,28 +4709,31 @@ void CDustComponent::calcBarnetRadii(CGridBasic * grid, cell_basic * cell, uint 
             
 	
 			// Saturated angular speed
-            //double omega_rat = calcRATSpeed(grid, cell, i_density, a_eff[a]); // at high J attractor point with J = JRAT
-            double omega_rat = pow((kB_cgs * T_dust / (I_p_cgs * (h-1))), 0.5);  // at low J attractor point with J = Jth
+            double omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a_eff[a]); // at high J attractor point with J = JRAT
+            double omega_rat_low_J = pow((kB_cgs * T_dust / (I_p_cgs * (h-1))), 0.5);  // at low J attractor point with J = Jth
             
 			// Volume of grain size a
 			double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
  
 
 			// The imagine part of magnetic suscepbility of grain size a at frequency w 			
-			double K_w;
+			double K_w_high_J;
+			double K_w_low_J;
 			
 			if (fp != 0) // grain is paramagnetic grains
  			{
-				K_w = CMathFunctions::calc_K_w(T_dust, fp, omega_rat); //here is in CGS unit	
+				K_w_high_J = CMathFunctions::calc_K_w(T_dust, fp, omega_rat_high_J); //here is in CGS unit	
+				K_w_low_J = CMathFunctions::calc_K_w(T_dust, fp, omega_rat_low_J); //here is in CGS unit	
 			}
 			else // grain is superparamagnetic grains
 			{			
-				K_w = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat); //here is also in CGS unit
+				K_w_high_J = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat_high_J); //here is also in CGS unit
+				K_w_low_J = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat_low_J); //here is also in CGS unit
 			}
             
 			// Barnet relaxation timescale [for	internal alignment]
-			double t_bar = I_p_cgs * pow(gamma_g, 2) / (V * K_w * pow(h,2) * (h-1) * pow(omega_rat, 2));
-			
+			double t_bar_high_J = I_p_cgs * pow(gamma_g, 2) / (V * K_w_high_J * pow(h,2) * (h-1) * pow(omega_rat_high_J, 2));
+			double t_bar_low_J = I_p_cgs * pow(gamma_g, 2) / (V * K_w_low_J * pow(h,2) * (h-1) * pow(omega_rat_low_J, 2));
 			
 			//****************************************************************************************************
 			//*
@@ -4735,47 +4742,94 @@ void CDustComponent::calcBarnetRadii(CGridBasic * grid, cell_basic * cell, uint 
 			//*
 			//*
 			//*****************************************************************************************************
-			double t_compare = t_bar / tau_gas;
+			double t_compare_high_J = t_bar_high_J / tau_gas;
+			double t_compare_low_J = t_bar_low_J / tau_gas;
 			
 			// if barnet timescale is larger than gas damping timescale
-            if(t_compare >= 1)
+            if((t_compare_high_J >= 1) or (t_compare_low_J >= 1))
             {
-                // linear interpolation
-                if(a > 1)
-                {
-                    double a1 = a_eff[a - 1];
-                    double a2 = a_eff[a];
+            	if ((t_compare_low_J >=1) and (cout == 0))
+            	{
+                	// linear interpolation
+                	if(a > 1)
+               	 	{
+                    	double a1 = a_eff[a - 1];
+                    	double a2 = a_eff[a];
 
-                    double o1 = t_compare_old;
-                    double o2 = t_compare;
+                    	double o1 = t_compare_old_low_J;
+                    	double o2 = t_compare_low_J;
 
-                    a_bar = a1 - o1 * (a2 - a1) / (o2 - o1);
+                    	a_bar_low_J = a1 - o1 * (a2 - a1) / (o2 - o1);
+                    	cout += 1;
+                	}
+                	else
+                	{
+                    	a_bar_low_J = a_min;
+                    	cout += 1;
+                    }
                 }
-                else
-                    a_bar = a_min;
+                
+                if ((t_compare_high_J >=1) and (cout == 1))
+            	{
+                	// linear interpolation
+                	if(a > 1)
+               	 	{
+                    	double a1 = a_eff[a - 1];
+                    	double a2 = a_eff[a];
 
-                break;
+                    	double o1 = t_compare_old_high_J;
+                    	double o2 = t_compare_high_J;
+
+                    	a_bar_high_J = a1 - o1 * (a2 - a1) / (o2 - o1);
+                    	cout += 1;
+                	}
+                	else
+                	{
+                    	a_bar_high_J = a_min;
+                    	cout += 1;
+                    }
+                }
+                
+                if(cout == 2)
+                	break;
             }
 
             // keep the prev. omega fraction for interpolation
-            t_compare_old = t_compare;
+            t_compare_old_low_J = t_compare_low_J;
+            t_compare_old_high_J = t_compare_high_J;
         }
 	}
     // Check for proper size range
-    if(a_bar < a_min)
-        a_bar = a_min;
+    if(a_bar_low_J < a_min)
+        a_bar_low_J = a_min;
 
-    if(a_bar > a_max)
-        a_bar = a_max;
+    if(a_bar_low_J > a_max)
+        a_bar_low_J = a_max;
+        
+    if(a_bar_high_J < a_min)
+        a_bar_high_J = a_min;
 
-    // Set aligned grain size in grid
-    grid->setBarnetRadius(cell, i_density, a_bar);
+    if(a_bar_high_J > a_max)
+        a_bar_high_J = a_max;
 
-    // Update aligned grain size limits
-    if(a_bar < min_a_bar)
-        min_a_bar = a_bar;
-    if(a_bar > max_a_bar)
-        max_a_bar = a_bar;
+    // Set maximum grain size for true internal alignment at low J in grid
+    grid->setBarnetLowRadius(cell, i_density, a_bar_low_J);
+    
+    // Set maximum grain size for true internal alignment at high J in grid
+    grid->setBarnetHighRadius(cell, i_density, a_bar_high_J);
+
+    // Update limit for true internal alignment at low J
+    if(a_bar_low_J < min_a_bar_low_J)
+        min_a_bar_low_J = a_bar_low_J;
+    if(a_bar_low_J > max_a_bar_low_J)
+        max_a_bar_low_J = a_bar_low_J;
+        
+        
+    // Update for true internal alignment at high J
+    if(a_bar_high_J < min_a_bar_high_J)
+        min_a_bar_high_J = a_bar_high_J;
+    if(a_bar_high_J > max_a_bar_high_J)
+        max_a_bar_high_J = a_bar_high_J;
 }
 
 double CDustComponent::calcGoldReductionFactor(const Vector3D & v, const Vector3D & B) const

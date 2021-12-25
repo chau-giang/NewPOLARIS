@@ -98,8 +98,10 @@ class CDustComponent
         max_a_disr_max = 0;
         min_size_param_modify = 1.e200;
         max_size_param_modify = 0;
-        min_a_bar = 1.e200;
-        max_a_bar = 0;
+        min_a_bar_low_J = 1.e200;
+        max_a_bar_low_J = 0;
+        min_a_bar_high_J = 1.e200;
+        max_a_bar_high_J = 0;
     
         f_highJ = 0.25;
         f_cor = 0;
@@ -1212,14 +1214,26 @@ class CDustComponent
         return max_size_param_modify;
     }
     
-    double getMinBarnetRadius()
+    double getMinBarnetLowRadius()
     {
-        return min_a_bar;
+        return min_a_bar_low_J;
     }
 
-    double getMaxBarnetRadius()
+    double getMaxBarnetLowRadius()
     {
-        return max_a_bar;
+        return max_a_bar_low_J;
+    }
+ 
+ 
+     
+    double getMinBarnetHighRadius()
+    {
+        return min_a_bar_high_J;
+    }
+
+    double getMaxBarnetHighRadius()
+    {
+        return max_a_bar_high_J;
     }
  
     double getScatteringMatrixElement(uint a,
@@ -2634,7 +2648,8 @@ class CDustComponent
     double min_a_disr, max_a_disr;
     double min_a_disr_max, max_a_disr_max;
     double min_size_param_modify, max_size_param_modify;
-    double min_a_bar, max_a_bar;
+    double min_a_bar_low_J, max_a_bar_low_J;
+    double min_a_bar_high_J, max_a_bar_high_J;
  
     
     // alignment paramaters
@@ -3414,30 +3429,59 @@ class CDustMixture
 
 //******************************************************************************
 
-    double getMinBarnetRadius()
+    double getMinBarnetLowRadius()
     {
-        double min_a_bar = 1e200;
+        double min_a_bar_low_J = 1e200;
         if(mixed_component != 0)
             for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
             {
-                double a_bar = mixed_component[i_mixture].getMinBarnetRadius();
-                if(a_bar < min_a_bar)
-                    min_a_bar = a_bar;
+                double a_bar_low_J = mixed_component[i_mixture].getMinBarnetLowRadius();
+                if(a_bar_low_J < min_a_bar_low_J)
+                    min_a_bar_low_J = a_bar_low_J;
             }
-        return min_a_bar;
+        return min_a_bar_low_J;
     }
 
-    double getMaxBarnetRadius()
+    double getMaxBarnetLowRadius()
     {
-        double max_a_bar = 0;
+        double max_a_bar_low_J = 0;
         if(mixed_component != 0)
             for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
             {
-                double a_bar = mixed_component[i_mixture].getMaxBarnetRadius();
-                if(a_bar > max_a_bar)
-                    max_a_bar = a_bar;
+                double a_bar_low_J = mixed_component[i_mixture].getMaxBarnetLowRadius();
+                if(a_bar_low_J > max_a_bar_low_J)
+                    max_a_bar_low_J = a_bar_low_J;
             }
-        return max_a_bar;
+        return max_a_bar_low_J;
+    }
+    
+    
+//******************************************************************************
+
+    double getMinBarnetHighRadius()
+    {
+        double min_a_bar_high_J = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_high_J = mixed_component[i_mixture].getMinBarnetHighRadius();
+                if(a_bar_high_J < min_a_bar_high_J)
+                    min_a_bar_high_J = a_bar_high_J;
+            }
+        return min_a_bar_high_J;
+    }
+
+    double getMaxBarnetHighRadius()
+    {
+        double max_a_bar_high_J = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_high_J = mixed_component[i_mixture].getMaxBarnetHighRadius();
+                if(a_bar_high_J > max_a_bar_high_J)
+                    max_a_bar_high_J = a_bar_high_J;
+            }
+        return max_a_bar_high_J;
     }
 
 
