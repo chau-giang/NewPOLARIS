@@ -2136,9 +2136,14 @@ void CRadiativeTransfer::calcBarnetHighJRadii()
         {
 #pragma omp critical
             {
-                cout << " -> Calc. Barnet radius at high J: " << 100.0 * float(per_counter) / float(max_cells)
-                     << " [%] (min: " << dust->getMinBarnetHighRadius()
-                     << " [m]; max: " << dust->getMaxBarnetHighRadius() << " [m])"
+                cout << " -> Calc. lower Barnet radius at high J: " << 100.0 * float(per_counter) / float(max_cells)
+                     << " [%] (min: " << dust->getMinBarnetHighLowerRadius()
+                     << " [m]; max: " << dust->getMaxBarnetHighLowerRadius() << " [m])"
+                     << "          \r";
+                     
+               cout << " -> Calc. upper Barnet radius at high J: " << 100.0 * float(per_counter) / float(max_cells)
+                     << " [%] (min: " << dust->getMinBarnetHighUpperRadius()
+                     << " [m]; max: " << dust->getMaxBarnetHighUpperRadius() << " [m])"
                      << "          \r";
                    
                 last_percentage = percentage;
@@ -2148,8 +2153,12 @@ void CRadiativeTransfer::calcBarnetHighJRadii()
 
     cout << CLR_LINE;
     cout << "- Calculation of Barnett radii at high J     : done" << endl;
-    cout << "    barnett radii at high J [" << float(dust->getMinBarnetHighRadius()) << ", "
-         << float(dust->getMaxBarnetHighRadius()) << "] [m]" << endl;
+    cout << "  lower barnett radii at high J [" << float(dust->getMinBarnetHighLowerRadius()) << ", "
+         << float(dust->getMaxBarnetHighLowerRadius()) << "] [m]" << endl;
+    cout << "  upper barnett radii at high J [" << float(dust->getMinBarnetHighUpperRadius()) << ", "
+         << float(dust->getMaxBarnetHighUpperRadius()) << "] [m]" << endl;
+         
+         
 }
 
 

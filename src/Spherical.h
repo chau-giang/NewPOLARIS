@@ -67,8 +67,12 @@ class CGridSpherical : public CGridBasic
         abar_low_max = 0;
 
 
-        abar_high_min = 1e300;
-        abar_high_max = 0;
+        abar_high_lower_min = 1e300;
+        abar_high_lower_max = 0;
+        
+        
+        abar_high_upper_min = 1e300;
+        abar_high_upper_max = 0;
         
         min_larm_limit = 0;
         max_larm_limit = 0;
@@ -158,7 +162,8 @@ class CGridSpherical : public CGridBasic
         plt_max_disr = false;
         plt_param_modif = false;
         plt_barnet_low = false;
-        plt_barnet_high = false;
+        plt_barnet_high_lower = false;
+        plt_barnet_high_upper = false;
 
         total_volume = 0;
         cell_volume = 0;
