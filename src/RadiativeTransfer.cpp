@@ -2070,7 +2070,7 @@ void CRadiativeTransfer::calcSizeParamModify()
          << float(dust->getMaxSizeParamModify()) << "] [m]" << endl;
 }
 
-void CRadiativeTransfer::calcBarnetRadii()
+void CRadiativeTransfer::calcBarnetLowJRadii()
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -2078,13 +2078,13 @@ void CRadiativeTransfer::calcBarnetRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. barnet radius: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. barnet radius at low J: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcBarnetRadii(grid, cell);
+        dust->calcBarnetLowJRadii(grid, cell);
 
 #pragma omp atomic update
         per_counter++;
@@ -2099,11 +2099,7 @@ void CRadiativeTransfer::calcBarnetRadii()
                      << " [%] (min: " << dust->getMinBarnetLowRadius()
                      << " [m]; max: " << dust->getMaxBarnetLowRadius() << " [m])"
                      << "          \r";
-                cout << " -> Calc. Barnet radius at high J: " << 100.0 * float(per_counter) / float(max_cells)
-                     << " [%] (min: " << dust->getMinBarnetHighRadius()
-                     << " [m]; max: " << dust->getMaxBarnetHighRadius() << " [m])"
-                     << "          \r";
-                     
+                   
                 last_percentage = percentage;
             }
         }
@@ -2113,10 +2109,46 @@ void CRadiativeTransfer::calcBarnetRadii()
     cout << "- Calculation of Barnett radii at low J     : done" << endl;
     cout << "    barnett radii at low J [" << float(dust->getMinBarnetLowRadius()) << ", "
          << float(dust->getMaxBarnetLowRadius()) << "] [m]" << endl;
-         
+}
+
+void CRadiativeTransfer::calcBarnetHighJRadii()
+{
+    ulong max_cells = grid->getMaxDataCells();
+
+    ullong per_counter = 0;
+    float last_percentage = 0;
+
+    cout << CLR_LINE;
+    cout << " -> Calc. barnet radius at high J: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+
+#pragma omp parallel for schedule(dynamic)
+    for(long c_i = 0; c_i < long(max_cells); c_i++)
+    {
+        cell_basic * cell = grid->getCellFromIndex(c_i);
+        dust->calcBarnetHighJRadii(grid, cell);
+
+#pragma omp atomic update
+        per_counter++;
+        float percentage = 100.0 * float(per_counter) / float(max_cells);
+
+        // Show only new percentage number if it changed
+        if((percentage - last_percentage) > PERCENTAGE_STEP)
+        {
+#pragma omp critical
+            {
+                cout << " -> Calc. Barnet radius at high J: " << 100.0 * float(per_counter) / float(max_cells)
+                     << " [%] (min: " << dust->getMinBarnetHighRadius()
+                     << " [m]; max: " << dust->getMaxBarnetHighRadius() << " [m])"
+                     << "          \r";
+                   
+                last_percentage = percentage;
+            }
+        }
+    }
+
     cout << CLR_LINE;
     cout << "- Calculation of Barnett radii at high J     : done" << endl;
-    cout << "    barnett radii at low J [" << float(dust->getMinBarnetHighRadius()) << ", "
+    cout << "    barnett radii at high J [" << float(dust->getMinBarnetHighRadius()) << ", "
          << float(dust->getMaxBarnetHighRadius()) << "] [m]" << endl;
 }
 

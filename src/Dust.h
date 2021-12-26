@@ -2538,7 +2538,8 @@ class CDustComponent
     void calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
     void calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
     void calcSizeParamModify(CGridBasic * grid, cell_basic * cell, uint i_density);
-	void calcBarnetRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+	void calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+	void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
 
 
     void initDustProperties();
@@ -3161,18 +3162,33 @@ class CDustMixture
         }
     }
 
-    void calcBarnetRadii(CGridBasic * grid, cell_basic * cell)
+    void calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, *cell);
-                mixed_component[i_mixture].calcBarnetRadii(grid, cell, 0);
+                mixed_component[i_mixture].calcBarnetLowJRadii(grid, cell, 0);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calcBarnetRadii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calcBarnetLowJRadii(grid, cell, i_mixture);
+        }
+    }
+    
+    void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, *cell);
+                mixed_component[i_mixture].calcBarnetHighJRadii(grid, cell, 0);
+            }
+            else
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcBarnetHighJRadii(grid, cell, i_mixture);
         }
     }
  

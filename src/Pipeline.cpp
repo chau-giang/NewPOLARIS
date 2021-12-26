@@ -314,7 +314,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     if(param.isRatSimulation())
     {
     	rad.calcAlignedRadii();
-        rad.calcBarnetRadii();
+        rad.calcBarnetLowJRadii();
+        rad.calcBarnetHighJRadii();
     }
     cout << SEP_LINE;
 
