@@ -112,7 +112,8 @@ void CGridBasic::updateDataRange(cell_basic * cell, parameters & param)
     double adisr = 0;
     double max_adisr = 0;
     double size_param_modif = 0;
-    double abar_low = 0;
+    double abar_low_lower = 0;
+    double abar_low_upper = 0; 
     double abar_high_lower = 0;
     double abar_high_upper = 0;
     double dust_temp = 0;
@@ -373,20 +374,33 @@ void CGridBasic::updateDataRange(cell_basic * cell, parameters & param)
         }
     }
 
-    if(!data_pos_barnet_low_J_list.empty())
+    if(!data_pos_barnet_low_J_lower_list.empty())
     {
-        for(uint i_dens = 0; i_dens < data_pos_barnet_low_J_list.size(); i_dens++)
+        for(uint i_dens = 0; i_dens < data_pos_barnet_low_J_lower_list.size(); i_dens++)
         {
-            abar_low = cell->getData(data_pos_barnet_low_J_list[i_dens]);
+            abar_low_lower = cell->getData(data_pos_barnet_low_J_lower_list[i_dens]);
 
-            if(abar_low > float(abar_low_max))
-                abar_low_max = (double)abar_low;
+            if(abar_low_lower > float(abar_low_lower_max))
+                abar_low_lower_max = (double)abar_low_lower;
 
-            if(abar_low < float(abar_low_min))
-                abar_low_min = (double)abar_low;
+            if(abar_low_lower < float(abar_low_lower_min))
+                abar_low_lower_min = (double)abar_low_lower;
         }
     }
- 
+    
+    if(!data_pos_barnet_low_J_upper_list.empty())
+    {
+        for(uint i_dens = 0; i_dens < data_pos_barnet_low_J_upper_list.size(); i_dens++)
+        {
+            abar_low_upper = cell->getData(data_pos_barnet_low_J_upper_list[i_dens]);
+
+            if(abar_low_upper > float(abar_low_upper_max))
+                abar_low_upper_max = (double)abar_low_upper;
+
+            if(abar_low_upper < float(abar_low_upper_min))
+                abar_low_upper_min = (double)abar_low_upper;
+        }
+    } 
  
     if(!data_pos_barnet_high_J_lower_list.empty())
     {
@@ -734,14 +748,18 @@ void CGridBasic::printPhysicalParameters()
     if(!data_pos_param_modif_list.empty())
         cout << "- size distribution modify  (min,max) : [" << size_param_modif_min << ", " << size_param_modif_max << "]" << endl;
         
-    if(!data_pos_barnet_low_J_list.empty())
-        cout << "- a_bar_low_J        (min,max) : [" << abar_low_min << ", " << abar_low_max << "] [m]" << endl;
+    if(!data_pos_barnet_low_J_lower_list.empty())
+        cout << "- a_bar_low_J_lower    (min,max) : [" << abar_low_lower_min << ", " << abar_low_lower_max << "] [m]" << endl;
         
+    if(!data_pos_barnet_low_J_upper_list.empty())
+        cout << "- a_bar_low_J_upper    (min,max) : [" << abar_low_upper_min << ", " << abar_low_upper_max << "] [m]" << endl;
+
+ 
     if(!data_pos_barnet_high_J_lower_list.empty())
-        cout << "- a_bar_high_J_lower       (min,max) : [" << abar_high_lower_min << ", " << abar_high_lower_max << "] [m]" << endl;
+        cout << "- a_bar_high_J_lower   (min,max) : [" << abar_high_lower_min << ", " << abar_high_lower_max << "] [m]" << endl;
         
     if(!data_pos_barnet_high_J_upper_list.empty())
-        cout << "- a_bar_high_J_upper       (min,max) : [" << abar_high_upper_min << ", " << abar_high_upper_max << "] [m]" << endl;
+        cout << "- a_bar_high_J_upper   (min,max) : [" << abar_high_upper_min << ", " << abar_high_upper_max << "] [m]" << endl;
 
    if(data_pos_vx != MAX_UINT)
     {
@@ -863,14 +881,16 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
     string disr_filename = path + "adisr.am";
     string max_disr_filename = path + "max_adisr.am";
     string param_modif_filename = path + "param_modif.am";
-    string barnet_low_filename = path + "abar_low.am";
+    string barnet_low_lower_filename = path + "abar_low_lower.am";
+    string barnet_low_upper_filename = path + "abar_low_upper.am"; 
     string barnet_high_lower_filename = path + "abar_high_lower.am";
     string barnet_high_upper_filename = path + "abar_high_upper.am";
     string d_filename = path + "delta.am";
 
     ofstream dens_writer, rat_writer;
     ofstream disr_writer, max_disr_writer, param_modif_writer;
-    ofstream barnet_low_writer, barnet_high_lower_writer, barnet_high_upper_writer;
+    ofstream barnet_low_lower_writer, barnet_low_upper_writer;
+    ofstream barnet_high_lower_writer, barnet_high_upper_writer;
     ofstream gas_writer, dust_writer;
     ofstream magvec_writer, magf_writer;
     ofstream velvec_writer, velf_writer;
@@ -952,18 +972,30 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
         }
     }
     
-    if(plt_barnet_low)
+ 
+    if(plt_barnet_low_lower)
     {
-        barnet_low_writer.open(barnet_low_filename.c_str(), ios::out);
+        barnet_low_lower_writer.open(barnet_low_lower_filename.c_str(), ios::out);
 
-        if(barnet_low_writer.fail())
+        if(barnet_low_lower_writer.fail())
         {
-            cout << "\nERROR: Cannot write to:\n " << barnet_low_filename << endl;
+            cout << "\nERROR: Cannot write to:\n " << barnet_low_lower_filename << endl;
             return false;
         }
     }
 
+    if(plt_barnet_low_upper)
+    {
+        barnet_low_upper_writer.open(barnet_low_upper_filename.c_str(), ios::out);
 
+        if(barnet_low_upper_writer.fail())
+        {
+            cout << "\nERROR: Cannot write to:\n " << barnet_low_upper_filename << endl;
+            return false;
+        }
+    }
+    
+    
     if(plt_barnet_high_lower)
     {
         barnet_high_lower_writer.open(barnet_high_lower_filename.c_str(), ios::out);
@@ -1097,7 +1129,8 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
     disr_writer << point_header.str();
     max_disr_writer << point_header.str();
     param_modif_writer << point_header.str();
-    barnet_low_writer << point_header.str();
+    barnet_low_lower_writer << point_header.str();
+    barnet_low_upper_writer << point_header.str(); 
     barnet_high_lower_writer << point_header.str();
     barnet_high_upper_writer << point_header.str();
     d_writer << point_header.str();
@@ -1145,7 +1178,8 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
                     disr_writer << uint(0) << endl;
                     max_disr_writer << uint(0) << endl;
                     param_modif_writer << uint(0) << endl;
-                    barnet_low_writer << uint(0) << endl;
+                    barnet_low_lower_writer << uint(0) << endl;
+                    barnet_low_upper_writer << uint(0) << endl; 
                     barnet_high_lower_writer << uint(0) << endl;
                     barnet_high_upper_writer << uint(0) << endl;
                 }
@@ -1190,9 +1224,11 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
                     if(plt_param_modif)
                         param_modif_writer << float((getSizeParamModify(pp, 0))) << endl;
                      
-                   
-                    if(plt_barnet_low)
-                        barnet_low_writer << float((getBarnetLowRadius(pp, 0))) << endl;
+                    if(plt_barnet_low_lower)
+                        barnet_low_lower_writer << float((getBarnetLowLowerRadius(pp, 0))) << endl;
+                        
+                    if(plt_barnet_low_upper)
+                        barnet_low_upper_writer << float((getBarnetLowUpperRadius(pp, 0))) << endl;                   
                         
                     if(plt_barnet_high_lower)
                         barnet_high_lower_writer << float((getBarnetHighLowerRadius(pp, 0))) << endl;
@@ -1231,7 +1267,8 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
     disr_writer.close();
     max_disr_writer.close();
     param_modif_writer.close();
-    barnet_low_writer.close();
+    barnet_low_lower_writer.close();
+    barnet_low_upper_writer.close(); 
     barnet_high_lower_writer.close();
     barnet_high_upper_writer.close();
     d_writer.close();
@@ -1289,7 +1326,7 @@ bool CGridBasic::writeSpecialLines(string data_path)
     pp.setDirection(Vector3D(0.0001, 0.0001, -1.00001).normalized());
     findStartingPoint(&pp);
 
-    z_writer << "d\tng\tTg\tTd\tmx\tmy\tmz\tvx\tvy\tvz\ta_alg\tadisr\tmax_adisr\tsize_param_modif\ta_barnet_low_J\ta_barnet_high_J_lower\ta_barnet_high_J_upper" << endl;
+    z_writer << "d\tng\tTg\tTd\tmx\tmy\tmz\tvx\tvy\tvz\ta_alg\tadisr\tmax_adisr\tsize_param_modif\ta_barnet_low_J_lower\ta_barnet_low_J_upper\ta_barnet_high_J_lower\ta_barnet_high_J_upper" << endl;
 
     while(next(&pp))
     {
@@ -1301,7 +1338,8 @@ bool CGridBasic::writeSpecialLines(string data_path)
         double adisr = 0;
         double max_adisr = 0;
         double size_param_modif = 0;
-        double abar_low = 0;
+        double abar_low_lower = 0;
+        double abar_low_upper = 0; 
         double abar_high_lower = 0;
         double abar_high_upper = 0;
         double mx = 0, my = 0, mz = 0;
@@ -1339,8 +1377,12 @@ bool CGridBasic::writeSpecialLines(string data_path)
         if(!data_pos_param_modif_list.empty())
             size_param_modif = getSizeParamModify(pp, 0);
 
-        if(!data_pos_barnet_low_J_list.empty())
-            abar_low = getBarnetLowRadius(pp, 0);
+            
+        if(!data_pos_barnet_low_J_lower_list.empty())
+            abar_low_lower = getBarnetLowLowerRadius(pp, 0);
+            
+        if(!data_pos_barnet_low_J_upper_list.empty())
+            abar_low_upper = getBarnetLowUpperRadius(pp, 0); 
             
         if(!data_pos_barnet_high_J_lower_list.empty())
             abar_high_lower = getBarnetHighLowerRadius(pp, 0);
@@ -1350,7 +1392,7 @@ bool CGridBasic::writeSpecialLines(string data_path)
             
         z_writer << pos << "\t" << dens << "\t" << Tg << "\t" << Td << "\t" << mx << "\t" << my << "\t" << mz
                  << "\t" << vx << "\t" << vy << "\t" << vz << "\t" << a_alg << "\t" << adisr << "\t" << max_adisr
-                  << "\t" << size_param_modif << "\t" << abar_low << "\t" << abar_high_lower << "\t" << abar_high_upper << endl;
+                  << "\t" << size_param_modif << "\t" << abar_low_lower << "\t" << abar_low_upper << "\t" << abar_high_lower << "\t" << abar_high_upper << endl;
     }
 
     cout << " -> Writing lines: 33.3 [%]                  \r" << flush;
@@ -1359,7 +1401,7 @@ bool CGridBasic::writeSpecialLines(string data_path)
     pp.setDirection(Vector3D(0.0001, -1.00001, 0.0001).normalized());
     findStartingPoint(&pp);
 
-    y_writer << "d\tng\tTg\tTd\tmx\tmy\tmz\tvx\tvy\tvz\ta_alg\tadisr\tmax_adisr\tsize_param_modif\ta_barnet_low_J\ta_barnet_high_J_lower\ta_barnet_high_J_upper" << endl;
+    y_writer << "d\tng\tTg\tTd\tmx\tmy\tmz\tvx\tvy\tvz\ta_alg\tadisr\tmax_adisr\tsize_param_modif\ta_barnet_low_J_lower\ta_barnet_low_J_upper\ta_barnet_high_J_lower\ta_barnet_high_J_upper" << endl;
 
     while(next(&pp))
     {
@@ -1371,7 +1413,8 @@ bool CGridBasic::writeSpecialLines(string data_path)
         double adisr = 0;
         double max_adisr = 0;
         double size_param_modif = 0;
-        double abar_low = 0;
+        double abar_low_lower = 0;
+        double abar_low_upper = 0; 
         double abar_high_lower = 0;
         double abar_high_upper = 0;
         double mx = 0, my = 0, mz = 0;
@@ -1409,8 +1452,11 @@ bool CGridBasic::writeSpecialLines(string data_path)
         if(!data_pos_param_modif_list.empty())
             size_param_modif = getSizeParamModify(pp, 0);
         
-        if(!data_pos_barnet_low_J_list.empty())
-            abar_low = getBarnetLowRadius(pp, 0);
+        if(!data_pos_barnet_low_J_lower_list.empty())
+            abar_low_lower = getBarnetLowLowerRadius(pp, 0);
+            
+        if(!data_pos_barnet_low_J_upper_list.empty())
+            abar_low_upper = getBarnetLowUpperRadius(pp, 0); 
             
         if(!data_pos_barnet_high_J_lower_list.empty())
             abar_high_lower = getBarnetHighLowerRadius(pp, 0);
@@ -1420,7 +1466,7 @@ bool CGridBasic::writeSpecialLines(string data_path)
  
         y_writer << pos << "\t" << dens << "\t" << Tg << "\t" << Td << "\t" << mx << "\t" << my << "\t" << mz
                  << "\t" << vx << "\t" << vy << "\t" << vz << "\t" << a_alg << "\t" << adisr << "\t" << max_adisr
-                  << "\t" << size_param_modif << "\t" << abar_low << "\t" << abar_high_lower << "\t" << abar_high_upper << endl;
+                  << "\t" << size_param_modif << "\t" << abar_low_lower << "\t" << abar_low_upper << "\t" << abar_high_lower << "\t" << abar_high_upper << endl;
     }
 
     cout << " -> Writing lines: 66.6 [%]                   \r" << flush;
@@ -1429,7 +1475,7 @@ bool CGridBasic::writeSpecialLines(string data_path)
     pp.setDirection(Vector3D(-1.00001, 0.0001, 0.0001).normalized());
     findStartingPoint(&pp);
 
-    x_writer << "d\tng\tTg\tTd\tmx\tmy\tmz\tvx\tvy\tvz\ta_alg\tadisr\tmax_adisr\tsize_param_modif\ta_barnet_low_J\ta_barnet_high_J_lower\ta_barnet_high_J_upper" << endl;
+    x_writer << "d\tng\tTg\tTd\tmx\tmy\tmz\tvx\tvy\tvz\ta_alg\tadisr\tmax_adisr\tsize_param_modif\ta_barnet_low_J_lower\ta_barnet_low_J_upper\ta_barnet_high_J_lower\ta_barnet_high_J_upper" << endl;
 
     while(next(&pp))
     {
@@ -1441,7 +1487,8 @@ bool CGridBasic::writeSpecialLines(string data_path)
         double adisr = 0;
         double max_adisr = 0;
         double size_param_modif = 0;
-        double abar_low = 0;
+        double abar_low_lower = 0;
+        double abar_low_upper = 0; 
         double abar_high_lower = 0;
         double abar_high_upper = 0;
         double mx = 0, my = 0, mz = 0;
@@ -1479,8 +1526,11 @@ bool CGridBasic::writeSpecialLines(string data_path)
         if(!data_pos_param_modif_list.empty())
             size_param_modif = getSizeParamModify(pp, 0);
             
-        if(!data_pos_barnet_low_J_list.empty())
-            abar_low = getBarnetLowRadius(pp, 0);
+        if(!data_pos_barnet_low_J_lower_list.empty())
+            abar_low_lower = getBarnetLowLowerRadius(pp, 0);
+            
+        if(!data_pos_barnet_low_J_upper_list.empty())
+            abar_low_upper = getBarnetLowUpperRadius(pp, 0); 
             
         if(!data_pos_barnet_high_J_lower_list.empty())
             abar_high_lower = getBarnetHighLowerRadius(pp, 0);
@@ -1490,7 +1540,7 @@ bool CGridBasic::writeSpecialLines(string data_path)
  
         x_writer << pos << "\t" << dens << "\t" << Tg << "\t" << Td << "\t" << mx << "\t" << my << "\t" << mz
                  << "\t" << vx << "\t" << vy << "\t" << vz << "\t" << a_alg << "\t" << adisr << "\t" << max_adisr
-                  << "\t" << size_param_modif << "\t" << abar_low << "\t" << abar_high_lower << "\t" << abar_high_upper << endl;
+                  << "\t" << size_param_modif << "\t" << abar_low_lower << "\t" << abar_low_upper << "\t" << abar_high_lower << "\t" << abar_high_upper << endl;
     }
 
     x_writer.close();
@@ -1550,7 +1600,8 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             plt_rat = (!data_pos_aalg_list.empty()) && param.isInPlotList(GRIDa_alg);
             plt_avg_th = (data_pos_avg_th != MAX_UINT) && param.isInPlotList(GRIDavg_th);
             plt_avg_dir = (data_pos_avg_dir != MAX_UINT) && param.isInPlotList(GRIDavg_dir);
-            plt_barnet_low = (!data_pos_barnet_low_J_list.empty()) && param.isInPlotList(GRIDabar_low);
+            plt_barnet_low_lower = (!data_pos_barnet_low_J_lower_list.empty()) && param.isInPlotList(GRIDabar_low_lower);
+            plt_barnet_low_upper = (!data_pos_barnet_low_J_upper_list.empty()) && param.isInPlotList(GRIDabar_low_upper); 
             plt_barnet_high_lower = (!data_pos_barnet_high_J_lower_list.empty()) && param.isInPlotList(GRIDabar_high_lower);
             plt_barnet_high_upper = (!data_pos_barnet_high_J_upper_list.empty()) && param.isInPlotList(GRIDabar_high_upper);
         }
@@ -1638,7 +1689,8 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         plt_disr = false;
         plt_max_disr = false;
         plt_param_modif = false;
-        plt_barnet_low = false;
+        plt_barnet_low_lower = false;
+        plt_barnet_low_upper = false; 
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
 
@@ -1655,7 +1707,8 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             plt_rat = param.isInPlotList(GRIDa_alg);
             plt_avg_th = param.isInPlotList(GRIDavg_th);
             plt_avg_dir = param.isInPlotList(GRIDavg_dir);
-            plt_barnet_low  = param.isInPlotList(GRIDabar_low);
+            plt_barnet_low_lower  = param.isInPlotList(GRIDabar_low_lower);
+            plt_barnet_low_upper  = param.isInPlotList(GRIDabar_low_upper); 
             plt_barnet_high_lower  = param.isInPlotList(GRIDabar_high_lower);
             plt_barnet_high_upper  = param.isInPlotList(GRIDabar_high_upper);
         }
@@ -1716,8 +1769,8 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                          uint(plt_rad_field1) * nr_rad_field_comp * WL_STEPS + uint(plt_g_zero1) +
                          uint(plt_u_rad) + uint(plt_n_th) + uint(plt_T_e) + uint(plt_n_cr) + uint(plt_g_min) +
                          uint(plt_g_max) + uint(plt_p) + uint(plt_avg_th) + uint(plt_avg_dir) + uint(plt_disr) +
-                         uint(plt_max_disr) + uint(plt_param_modif) + uint(plt_barnet_low) + uint(plt_barnet_high_lower) + 
-                         uint(plt_barnet_high_upper);
+                         uint(plt_max_disr) + uint(plt_param_modif) + uint(plt_barnet_low_lower) + uint(plt_barnet_low_upper) + 
+                         uint(plt_barnet_high_lower) + uint(plt_barnet_high_upper);
 
     if(nr_parameters == 0)
         return res;
@@ -1853,7 +1906,8 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
     valarray<double> array_disr(nelements);
     valarray<double> array_max_disr(nelements);
     valarray<double> array_param_modif(nelements);
-    valarray<double> array_barnet_low(nelements);
+    valarray<double> array_barnet_low_lower(nelements);
+    valarray<double> array_barnet_low_upper(nelements); 
     valarray<double> array_barnet_high_lower(nelements);
     valarray<double> array_barnet_high_upper(nelements);
 
@@ -1993,12 +2047,18 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         for(long i_cell = 0; i_cell < nelements; i_cell++)
             buffer_param_modif[i_cell] = new double[data_pos_param_modif_list.size()];
     }
-    if(plt_barnet_low)
+    if(plt_barnet_low_lower)
     {
-        buffer_barnet_low = new double *[nelements];
+        buffer_barnet_low_lower = new double *[nelements];
         for(long i_cell = 0; i_cell < nelements; i_cell++)
-            buffer_barnet_low[i_cell] = new double[data_pos_barnet_low_J_list.size()];
+            buffer_barnet_low_lower[i_cell] = new double[data_pos_barnet_low_J_lower_list.size()];
     }
+    if(plt_barnet_low_upper)
+    {
+        buffer_barnet_low_upper = new double *[nelements];
+        for(long i_cell = 0; i_cell < nelements; i_cell++)
+            buffer_barnet_low_upper[i_cell] = new double[data_pos_barnet_low_J_upper_list.size()];
+    } 
     if(plt_barnet_high_lower)
     {
         buffer_barnet_high_lower = new double *[nelements];
@@ -2363,17 +2423,29 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                 }
             }
             
-            if(plt_barnet_low)
+            if(plt_barnet_low_lower)
             {
                 for(uint i_density = 0; i_density < nr_densities; i_density++)
                 {
                     for(long i_cell = 0; i_cell < nelements; i_cell++)
-                        array_barnet_low[i_cell] = buffer_barnet_low[i_cell][i_density];
+                        array_barnet_low_lower[i_cell] = buffer_barnet_low_lower[i_cell][i_density];
 
                     fpixel[3]++;
-                    pFits->pHDU().write(fpixel, nelements, array_barnet_low);
+                    pFits->pHDU().write(fpixel, nelements, array_barnet_low_lower);
                 }
             }
+            
+            if(plt_barnet_low_upper)
+            {
+                for(uint i_density = 0; i_density < nr_densities; i_density++)
+                {
+                    for(long i_cell = 0; i_cell < nelements; i_cell++)
+                        array_barnet_low_upper[i_cell] = buffer_barnet_low_upper[i_cell][i_density];
+
+                    fpixel[3]++;
+                    pFits->pHDU().write(fpixel, nelements, array_barnet_low_upper);
+                }
+            } 
             
             if(plt_barnet_high_lower)
             {
@@ -2743,18 +2815,32 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                 }
             }
             
-            if(plt_barnet_low)
+ 
+            if(plt_barnet_low_lower)
             {
                 for(uint i_density = 0; i_density < nr_densities; i_density++)
                 {
                     for(long i_cell = 0; i_cell < nelements; i_cell++)
-                        array_barnet_low[i_cell] = buffer_barnet_low[i_cell][i_density];
+                        array_barnet_low_lower[i_cell] = buffer_barnet_low_lower[i_cell][i_density];
 
                     fpixel[3]++;
-                    pFits->pHDU().write(fpixel, nelements, array_barnet_low);
+                    pFits->pHDU().write(fpixel, nelements, array_barnet_low_lower);
                 }
             }
             
+            if(plt_barnet_low_upper)
+            {
+                for(uint i_density = 0; i_density < nr_densities; i_density++)
+                {
+                    for(long i_cell = 0; i_cell < nelements; i_cell++)
+                        array_barnet_low_upper[i_cell] = buffer_barnet_low_upper[i_cell][i_density];
+
+                    fpixel[3]++;
+                    pFits->pHDU().write(fpixel, nelements, array_barnet_low_upper);
+                }
+            }
+            
+                        
             if(plt_barnet_high_lower)
             {
                 for(uint i_density = 0; i_density < nr_densities; i_density++)
@@ -3216,24 +3302,43 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         }
     }
     
-    if(plt_barnet_low)
+    if(plt_barnet_low_lower)
     {
         if(nr_densities > 1)
             for(uint i_density = 1; i_density <= nr_densities; i_density++)
             {
                 counter++;
                 updateMidplaneString(str_1, str_2, counter);
-                string str_3 = getDensityString("barnet_low_J_radius_%i [m]", i_density);
+                string str_3 = getDensityString("barnet_low_J_lower_limit_radius_%i [m]", i_density);
                 pFits->pHDU().addKey(str_1, str_3, str_2);
             }
         else
         {
             counter++;
             updateMidplaneString(str_1, str_2, counter);
-            pFits->pHDU().addKey(str_1, "barnet_low_J_radius [m]", str_2);
+            pFits->pHDU().addKey(str_1, "barnet_low_J_lower_limit_radius [m]", str_2);
         }
     }
     
+    if(plt_barnet_low_upper)
+    {
+        if(nr_densities > 1)
+            for(uint i_density = 1; i_density <= nr_densities; i_density++)
+            {
+                counter++;
+                updateMidplaneString(str_1, str_2, counter);
+                string str_3 = getDensityString("barnet_low_J_upper_limit_radius_%i [m]", i_density);
+                pFits->pHDU().addKey(str_1, str_3, str_2);
+            }
+        else
+        {
+            counter++;
+            updateMidplaneString(str_1, str_2, counter);
+            pFits->pHDU().addKey(str_1, "barnet_low_J_upper_limit_radius [m]", str_2);
+        }
+    }
+ 
+
     if(plt_barnet_high_lower)
     {
         if(nr_densities > 1)
@@ -3367,8 +3472,10 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         delete[] buffer_max_disr;
     if(plt_param_modif)
         delete[] buffer_param_modif;
-    if(plt_barnet_low)
-        delete[] buffer_barnet_low;
+    if(plt_barnet_low_lower)
+        delete[] buffer_barnet_low_lower;
+    if(plt_barnet_low_upper)
+        delete[] buffer_barnet_low_upper;
     if(plt_barnet_high_lower)
         delete[] buffer_barnet_high_lower;
     if(plt_barnet_high_upper)

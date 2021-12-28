@@ -63,8 +63,13 @@ class CGridSpherical : public CGridBasic
         size_param_modif_min = 1e300;
         size_param_modif_max = -4;
         
-        abar_low_min = 1e300;
-        abar_low_max = 0;
+
+        abar_low_lower_min = 1e300;
+        abar_low_lower_max = 0;
+        
+        
+        abar_low_upper_min = 1e300;
+        abar_low_upper_max = 0;
 
 
         abar_high_lower_min = 1e300;
@@ -161,7 +166,8 @@ class CGridSpherical : public CGridBasic
         plt_disr = false;
         plt_max_disr = false;
         plt_param_modif = false;
-        plt_barnet_low = false;
+        plt_barnet_low_lower = false;
+        plt_barnet_low_upper = false;
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
 

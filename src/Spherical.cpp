@@ -430,9 +430,10 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     plt_disr = (!data_pos_adisr_list.empty());     // 9
     plt_max_disr = (!data_pos_max_adisr_list.empty());     // 10
     plt_param_modif = (!data_pos_param_modif_list.empty());     // 11
-    plt_barnet_low = (!data_pos_barnet_low_J_list.empty());     // 12
-    plt_barnet_high_lower = (!data_pos_barnet_high_J_lower_list.empty());     // 13
-    plt_barnet_high_upper = (!data_pos_barnet_high_J_upper_list.empty());     // 14
+    plt_barnet_low_lower = (!data_pos_barnet_low_J_lower_list.empty());     // 12
+    plt_barnet_low_upper = (!data_pos_barnet_low_J_upper_list.empty());     // 13
+    plt_barnet_high_lower = (!data_pos_barnet_high_J_lower_list.empty());     // 14
+    plt_barnet_high_upper = (!data_pos_barnet_high_J_upper_list.empty());     // 15
 
     plt_mag = (data_pos_mx != MAX_UINT); // 0
     plt_vel = (data_pos_vx != MAX_UINT); // 1
@@ -452,7 +453,8 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         plt_disr = false;
         plt_max_disr = false;
         plt_param_modif = false;
-        plt_barnet_low = false;
+        plt_barnet_low_lower = false;
+        plt_barnet_low_upper = false;
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
     }
@@ -489,14 +491,15 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     string ratd_filename = path + "grid_RATD.py";
     string max_ratd_filename = path + "grid_max_RATD.py";
     string param_modif_filename = path + "grid_param_modif.py";
-    string barnet_low_filename = path + "grid_barnet_low.py";
+    string barnet_low_lower_filename = path + "grid_barnet_low_lower.py";
+    string barnet_low_upper_filename = path + "grid_barnet_low_upper.py";
     string barnet_high_lower_filename = path + "grid_barnet_high_lower.py";
     string barnet_high_upper_filename = path + "grid_barnet_high_upper.py";
     string mag_filename = path + "grid_mag.py";
     string vel_filename = path + "grid_vel.py";
 
 
-    ofstream point_fields[15];
+    ofstream point_fields[16];
     ofstream vec_fields[2];
 
     point_fields[0].open(grid_filename.c_str());
@@ -629,22 +632,34 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         }
     }
     
-    if(plt_barnet_low)
+    if(plt_barnet_low_lower)
     {
-        point_fields[12].open(barnet_low_filename.c_str());
+        point_fields[12].open(barnet_low_lower_filename.c_str());
 
         if(point_fields[12].fail())
         {
-            cout << "\nERROR: Cannot write to:\n" << barnet_low_filename << endl;
+            cout << "\nERROR: Cannot write to:\n" << barnet_low_lower_filename << endl;
             return false;
         }
     }
     
-    if(plt_barnet_high_lower)
+    if(plt_barnet_low_upper)
     {
-        point_fields[13].open(barnet_high_lower_filename.c_str());
+        point_fields[13].open(barnet_low_upper_filename.c_str());
 
         if(point_fields[13].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << barnet_low_upper_filename << endl;
+            return false;
+        }
+    }
+
+    
+    if(plt_barnet_high_lower)
+    {
+        point_fields[14].open(barnet_high_lower_filename.c_str());
+
+        if(point_fields[14].fail())
         {
             cout << "\nERROR: Cannot write to:\n" << barnet_high_lower_filename << endl;
             return false;
@@ -653,9 +668,9 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     
     if(plt_barnet_high_upper)
     {
-        point_fields[14].open(barnet_high_upper_filename.c_str());
+        point_fields[15].open(barnet_high_upper_filename.c_str());
 
-        if(point_fields[14].fail())
+        if(point_fields[15].fail())
         {
             cout << "\nERROR: Cannot write to:\n" << barnet_high_upper_filename << endl;
             return false;
@@ -1048,20 +1063,21 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
 
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
-
-// 11 abarnet_low_J
+ 
+ 
+// 11 abarnet_low_J_lower
     point_fields[12] << point_header.str();
     point_fields[12] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
-    point_fields[12] << "set title \'3D barnet radii at low J distribution (min ID: " << adisr_min
-                    << "; max ID: " << abar_low_max << ")\' font \'Arial,12\'" << endl;
+    point_fields[12] << "set title \'3D barnet radii at low J distribution [lower limit] (min ID: " << abar_low_lower_min
+                    << "; max ID: " << abar_low_lower_max << ")\' font \'Arial,12\'" << endl;
 
-    point_fields[12] << "set cblabel \'disrupted radius ID\'" << endl;
+    point_fields[12] << "set cblabel \'lower barnett radius at low J ID\'" << endl;
 
-    if(abar_low_min == abar_low_max)
-        abar_low_max = 1.01 * abar_low_min;
+    if(abar_low_lower_min == abar_low_lower_max)
+        abar_low_lower_max = 1.01 * abar_low_lower_min;
 
-    point_fields[12] << "set cbrange[" << abar_low_min << ":" << abar_low_max << "]" << endl;
+    point_fields[12] << "set cbrange[" << abar_low_lower_min << ":" << abar_low_lower_max << "]" << endl;
 
     point_fields[12] << "set format cb \'%.03g\'" << endl;
 
@@ -1089,20 +1105,20 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
 
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
-    
-// 12 abarnet_high_J_lower
+
+// 12 abarnet_high_J_upper
     point_fields[13] << point_header.str();
     point_fields[13] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
-    point_fields[13] << "set title \'3D barnet radii at high J distribution [lower limit] (min ID: " << adisr_min
-                    << "; max ID: " << abar_high_lower_max << ")\' font \'Arial,12\'" << endl;
+    point_fields[13] << "set title \'3D barnet radii at low J distribution [upper limit] (min ID: " << abar_low_upper_min
+                    << "; max ID: " << abar_low_upper_max << ")\' font \'Arial,12\'" << endl;
 
-    point_fields[13] << "set cblabel \'lower barnett radius at low J ID\'" << endl;
+    point_fields[13] << "set cblabel \'upper barnett radius at low J ID\'" << endl;
 
-    if(abar_high_lower_min == abar_high_lower_max)
-        abar_high_lower_max = 1.01 * abar_high_lower_min;
+    if(abar_low_upper_min == abar_low_upper_max)
+        abar_low_upper_max = 1.01 * abar_low_upper_min;
 
-    point_fields[13] << "set cbrange[" << abar_high_lower_min << ":" << abar_high_lower_max << "]" << endl;
+    point_fields[13] << "set cbrange[" << abar_low_upper_min << ":" << abar_low_upper_max << "]" << endl;
 
     point_fields[13] << "set format cb \'%.03g\'" << endl;
 
@@ -1130,24 +1146,66 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
 
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
-
-// 13 abarnet_high_J_upper
+ 
+ 
+// 13 abarnet_high_J_lower
     point_fields[14] << point_header.str();
     point_fields[14] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
-    point_fields[14] << "set title \'3D barnet radii at high J distribution [upper limit] (min ID: " << adisr_min
-                    << "; max ID: " << abar_high_upper_max << ")\' font \'Arial,12\'" << endl;
+    point_fields[14] << "set title \'3D barnet radii at high J distribution [lower limit] (min ID: " << abar_high_lower_min
+                    << "; max ID: " << abar_high_lower_max << ")\' font \'Arial,12\'" << endl;
 
-    point_fields[14] << "set cblabel \'upper barnett radius at low J ID\'" << endl;
+    point_fields[14] << "set cblabel \'lower barnett radius at low J ID\'" << endl;
 
-    if(abar_high_upper_min == abar_high_upper_max)
-        abar_high_upper_max = 1.01 * abar_high_upper_min;
+    if(abar_high_lower_min == abar_high_lower_max)
+        abar_high_lower_max = 1.01 * abar_high_lower_min;
 
-    point_fields[14] << "set cbrange[" << abar_high_upper_min << ":" << abar_high_upper_max << "]" << endl;
+    point_fields[14] << "set cbrange[" << abar_high_lower_min << ":" << abar_high_lower_max << "]" << endl;
 
     point_fields[14] << "set format cb \'%.03g\'" << endl;
 
     point_fields[14] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+
+// 14 abarnet_high_J_upper
+    point_fields[15] << point_header.str();
+    point_fields[15] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[15] << "set title \'3D barnet radii at high J distribution [upper limit] (min ID: " << abar_high_upper_min
+                    << "; max ID: " << abar_high_upper_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[15] << "set cblabel \'upper barnett radius at low J ID\'" << endl;
+
+    if(abar_high_upper_min == abar_high_upper_max)
+        abar_high_upper_max = 1.01 * abar_high_upper_min;
+
+    point_fields[15] << "set cbrange[" << abar_high_upper_min << ":" << abar_high_upper_max << "]" << endl;
+
+    point_fields[15] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[15] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
 
     vec_header.str("");
     vec_header << "reset" << endl;
@@ -1288,24 +1346,31 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                                         << size_param_modify << endl;
                     }
                     
-                    if(plt_barnet_low)
+                    if(plt_barnet_low_lower)
                     {
-                        double a_bar_low = getBarnetLowRadius(tmp_cell_pos, 0);
+                        double a_bar_low_lower = getBarnetLowLowerRadius(tmp_cell_pos, 0);
                         point_fields[12] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << a_bar_low << endl;
+                                        << a_bar_low_lower << endl;
+                    }
+               
+               		if(plt_barnet_low_upper)
+                    {
+                        double a_bar_low_upper = getBarnetLowUpperRadius(tmp_cell_pos, 0);
+                        point_fields[13] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_bar_low_upper << endl;
                     }
                     
                     if(plt_barnet_high_lower)
                     {
                         double a_bar_high_lower = getBarnetHighLowerRadius(tmp_cell_pos, 0);
-                        point_fields[13] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                        point_fields[14] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
                                         << a_bar_high_lower << endl;
                     }
                
                		if(plt_barnet_high_upper)
                     {
                         double a_bar_high_upper = getBarnetHighUpperRadius(tmp_cell_pos, 0);
-                        point_fields[14] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                        point_fields[15] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
                                         << a_bar_high_upper << endl;
                     }
                 }
@@ -1377,15 +1442,19 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                       << basic_grid_l0.str() << "\ne\n"
                      << basic_grid_l1.str() << "\ne" << endl;
                     
-    point_fields[12] << "\ne\n" //GRIDabar_low
-                      << basic_grid_l0.str() << "\ne\n"
-                     << basic_grid_l1.str() << "\ne" << endl;
-
-    point_fields[13] << "\ne\n" //GRIDabar_high_lower
+    point_fields[12] << "\ne\n" //GRIDabar_low_lower
                       << basic_grid_l0.str() << "\ne\n"
                      << basic_grid_l1.str() << "\ne" << endl;
                      
-	point_fields[14] << "\ne\n" //GRIDabar_high_upper
+	point_fields[13] << "\ne\n" //GRIDabar_low_upper
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+
+    point_fields[14] << "\ne\n" //GRIDabar_high_lower
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+	point_fields[15] << "\ne\n" //GRIDabar_high_upper
                       << basic_grid_l0.str() << "\ne\n"
                      << basic_grid_l1.str() << "\ne" << endl;
                      

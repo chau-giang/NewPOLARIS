@@ -111,8 +111,12 @@ class CGridBasic
         size_param_modif_min = 0;
         size_param_modif_max = 0;
 
-        abar_low_min = 0;
-        abar_low_max = 0;
+        abar_low_lower_min = 0;
+        abar_low_lower_max = 0;
+        
+        abar_low_upper_min = 0;
+        abar_low_upper_max = 0;
+ 
         
         abar_high_lower_min = 0;
         abar_high_lower_max = 0;
@@ -245,7 +249,8 @@ class CGridBasic
         plt_disr = false;
         plt_max_disr = false;
         plt_param_modif = false;
-        plt_barnet_low = false;
+        plt_barnet_low_lower = false;
+        plt_barnet_low_upper = false; 
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
 
@@ -289,7 +294,8 @@ class CGridBasic
         buffer_disr = 0;
         buffer_max_disr = 0;
         buffer_param_modif = 0;
-        buffer_barnet_low = 0;
+        buffer_barnet_low_lower = 0;
+        buffer_barnet_low_upper = 0;
         buffer_barnet_high_lower = 0;
         buffer_barnet_high_upper = 0;
 
@@ -421,8 +427,11 @@ class CGridBasic
         size_param_modif_max = -1e300;
         size_param_modif_min = 1e300;
 
-        abar_low_max = -1e300;
-        abar_low_min = 1e300;
+        abar_low_lower_max = -1e300;
+        abar_low_lower_min = 1e300;
+        
+        abar_low_upper_max = -1e300;
+        abar_low_upper_min = 1e300;
         
         abar_high_lower_max = -1e300;
         abar_high_lower_min = 1e300;
@@ -534,7 +543,8 @@ class CGridBasic
         plt_disr = false;
         plt_max_disr = false;
         plt_param_modif = false;
-        plt_barnet_low = false;
+        plt_barnet_low_lower = false;
+        plt_barnet_low_upper = false;
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
 
@@ -578,7 +588,8 @@ class CGridBasic
         buffer_disr = 0;
         buffer_max_disr = 0;
         buffer_param_modif = 0;
-        buffer_barnet_low = 0;
+        buffer_barnet_low_lower = 0;
+        buffer_barnet_low_upper = 0;
         buffer_barnet_high_lower = 0;
         buffer_barnet_high_upper = 0;
 
@@ -1436,9 +1447,14 @@ class CGridBasic
         return data_pos_param_modif_list.size();
     }
 
-    uint getNrBarnetLowRadii()
+    uint getNrBarnetLowLowerRadii()
     {
-        return data_pos_barnet_low_J_list.size();
+        return data_pos_barnet_low_J_lower_list.size();
+    }
+    
+    uint getNrBarnetLowUpperRadii()
+    {
+        return data_pos_barnet_low_J_upper_list.size();
     }
     
     uint getNrBarnetHighLowerRadii()
@@ -1541,26 +1557,48 @@ class CGridBasic
 
 //*********************************************************************************
 
-    double getBarnetLowRadius(const cell_basic & cell, uint i_density) const
+    double getBarnetLowLowerRadius(const cell_basic & cell, uint i_density) const
     {
-        if(data_pos_barnet_low_J_list.size() == 1)
-            return cell.getData(data_pos_barnet_low_J_list[0]);
-        else if(data_pos_barnet_low_J_list.size() > i_density)
-            return cell.getData(data_pos_barnet_low_J_list[i_density]);
+        if(data_pos_barnet_low_J_lower_list.size() == 1)
+            return cell.getData(data_pos_barnet_low_J_lower_list[0]);
+        else if(data_pos_barnet_low_J_lower_list.size() > i_density)
+            return cell.getData(data_pos_barnet_low_J_lower_list[i_density]);
         else
             return 0;
     }
 
-    double getBarnetLowRadius(const photon_package & pp, uint i_density) const
+    double getBarnetLowLowerRadius(const photon_package & pp, uint i_density) const
     {
-        return getBarnetLowRadius(*pp.getPositionCell(), i_density);
+        return getBarnetLowLowerRadius(*pp.getPositionCell(), i_density);
     }
 
-    void setBarnetLowRadius(cell_basic * cell, uint i_density, double _abar_low)
+    void setBarnetLowLowerRadius(cell_basic * cell, uint i_density, double _abar_low_lower)
     {
-        cell->setData(data_pos_barnet_low_J_list[i_density], _abar_low);
+        cell->setData(data_pos_barnet_low_J_lower_list[i_density], _abar_low_lower);
     }
 
+
+//*********************************************************************************
+
+    double getBarnetLowUpperRadius(const cell_basic & cell, uint i_density) const
+    {
+        if(data_pos_barnet_low_J_upper_list.size() == 1)
+            return cell.getData(data_pos_barnet_low_J_upper_list[0]);
+        else if(data_pos_barnet_low_J_upper_list.size() > i_density)
+            return cell.getData(data_pos_barnet_low_J_upper_list[i_density]);
+        else
+            return 0;
+    }
+
+    double getBarnetLowUpperRadius(const photon_package & pp, uint i_density) const
+    {
+        return getBarnetLowUpperRadius(*pp.getPositionCell(), i_density);
+    }
+
+    void setBarnetLowUpperRadius(cell_basic * cell, uint i_density, double _abar_low_upper)
+    {
+        cell->setData(data_pos_barnet_low_J_upper_list[i_density], _abar_low_upper);
+    }
 
 //*********************************************************************************
 
@@ -2329,6 +2367,7 @@ class CGridBasic
                 buffer_avg_dir[i_cell] = getAvgDir(pp);
             if(plt_avg_th)
                 buffer_avg_th[i_cell] = getAvgTheta(pp);
+                
             if(plt_disr)
                 for(uint i_density = 0; i_density < data_pos_adisr_list.size(); i_density++)
                     buffer_disr[i_cell][i_density] = getDisruptRadius(pp, i_density);
@@ -2338,9 +2377,14 @@ class CGridBasic
             if(plt_param_modif)
                 for(uint i_density = 0; i_density < data_pos_param_modif_list.size(); i_density++)
                     buffer_param_modif[i_cell][i_density] = getSizeParamModify(pp, i_density);
-            if(plt_barnet_low)
-                for(uint i_density = 0; i_density < data_pos_barnet_low_J_list.size(); i_density++)
-                    buffer_barnet_low[i_cell][i_density] = getBarnetLowRadius(pp, i_density);
+                    
+            if(plt_barnet_low_lower)
+                for(uint i_density = 0; i_density < data_pos_barnet_low_J_lower_list.size(); i_density++)
+                    buffer_barnet_low_lower[i_cell][i_density] = getBarnetLowLowerRadius(pp, i_density);
+            if(plt_barnet_low_upper)
+                for(uint i_density = 0; i_density < data_pos_barnet_low_J_upper_list.size(); i_density++)
+                    buffer_barnet_low_upper[i_cell][i_density] = getBarnetLowUpperRadius(pp, i_density);
+                    
             if(plt_barnet_high_lower)
                 for(uint i_density = 0; i_density < data_pos_barnet_high_J_lower_list.size(); i_density++)
                     buffer_barnet_high_lower[i_cell][i_density] = getBarnetHighLowerRadius(pp, i_density);
@@ -2436,6 +2480,7 @@ class CGridBasic
                 buffer_avg_dir[i_cell] = 0;
             if(plt_avg_th)
                 buffer_avg_th[i_cell] = 0;
+                
             if(plt_disr)
             {
                 for(uint i_density = 0; i_density < data_pos_adisr_list.size(); i_density++)
@@ -2451,11 +2496,18 @@ class CGridBasic
                 for(uint i_density = 0; i_density < data_pos_param_modif_list.size(); i_density++)
                     buffer_param_modif[i_cell][i_density] = 0;
             }
-            if(plt_barnet_low)
+            
+            if(plt_barnet_low_lower)
             {
-                for(uint i_density = 0; i_density < data_pos_barnet_low_J_list.size(); i_density++)
-                    buffer_barnet_low[i_cell][i_density] = 0;
+                for(uint i_density = 0; i_density < data_pos_barnet_low_J_lower_list.size(); i_density++)
+                    buffer_barnet_low_lower[i_cell][i_density] = 0;
             }
+            if(plt_barnet_low_upper)
+            {
+                for(uint i_density = 0; i_density < data_pos_barnet_low_J_upper_list.size(); i_density++)
+                    buffer_barnet_low_upper[i_cell][i_density] = 0;
+            }
+            
             if(plt_barnet_high_lower)
             {
                 for(uint i_density = 0; i_density < data_pos_barnet_high_J_lower_list.size(); i_density++)
@@ -2872,10 +2924,16 @@ class CGridBasic
         size_param_modif_max = size_max;
     }
     
-    void setbarnetLowRadiusRange(double a_min, double a_max)
+    void setbarnetLowLowerRadiusRange(double a_min, double a_max)
     {
-        abar_low_min = a_min;
-        abar_low_max = a_max;
+        abar_low_lower_min = a_min;
+        abar_low_lower_max = a_max;
+    }
+
+    void setbarnetLowUpperRadiusRange(double a_min, double a_max)
+    {
+        abar_low_upper_min = a_min;
+        abar_low_upper_max = a_max;
     }
 
 
@@ -3288,9 +3346,14 @@ class CGridBasic
                     data_pos_param_modif_list.push_back(i);
                     break;
                                 
-                case GRIDabar_low:
-                	data_pos_barnet_low_J_list.push_back(i);
-                	break;
+            	case GRIDabar_low_lower:
+            		data_pos_barnet_low_J_lower_list.push_back(i);
+            		break;
+            		
+            	case GRIDabar_low_upper:
+            		data_pos_barnet_low_J_upper_list.push_back(i);
+            		break;
+
                 	
             	case GRIDabar_high_lower:
             		data_pos_barnet_high_J_lower_list.push_back(i);
@@ -3662,12 +3725,22 @@ class CGridBasic
             }
         }
         
-        if(data_pos_barnet_low_J_list.empty())
+        if(data_pos_barnet_low_J_lower_list.empty())
         {
             for(uint i_density = 0; i_density < nr_densities; i_density++)
             {
-                data_pos_barnet_low_J_list.push_back(data_offset + tmp_data_offset);
-                data_ids.push_back(GRIDabar_low);
+                data_pos_barnet_low_J_lower_list.push_back(data_offset + tmp_data_offset);
+                data_ids.push_back(GRIDabar_low_lower);
+                tmp_data_offset++;
+            }
+        }
+        
+        if(data_pos_barnet_low_J_upper_list.empty())
+        {
+            for(uint i_density = 0; i_density < nr_densities; i_density++)
+            {
+                data_pos_barnet_low_J_upper_list.push_back(data_offset + tmp_data_offset);
+                data_ids.push_back(GRIDabar_low_upper);
                 tmp_data_offset++;
             }
         }
@@ -3944,19 +4017,28 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
                 cout << "        No dust emission with RAT alignment possible." << endl;
                 return MAX_UINT;
             }
-            if(data_pos_barnet_low_J_list.empty())
+            
+            
+            
+            
+            if(data_pos_barnet_low_J_lower_list.empty() &&  data_pos_barnet_low_J_upper_list.empty())
             {
                 cout << "\nERROR: Grid contains no condition for perfect internal alignment at low J!" << endl;
                 cout << "        No dust emission with RAT alignment possible." << endl;
                 return MAX_UINT;
             }
-            else if(data_pos_barnet_low_J_list.size() != 1 && data_pos_barnet_low_J_list.size() != nr_densities)
+            else if(data_pos_barnet_low_J_lower_list.size() != 1 && data_pos_barnet_low_J_lower_list.size() != nr_densities && data_pos_barnet_low_J_upper_list.size() != 1 && data_pos_barnet_low_J_upper_list.size() != nr_densities)
             {
                 cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at low J"
                      << endl;
                 cout << "        No dust emission with RAT alignment possible." << endl;
                 return MAX_UINT;
             }
+            
+            
+            
+            
+            
             if(data_pos_barnet_high_J_lower_list.empty() &&  data_pos_barnet_high_J_upper_list.empty())
             {
                 cout << "\nERROR: Grid contains no condition for perfect internal alignment at high J!" << endl;
@@ -3965,7 +4047,7 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
             }
             else if(data_pos_barnet_high_J_lower_list.size() != 1 && data_pos_barnet_high_J_lower_list.size() != nr_densities && data_pos_barnet_high_J_upper_list.size() != 1 && data_pos_barnet_high_J_upper_list.size() != nr_densities)
             {
-                cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at low J"
+                cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at high J"
                      << endl;
                 cout << "        No dust emission with RAT alignment possible." << endl;
                 return MAX_UINT;
@@ -4109,8 +4191,11 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
                      << endl;
                 return MAX_UINT;
             }
+            
+            
+            
 
-            if(data_pos_barnet_low_J_list.empty())
+            if(data_pos_barnet_low_J_lower_list.empty() && data_pos_barnet_low_J_upper_list.empty())
             {
                 cout << "\nERROR: Grid contains no condition for perfect internal alignment at low J!" << endl;
                 cout << "        No dust scattering calculations with RAT alignment "
@@ -4118,15 +4203,18 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
                      << endl;
                 return MAX_UINT;
             }
-            else if(data_pos_barnet_low_J_list.size() != 1 && data_pos_barnet_low_J_list.size() != nr_densities)
+            else if(data_pos_barnet_low_J_lower_list.size() != 1 && data_pos_barnet_low_J_lower_list.size() != nr_densities && data_pos_barnet_low_J_upper_list.size() != 1 && data_pos_barnet_low_J_upper_list.size() != nr_densities)
             {
-                cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at low J "
+                cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at high J "
                      << endl;
                 cout << "        No dust scattering calculations with RAT alignment "
                         "possible."
                      << endl;
                 return MAX_UINT;
             }
+            
+            
+            
             
             if(data_pos_barnet_high_J_lower_list.empty() && data_pos_barnet_high_J_upper_list.empty())
             {
@@ -4423,8 +4511,11 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     double size_param_modif_min;
     double size_param_modif_max;
     
-    double abar_low_min;
-    double abar_low_max;
+    double abar_low_lower_min;
+    double abar_low_lower_max;
+    
+    double abar_low_upper_min;
+    double abar_low_upper_max;
 
     double abar_high_lower_min;
     double abar_high_lower_max;
@@ -4556,7 +4647,8 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     uilist data_pos_adisr_list;
     uilist data_pos_max_adisr_list;
     uilist data_pos_param_modif_list;
-    uilist data_pos_barnet_low_J_list;
+    uilist data_pos_barnet_low_J_lower_list;
+    uilist data_pos_barnet_low_J_upper_list;
     uilist data_pos_barnet_high_J_lower_list;
     uilist data_pos_barnet_high_J_upper_list;
 
@@ -4599,7 +4691,8 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     bool plt_disr;
     bool plt_max_disr;
     bool plt_param_modif;
-    bool plt_barnet_low;
+    bool plt_barnet_low_lower;
+    bool plt_barnet_low_upper;
     bool plt_barnet_high_lower;
     bool plt_barnet_high_upper;
 
@@ -4651,7 +4744,8 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     double ** buffer_disr;
     double ** buffer_max_disr;
     double ** buffer_param_modif;
-    double ** buffer_barnet_low;
+    double ** buffer_barnet_low_lower;
+    double ** buffer_barnet_low_upper;
     double ** buffer_barnet_high_lower;
     double ** buffer_barnet_high_upper;
     
