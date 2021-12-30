@@ -2279,7 +2279,7 @@ bool CDustComponent::writeComponent(string path_data, string path_plot)
     data_writer << "#f_correlation" << endl;
     data_writer << f_cor << endl;
     data_writer << "#G(cos2(zeta)" << endl;
-    data_writer << wrong_alignment_factor << endl;
+    data_writer << wrong_internal_factor << endl;
    
     
     data_writer << "Ordinary paramagnetic grain" << endl;
@@ -3109,7 +3109,7 @@ bool CDustComponent::add(double ** size_fraction, CDustComponent * comp, uint **
         f_highJ = comp->getFHighJ();
         tensile_strength = comp->getTensileStrength();
         size_choice = comp->getSizeChoice();
-        wrong_inernal_factor = comp->getWrongInternalRAT();
+        wrong_internal_factor = comp->getWrongInternalRAT();
         larm_f = comp->getLarmF();
         number_cluster = comp->getNumberIronCluster();
         volume_filling_cluster = comp->getVolumeFillingFactor();
@@ -3560,17 +3560,21 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     if((alignment & ALIG_RAT) == ALIG_RAT)
     {
         a_alig = grid->getAlignedRadius(pp, i_density);
-     	abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
-     	abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
      	   
         if(a_eff[a] > a_alig)
         {
             if((alignment & ALIG_INTERNAL) == ALIG_INTERNAL)
          	{
-            	if ((a_eff[a] >= abar_lowJ_lower) && (a_eff[a] <= abar_lowJ_upper))
+         	    abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
+     			abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
+            	if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
+            	{
             		Rrat_low_J = getInternalRAT();
+            	}
             	else
-            		Rrat_low_J = getWrongInternalRAT();
+            	{
+ 					Rrat_low_J = getWrongInternalRAT();
+            	}
             	Rrat = f_highJ + (1 - f_highJ) * Rrat_low_J;
             	//Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
  
