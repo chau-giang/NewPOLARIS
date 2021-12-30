@@ -3080,12 +3080,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
-    if(cmd.compare("<disruption_size>") == 0)
-    {
-        param->setDisruptionSizeInput(atof(data.c_str()));
-        return true;
-    }
-
     if(cmd.compare("<f_highJ>") == 0)
     {
         param->setFhighJ(atof(data.c_str()));
@@ -3103,6 +3097,13 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         param->setAlphaQ(atof(data.c_str()));
         return true;
     }
+    
+    if(cmd.compare("<wrong_g_zeta>") == 0)
+    {
+        param->setWrongInternalRAT(atof(data.c_str()));
+        return true;
+    }
+
 
     if(cmd.compare("<f_c>") == 0)
     {

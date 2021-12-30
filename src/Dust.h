@@ -81,8 +81,8 @@ class CDustComponent
         material_density = 0;
         tensile_strength = 0;
         size_choice = 0;
-        disruption_size = 0;
         gold_g_factor = 0;
+        wrong_internal_factor = 0;
         dust_mass_fraction = 0;
 
         Q_ref = 0.4;
@@ -1924,12 +1924,7 @@ class CDustComponent
     {
         size_choice = val;
     }
-
-    void setDisruptionSizeInput(double val)
-    {
-        disruption_size = val;
-    }
-
+ 
     void setFHighJ(double val)
     {
         f_highJ = val;
@@ -1945,6 +1940,11 @@ class CDustComponent
         alpha_Q = val;
     }
 
+    void setWrongInternalRAT(double val)
+    {
+        wrong_internal_factor = val;
+    }
+    
     double getQrat(uint a, uint w, double theta) const
     {
         if(theta < 0)
@@ -2380,15 +2380,16 @@ class CDustComponent
     {
         return size_choice;
     }
-
-    double getDisruptionSizeInput() const
-    {
-        return disruption_size;
-    }
+ 
 
     double getCorrelationFactor() const
     {
         return f_cor;
+    }
+    
+    double getWrongInternalRAT() const
+    {
+        return wrong_internal_factor;
     }
 
     bool isAligned() const
@@ -2667,7 +2668,7 @@ class CDustComponent
     double material_density;
     double tensile_strength;
     double size_choice;
-    double disruption_size;
+    double wrong_internal_factor;
     double dust_mass_fraction;
     // double min_temp;
     double max_temp;

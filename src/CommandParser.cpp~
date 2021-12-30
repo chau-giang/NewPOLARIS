@@ -821,11 +821,27 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
 
     if(cmd.compare("<larm_f>") == 0)
     {
-        double val = atof(data.c_str());
-        param->setLarmF(val);
+        param->setLarmF(atof(data.c_str()));
         return true;
     }
 
+    if(cmd.compare("<number_cluster>") == 0)
+    {
+        param->setNumberIronCluster(atof(data.c_str()));
+        return true;
+    }
+ 
+    if(cmd.compare("<volume_filling_cluster>") == 0)
+    {
+        param->setVolumeFillingFactor(atof(data.c_str()));
+        return true;
+    }
+
+    if(cmd.compare("<iron_fraction>") == 0)
+    {
+        param->setIronFraction(atof(data.c_str()));
+        return true;
+    }    
     if(cmd.compare("<plot_list>") == 0)
     {
         dlist ids = parseValues(data);
@@ -3064,12 +3080,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
-    if(cmd.compare("<disruption_size>") == 0)
-    {
-        param->setDisruptionSizeInput(atof(data.c_str()));
-        return true;
-    }
-
     if(cmd.compare("<f_highJ>") == 0)
     {
         param->setFhighJ(atof(data.c_str()));
@@ -3085,6 +3095,18 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
     if(cmd.compare("<alpha_Q>") == 0)
     {
         param->setAlphaQ(atof(data.c_str()));
+        return true;
+    }
+    
+    if(cmd.compare("<tensile_strength>") == 0)
+    {
+        param->setTensileStrength(atof(data.c_str()));
+        return true;
+    }
+    
+    if(cmd.compare("<G_zeta>") == 0)
+    {
+        param->setWrongInternalRAT(atof(data.c_str()));
         return true;
     }
 

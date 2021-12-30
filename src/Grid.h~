@@ -4511,8 +4511,11 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     double size_param_modif_min;
     double size_param_modif_max;
     
-    double abar_low_min;
-    double abar_low_max;
+    double abar_low_lower_min;
+    double abar_low_lower_max;
+    
+    double abar_low_upper_min;
+    double abar_low_upper_max;
 
     double abar_high_lower_min;
     double abar_high_lower_max;
@@ -4644,7 +4647,8 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     uilist data_pos_adisr_list;
     uilist data_pos_max_adisr_list;
     uilist data_pos_param_modif_list;
-    uilist data_pos_barnet_low_J_list;
+    uilist data_pos_barnet_low_J_lower_list;
+    uilist data_pos_barnet_low_J_upper_list;
     uilist data_pos_barnet_high_J_lower_list;
     uilist data_pos_barnet_high_J_upper_list;
 
@@ -4687,7 +4691,8 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     bool plt_disr;
     bool plt_max_disr;
     bool plt_param_modif;
-    bool plt_barnet_low;
+    bool plt_barnet_low_lower;
+    bool plt_barnet_low_upper;
     bool plt_barnet_high_lower;
     bool plt_barnet_high_upper;
 
@@ -4739,7 +4744,8 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     double ** buffer_disr;
     double ** buffer_max_disr;
     double ** buffer_param_modif;
-    double ** buffer_barnet_low;
+    double ** buffer_barnet_low_lower;
+    double ** buffer_barnet_low_upper;
     double ** buffer_barnet_high_lower;
     double ** buffer_barnet_high_upper;
     

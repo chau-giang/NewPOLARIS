@@ -2153,7 +2153,7 @@ void CRadiativeTransfer::calcBarnetHighJRadii()
                      << " [m]; max: " << dust->getMaxBarnetHighUpperRadius() << " [m])"
                      << "          \r";
                    
-                last_percentage = percentage;
+               last_percentage = percentage;
             }
         }
     }

@@ -2278,6 +2278,8 @@ bool CDustComponent::writeComponent(string path_data, string path_plot)
     data_writer << f_highJ << endl;
     data_writer << "#f_correlation" << endl;
     data_writer << f_cor << endl;
+    data_writer << "#G(cos2(zeta)" << endl;
+    data_writer << wrong_alignment_factor << endl;
    
     
     data_writer << "Ordinary paramagnetic grain" << endl;
@@ -3107,6 +3109,7 @@ bool CDustComponent::add(double ** size_fraction, CDustComponent * comp, uint **
         f_highJ = comp->getFHighJ();
         tensile_strength = comp->getTensileStrength();
         size_choice = comp->getSizeChoice();
+        wrong_inernal_factor = comp->getWrongInternalRAT();
         larm_f = comp->getLarmF();
         number_cluster = comp->getNumberIronCluster();
         volume_filling_cluster = comp->getVolumeFillingFactor();
@@ -3512,8 +3515,11 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
 
     // Init variables
     double Rrat = 0, Rgold = 0, Ridg = 0, Rent = 1;
+    double Rrat_low_J = 0;
     double delta = 1;
     double a_alig = 1;
+    double abar_lowJ_lower = 1;
+    double abar_lowJ_upper = 1;
 
     // Get dust temperature from grid
     double Td;
@@ -3554,10 +3560,21 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     if((alignment & ALIG_RAT) == ALIG_RAT)
     {
         a_alig = grid->getAlignedRadius(pp, i_density);
+     	abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
+     	abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
+     	   
         if(a_eff[a] > a_alig)
         {
             if((alignment & ALIG_INTERNAL) == ALIG_INTERNAL)
-                Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
+         	{
+            	if ((a_eff[a] >= abar_lowJ_lower) && (a_eff[a] <= abar_lowJ_upper))
+            		Rrat_low_J = getInternalRAT();
+            	else
+            		Rrat_low_J = getWrongInternalRAT();
+            	Rrat = f_highJ + (1 - f_highJ) * Rrat_low_J;
+            	//Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
+ 
+            }
             else
                 Rrat = 1;
         }
@@ -4467,10 +4484,19 @@ void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, u
     // Loop over all considered grain sizes
     double omega_old = 0;
 
+	uint test = 0;
+	uint index_size_max;
+	
     for(uint a = nr_of_dust_species; a > 0; a--)
     {
         if(sizeIndexUsed(a, a_min, a_max))
         {
+            if (test == 0)
+		    {
+		    	index_size_max = a;
+		    	test +=1 ;
+		    }   
+		    	
             // Saturated angular speed
             double omega_rat = calcRATSpeed(grid, cell, i_density, a);
 
@@ -4482,7 +4508,7 @@ void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, u
 
             if(omega_frac > DISRUPTION_LIMIT)
             {
-                if (a_eff[a] < a_max)
+                if (a < index_size_max)
                 {
                     // Find disruption size
                     // linear interpolation
@@ -4497,7 +4523,7 @@ void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, u
                 else
                     a_disr_max = a_max;
                 break;
- 
+ 			}
             // keep the prev. omega fraction for interpolation
             omega_old = omega_frac;
         }
@@ -4760,6 +4786,9 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
         }
 	}
 	
+	uint test = 0;
+	uint index_size_max;
+	
 	if (a_bar_low_J_lower == a_max)
 		a_bar_low_J_upper = a_max;
 	else
@@ -4769,6 +4798,11 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
 		{
 		    if(sizeIndexUsed(a, a_min, a_max))
 		    {   
+		    	if (test == 0)
+		    	{
+		    		index_size_max = a;
+		    		test +=1 ;
+		    	}   
 		        //****************************************************************************************
 				//*
 				//*
@@ -4857,11 +4891,11 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
 
 				
 				// if barnet timescale is larger than gas damping timescale
-		        if(t_compare_low_J <= 1)
+		        if(t_compare_low_J < 1)
 		        {
 		            // Find disruption size
 		            // linear interpolation
-		            if(a_eff[a] < a_max) //grain size > amin
+		            if(a < index_size_max) //grain size > amin
 		            {
 		                double a1 = a_eff[a - 1]; //previous grain size
 		                double a2 = a_eff[a]; //calculated grain size
@@ -5087,6 +5121,9 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
         }
 	}
 	
+	uint test = 0;
+	uint index_size_max;
+	
 	if (a_bar_high_J_lower == a_max)
 		a_bar_high_J_upper = a_max;
 	else
@@ -5095,7 +5132,12 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
 		for(uint a = nr_of_dust_species; a > 0 ; a--)
 		{
 		    if(sizeIndexUsed(a, a_min, a_max))
-		    {   
+		    {
+		    	if (test == 0)
+		    	{
+		    		index_size_max = a;
+		    		test +=1 ;
+		    	}   
 		        //****************************************************************************************
 				//*
 				//*
@@ -5184,11 +5226,11 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
 
 				
 				// if barnet timescale is larger than gas damping timescale
-		        if(t_compare_high_J <= 1)
+		        if(t_compare_high_J < 1)
 		        {
 		            // Find disruption size
 		            // linear interpolation
-		            if(a_eff[a] < a_max) //grain size > amin
+		            if(a < index_size_max) //grain size > amin
 		            {
 		                double a1 = a_eff[a - 1]; //previous grain size
 		                double a2 = a_eff[a]; //calculated grain size
@@ -6349,6 +6391,7 @@ bool CDustMixture::createDustMixtures(parameters & param, string path_data, stri
             single_component[i_comp].setFHighJ(param.getFHighJ());
             single_component[i_comp].setQref(param.getQref());
             single_component[i_comp].setAlphaQ(param.getAlphaQ());
+            single_component[i_comp].setWrongInternalRAT(param.getWrongInternalRAT());
 
             single_component[i_comp].setDelta0(param.getDelta0());
             

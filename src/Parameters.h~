@@ -112,6 +112,7 @@ class parameters
         f_highJ = 0.25;
         Q_ref = 0.4;
         alpha_Q = 3.0;
+        wrong_internal_factor = 0;
 
         f_cor = 0.6;
         //a_disr = 0;
@@ -770,6 +771,11 @@ class parameters
     double getFcorr() const
     {
         return f_cor;
+    }
+    
+    double getWrongInternalRAT() const
+    {
+        return wrong_internal_factor;
     }
 
     //double getDisruptionSize() const
@@ -2476,6 +2482,7 @@ class parameters
     //double a_disr;
     double Q_ref;
     double alpha_Q;
+    double wrong_internal_factor;
 
     double adjTgas;
     double isrf_g_zero;
