@@ -3866,6 +3866,7 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
     // Calculate the temperature only for cells with a density not zero
     if(getNumberDensity(grid, *cell, i_density) == 0)
         return;
+        
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, *cell);
     double a_max = getSizeMax(grid, *cell);
@@ -3940,15 +3941,20 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
 
  
             // Calculate temperature from absorption rate
-            t_dust = max(double(TEMP_MIN), findTemperature(a, abs_rate[a]));
-            abs_temp[a] = t_dust;
-            temp_size.setValue(a, a_eff[a], t_dust);
+            //t_dust = max(double(TEMP_MIN), findTemperature(a, abs_rate[a]));
+            //abs_temp[a] = t_dust;
+            //temp_size.setValue(a, a_eff[a], t_dust);
 
-
+			abs_temp[a] = max(double(TEMP_MIN), findTemperature(a, abs_rate[a]));
+			temp_size.setValue(a, a_eff[a], abs_temp[a]);
+			
+		
             // Consider sublimation temperature
             if(sublimate && grid->getTemperatureFieldInformation() == TEMP_FULL)
-                if(t_dust >= sub_temp)
-                    t_dust = TEMP_MIN;
+                //if(t_dust >= sub_temp)
+                //    t_dust = TEMP_MIN;
+				if (abs_temp[a] >= sub_temp)
+					abs_temp[a] = TEMP_MIN;
 
             if(grid->getTemperatureFieldInformation() == TEMP_EFF ||
                grid->getTemperatureFieldInformation() == TEMP_SINGLE)
@@ -3966,15 +3972,17 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
                     if ((a_eff[a] > a_disr) && (a_eff[a] < a_disr_max))
                     {
                         abs_temp[a] = TEMP_MIN;
-                        t_dust = TEMP_MIN;
+                        //t_dust = TEMP_MIN;
                     }
                 }
 
                 // Set dust temperature in grid
-                grid->setDustTemperature(cell, i_density, a, t_dust);
+                //grid->setDustTemperature(cell, i_density, a, t_dust);
+				grid->setDustTemperature(cell, i_density, a, abs_temp[a]);
 
                 // Update min and max temperatures for visualization
-                max_temp = max(max_temp, t_dust);
+                //max_temp = max(max_temp, t_dust);
+                max_temp = max(max_temp, abs_temp[a]);
                 //if(temp < min_temp)
                 //    min_temp = temp;
             }

@@ -288,24 +288,24 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         rad.calcMaxDisruptRadii();
         rad.calcSizeParamModify();
 
-        //cout << "\n Second loop \n" << endl;
-        //rad.calcMonteCarloRadiationField(param, param.getCommand(),
-        //                                use_energy_density,
-        //                               false); //(param.getCommand() == CMD_RAT));
-        //rad.calcFinalTemperature(use_energy_density);
-        //rad.calcDisruptRadii();
-        //rad.calcMaxDisruptRadii();
-        //rad.calcSizeParamModify();
+        cout << "\n Second loop \n" << endl;
+        rad.calcMonteCarloRadiationField(param, param.getCommand(),
+                                        use_energy_density,
+                                       false); //(param.getCommand() == CMD_RAT));
+        rad.calcFinalTemperature(use_energy_density);
+        rad.calcDisruptRadii();
+        rad.calcMaxDisruptRadii();
+        rad.calcSizeParamModify();
 
-        //cout << "\n Final temperature and alignment \n" << endl;
-        //rad.calcMonteCarloRadiationField(param, param.getCommand(),
-        //                                 use_energy_density,
-        //                                 false); //(param.getCommand() == CMD_RAT))
+        cout << "\n Final temperature and alignment \n" << endl;
+        rad.calcMonteCarloRadiationField(param, param.getCommand(),
+                                         use_energy_density,
+                                         false); //(param.getCommand() == CMD_RAT))
 
-        //rad.calcFinalTemperature(use_energy_density);
-        //rad.calcDisruptRadii();
-        //rad.calcMaxDisruptRadii();
-        //rad.calcSizeParamModify();
+        rad.calcFinalTemperature(use_energy_density);
+        rad.calcDisruptRadii();
+        rad.calcMaxDisruptRadii();
+        rad.calcSizeParamModify();
     }
         
     if(param.isRatSimulation())
