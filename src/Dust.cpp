@@ -3701,7 +3701,7 @@ void CDustComponent::convertTempInQB(CGridBasic * grid,
         return;
 
     // Set use dust offset later
-    dust_offset = false;
+    dust_offset = true;
 
     // Init variables
     double temp_offset;

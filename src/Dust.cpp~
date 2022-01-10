@@ -3701,7 +3701,7 @@ void CDustComponent::convertTempInQB(CGridBasic * grid,
         return;
 
     // Set use dust offset later
-    dust_offset = false;
+    dust_offset = true;
 
     // Init variables
     double temp_offset;
@@ -4022,7 +4022,6 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
         }
         else
         {
-        	cout << "enter here?" << endl;
          // Calculate dust temperature of chosen radius and set it as Tdust of a grid
             avg_temp = temp_size.getValue(size_choice);
         }
