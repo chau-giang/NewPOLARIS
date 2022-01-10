@@ -44,6 +44,9 @@ class CGridSpherical : public CGridBasic
 
         min_dust_temp = 0;
         max_dust_temp = 0;
+        
+        min_abs_ini = 0;
+        max_abs_ini = 0;
 
         min_gas_dens = 0;
         max_gas_dens = 0;
@@ -118,6 +121,7 @@ class CGridSpherical : public CGridBasic
         // data_pos_dd = MAX_UINT;
         // data_pos_td = MAX_UINT;
         data_pos_tg = MAX_UINT;
+        //data_pos_abs_ini = MAX_UINT;
         data_pos_mx = MAX_UINT;
         data_pos_my = MAX_UINT;
         data_pos_mz = MAX_UINT;
@@ -170,6 +174,7 @@ class CGridSpherical : public CGridBasic
         plt_barnet_low_upper = false;
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
+        plt_abs_ini = false;
 
         total_volume = 0;
         cell_volume = 0;

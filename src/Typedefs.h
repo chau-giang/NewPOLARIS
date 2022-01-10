@@ -251,6 +251,7 @@ using namespace std;
 #define GRIDabar_low_upper 40
 #define GRIDabar_high_lower 41
 #define GRIDabar_high_upper 42
+#define GRIDabs_ini 43
 
 #define minGRID GRIDgas_dens
 #define maxGRID GRIDavg_dir

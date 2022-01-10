@@ -247,8 +247,8 @@ using namespace std;
 #define GRIDadisr 36
 #define GRIDparam_modif 37
 #define GRIDadisr_max 38
-#define GRIDabar_low 39
-#define GRIDabar_low 40
+#define GRIDabar_low_lower 39
+#define GRIDabar_low_upper 40
 #define GRIDabar_high_lower 41
 #define GRIDabar_high_upper 42
 

@@ -3515,11 +3515,13 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
 
     // Init variables
     double Rrat = 0, Rgold = 0, Ridg = 0, Rent = 1;
-    double Rrat_low_J = 0;
+    double Rrat_low_J = 0, Rrat_high_J = 0;
     double delta = 1;
     double a_alig = 1;
     double abar_lowJ_lower = 1;
     double abar_lowJ_upper = 1;
+    double abar_highJ_lower = 1;
+    double abar_highJ_upper = 1;
 
     // Get dust temperature from grid
     double Td;
@@ -3538,24 +3540,23 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     
     // Calculate the maximum alignment grain constrained by larmor timescale and gas damping timescale
     double a_limit;
-    //if (Ncl == 0) // if no Iron cluster is found, dust is paramagnetic grains
-    //{
-    //	double fp = getIronFraction();  
-    // 	if (fp == 0) //if no iron fraction is used, use defaul calculation of amax,B from the original code
-    //	{
-    //    	double larm_f = getLarmF();	
-    // 		a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
-    //	}
-    //	else 		//if iron fraction is used, use new calculation of amax,B  
-    //		a_limit = CMathFunctions::calc_larm_limit_para(Blen, Td, Tg, ng, aspect_ratio, fp);
-    //}
-    //else 	//if Iron cluster is found, dust is super paramagnetic grains
-    //{
-	//	double phi_sp = getVolumeFillingFactor();
-    //	a_limit = CMathFunctions::calc_larm_limit_super(Blen, Td, Tg, ng, aspect_ratio, Ncl, phi_sp);
-    //}
-    double larm_f = getLarmF();	
-    a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
+    if (Ncl == 0) // if no Iron cluster is found, dust is paramagnetic grains
+    {
+    	double fp = getIronFraction();  
+     	if (fp == 0) //if no iron fraction is used, use defaul calculation of amax,B from the original code
+    	{
+        	double larm_f = getLarmF();	
+     		a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
+    	}
+    	else 		//if iron fraction is used, use new calculation of amax,B  
+    		a_limit = CMathFunctions::calc_larm_limit_para(Blen, Td, Tg, ng, aspect_ratio, fp);
+    }
+    else 	//if Iron cluster is found, dust is super paramagnetic grains
+    {
+		double phi_sp = getVolumeFillingFactor();
+    	a_limit = CMathFunctions::calc_larm_limit_super(Blen, Td, Tg, ng, aspect_ratio, Ncl, phi_sp);
+    }
+    
 
     // Calculate the parameters for radiative torque alignment
     if((alignment & ALIG_RAT) == ALIG_RAT)
@@ -3566,19 +3567,43 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
         {
             if((alignment & ALIG_INTERNAL) == ALIG_INTERNAL)
          	{
-         	    abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
-     			abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
-            	if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
-            	{
-            		Rrat_low_J = getInternalRAT();
+         		//If account for right and wrong internal alignment
+         		if(getWrongInternalRAT() != 0)
+         		{
+         			// Internal alignment at low J attractor
+         	    	abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
+     				abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
+     				
+            		if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
+            		{
+            			Rrat_low_J = getInternalRAT();
+            		}
+            		else
+            		{
+ 						Rrat_low_J = getWrongInternalRAT();
+            		}
+            		
+            		// Internal alignment at high J attractor
+            		abar_highJ_lower = grid->getBarnetHighLowerRadius(pp, i_density);
+     				abar_highJ_upper = grid->getBarnetHighUpperRadius(pp, i_density);
+     				
+            		if (a_eff[a] > abar_highJ_lower && a_eff[a] < abar_highJ_upper) 
+            		{
+            			Rrat_high_J = 1;
+            		}
+            		else
+            		{
+ 						Rrat_high_J = getWrongInternalRAT();
+            		}
+            		
+            		Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
             	}
+            	
+            	// If assume all dust grains have right internal alignment
             	else
             	{
- 					Rrat_low_J = getWrongInternalRAT();
-            	}
-            	Rrat = f_highJ + (1 - f_highJ) * Rrat_low_J;
-            	//Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
- 
+            		Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
+ 				}
             }
             else
                 Rrat = 1;
@@ -3676,7 +3701,7 @@ void CDustComponent::convertTempInQB(CGridBasic * grid,
         return;
 
     // Set use dust offset later
-    dust_offset = true;
+    dust_offset = false;
 
     // Init variables
     double temp_offset;
@@ -3901,11 +3926,12 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
             }
 
             // Add offset on absorption rate
-            if((a_disr == 0) && (a_disr_max) == 0 && dust_offset)
+            if(dust_offset)
             {
                 if(grid->getTemperatureFieldInformation() == TEMP_FULL)
                 {
                     abs_rate[a] += grid->getQBOffset(*cell, i_density, a);
+                    cout << grid->getQBOffset(*cell, i_density, a_eff[10]) << endl;
                 }
                 else if(grid->getTemperatureFieldInformation() == TEMP_EFF ||
                         grid->getTemperatureFieldInformation() == TEMP_SINGLE)
@@ -3914,14 +3940,15 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
 
  
             // Calculate temperature from absorption rate
-            abs_temp[a] = max(double(TEMP_MIN), findTemperature(a, abs_rate[a]));
-            temp_size.setValue(a, a_eff[a], abs_temp[a]);
- 
+            t_dust = max(double(TEMP_MIN), findTemperature(a, abs_rate[a]));
+            abs_temp[a] = t_dust;
+            temp_size.setValue(a, a_eff[a], t_dust);
+
 
             // Consider sublimation temperature
             if(sublimate && grid->getTemperatureFieldInformation() == TEMP_FULL)
-                if(abs_temp[a] >= sub_temp)
-                    abs_temp[a] = TEMP_MIN;
+                if(t_dust >= sub_temp)
+                    t_dust = TEMP_MIN;
 
             if(grid->getTemperatureFieldInformation() == TEMP_EFF ||
                grid->getTemperatureFieldInformation() == TEMP_SINGLE)
@@ -3937,14 +3964,17 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
                 if ((a_disr != 0) && (a_disr_max != 0))
                 {
                     if ((a_eff[a] > a_disr) && (a_eff[a] < a_disr_max))
+                    {
                         abs_temp[a] = TEMP_MIN;
+                        t_dust = TEMP_MIN;
+                    }
                 }
 
                 // Set dust temperature in grid
-                grid->setDustTemperature(cell, i_density, a, abs_temp[a]);
+                grid->setDustTemperature(cell, i_density, a, t_dust);
 
                 // Update min and max temperatures for visualization
-                max_temp = max(max_temp, abs_temp[a]);
+                max_temp = max(max_temp, t_dust);
                 //if(temp < min_temp)
                 //    min_temp = temp;
             }
@@ -4015,6 +4045,7 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
 
 }
 
+
 double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i_density, uint a)
 {
 	// ************************************************************************************************************
@@ -4042,9 +4073,6 @@ double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i
     // Get thermal velocity
     double v_th = sqrt(2.0 * con_kB * T_gas / (mu * m_H));
  
-    // Loop over all considered grain sizes
-    double omega_old = 0;
-
     // Minor and major axis
     double a_minor = a_eff[a] * pow(s, 2. / 3.);
     double a_major = a_eff[a] * pow(s, -1. / 3.);
@@ -4072,7 +4100,10 @@ double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i
             du[w] = 0;
             continue;
         }
-
+        
+		// Get angle between magnetic field and radiation field
+        double theta = grid->getTheta(*cell, en_dir);
+                
         // Anisotropy parameter
         double gamma = en_dir.length() / arr_en_dens;
 
@@ -4087,6 +4118,11 @@ double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i
         if(wavelength_list[w] > 1.8 * a_eff[a])
             Qr = Q_ref / pow(wavelength_list[w] / (1.8 * a_eff[a]), alpha_Q);
 
+		//double cos_theta = abs(cos(theta));
+		
+		//Qr *= cos_theta;
+		
+		
         // Qr=getQrat(a, w, 0.0);
         arr_product[w] = arr_en_dens * (wavelength_list[w] / PIx2) * Qr * gamma * PI * pow(a_eff[a], 2);
         // Gamma_RAT = u_lambda*(lambda/(2*pi))*Qr*gamma_lambda*pi*a**2

@@ -284,7 +284,6 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     {
         cout << "\n DISRUPTION SIMULATION \n" << endl;
         cout << "\n First loop\n" << endl;
-  
         rad.calcDisruptRadii();
         rad.calcMaxDisruptRadii();
         rad.calcSizeParamModify();
@@ -300,8 +299,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
 
         //cout << "\n Final temperature and alignment \n" << endl;
         //rad.calcMonteCarloRadiationField(param, param.getCommand(),
-         //                                use_energy_density,
-         //                                false); //(param.getCommand() == CMD_RAT))
+        //                                 use_energy_density,
+        //                                 false); //(param.getCommand() == CMD_RAT))
 
         //rad.calcFinalTemperature(use_energy_density);
         //rad.calcDisruptRadii();

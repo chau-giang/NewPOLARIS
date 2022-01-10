@@ -92,6 +92,9 @@ class CGridBasic
 
         min_dust_temp = 0;
         max_dust_temp = 0;
+        
+        min_abs_ini = 0;
+        max_abs_ini = 0;
 
         min_gas_dens = 0;
         max_gas_dens = 0;
@@ -253,6 +256,7 @@ class CGridBasic
         plt_barnet_low_upper = false; 
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
+        plt_abs_ini = false;
 
         total_volume = 0;
         cell_volume = 0;
@@ -298,6 +302,7 @@ class CGridBasic
         buffer_barnet_low_upper = 0;
         buffer_barnet_high_lower = 0;
         buffer_barnet_high_upper = 0;
+        buffer_abs_ini = 0;
 
         turbulent_velocity = 0;
 
@@ -405,9 +410,12 @@ class CGridBasic
 
         max_dust_temp = -1e300;
         min_dust_temp = 1e300;
+        
+        max_abs_ini = -1e-300;
+        min_abs_ini = 1e300;
 
         max_larm_limit = -1e300;
-        min_larm_limit = 1e300;
+        min_larm_limit = 1e-300;
 
         max_delta = -1e300;
         min_delta = 1e300;
@@ -547,6 +555,7 @@ class CGridBasic
         plt_barnet_low_upper = false;
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
+        plt_abs_ini = false;
 
         total_volume = 0;
         cell_volume = 0;
@@ -592,6 +601,7 @@ class CGridBasic
         buffer_barnet_low_upper = 0;
         buffer_barnet_high_lower = 0;
         buffer_barnet_high_upper = 0;
+        buffer_abs_ini = 0;
 
         turbulent_velocity = 0;
 
@@ -1374,29 +1384,16 @@ class CGridBasic
         cell->setData(data_pos_gd_list[i_density], dens);
     }
 
-    double getQBOffset(const cell_basic & cell, uint i_density) const
-    {
-        if(data_pos_dt_list.size() == 1)
-            return cell.getData(data_pos_dt_list[0]);
-        else if(data_pos_dt_list.size() > i_density)
-            return cell.getData(data_pos_dt_list[i_density]);
-        else
-            return 0;
-    }
 
-    double getQBOffset(const photon_package & pp, uint i_density) const
-    {
-        return getQBOffset(*pp.getPositionCell(), i_density);
-    }
 
     double getQBOffset(const cell_basic & cell, uint i_density, uint a) const
     {
-        if(!data_pos_dt_list.empty())
+        if(!data_pos_abs_ini_list.empty())
         {
             uint id = a + nr_densities;
             for(uint i = 0; i < i_density; i++)
                 id += size_skip[i];
-            return cell.getData(data_pos_dt_list[id]);
+            return cell.getData(data_pos_abs_ini_list[id]);
         }
         else
             return 0;
@@ -1407,23 +1404,53 @@ class CGridBasic
         return getQBOffset(*pp.getPositionCell(), i_density, a);
     }
 
-    void setQBOffset(cell_basic * cell, uint i_density, uint a, double temp)
+
+    double getQBOffset(const cell_basic & cell, uint i_density) const
     {
-        if(!data_pos_dt_list.empty())
+        if(data_pos_abs_ini_list.size() == 1)
+            return cell.getData(data_pos_abs_ini_list[0]);
+        else if(data_pos_abs_ini_list.size() > i_density)
+            return cell.getData(data_pos_abs_ini_list[i_density]);
+        else
+            return 0;
+    }
+    
+    double getQBOffset(const photon_package & pp, uint i_density) const
+    {
+        return getQBOffset(*pp.getPositionCell(), i_density);
+    }
+    
+    
+    double getQBOffset(const cell_basic & cell) const
+    {
+        double sum = 0;
+        for(uint i_density = 0; i_density < nr_densities; i_density++)
+            sum += getQBOffset(cell, i_density) * getRelativeDustDensity(cell, i_density);
+        return sum;
+    }
+
+    double getQBOffset(const photon_package & pp) const
+    {
+        return getQBOffset(*pp.getPositionCell());
+    }
+    
+    void setQBOffset(cell_basic * cell, uint i_density, uint a, double abs_ini)
+    {
+        if(!data_pos_abs_ini_list.empty())
         {
             uint id = a + nr_densities;
             for(uint i = 0; i < i_density; i++)
                 id += size_skip[i];
-            cell->setData(data_pos_dt_list[id], temp);
+            cell->setData(data_pos_abs_ini_list[id], abs_ini);
         }
     }
 
-    void setQBOffset(cell_basic * cell, uint i_density, double temp)
+    void setQBOffset(cell_basic * cell, uint i_density, double abs_ini)
     {
-        if(data_pos_dt_list.size() == 1)
-            cell->setData(data_pos_dt_list[0], temp);
+        if(data_pos_abs_ini_list.size() == 1)
+            cell->setData(data_pos_abs_ini_list[0], abs_ini);
         else if(data_pos_dt_list.size() > 1)
-            cell->setData(data_pos_dt_list[i_density], temp);
+            cell->setData(data_pos_abs_ini_list[i_density], abs_ini);
     }
 
 //*******************************************************************************
@@ -2277,7 +2304,7 @@ class CGridBasic
                 double field = getMagField(pp).length();
                 double Td = getDustTemperature(pp);
                 double Tg = getGasTemperature(pp);
-                double dens = getGasDensity(pp);
+                double dens = getGasNumberDensity(pp);
                 double a_limit;
                 //double larm_f = param.getLarmF();
                 //double a_limit = CMathFunctions::calc_larm_limit(field, Td, Tg, dens, 0.5, larm_f);
@@ -2391,6 +2418,14 @@ class CGridBasic
             if(plt_barnet_high_upper)
                 for(uint i_density = 0; i_density < data_pos_barnet_high_J_upper_list.size(); i_density++)
                     buffer_barnet_high_upper[i_cell][i_density] = getBarnetHighUpperRadius(pp, i_density);
+                    
+            if(plt_abs_ini)
+            {
+                buffer_abs_ini[i_cell][0] = getQBOffset(pp);
+                if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+                    for(uint i_density = 0; i_density < nr_densities; i_density++)
+                        buffer_abs_ini[i_cell][i_density + 1] = getQBOffset(pp, i_density);
+            }
         }
         else
         {
@@ -2517,6 +2552,13 @@ class CGridBasic
             {
                 for(uint i_density = 0; i_density < data_pos_barnet_high_J_upper_list.size(); i_density++)
                     buffer_barnet_high_upper[i_cell][i_density] = 0;
+            }
+            if(plt_abs_ini)
+            {
+                buffer_abs_ini[i_cell][0] = 0;
+                if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+                    for(uint i_density = 1; i_density <= nr_densities; i_density++)
+                        buffer_abs_ini[i_cell][i_density] = 0;
             }
         }
     }
@@ -2898,6 +2940,12 @@ class CGridBasic
     {
         max_dust_temp = _max_dust_temp;
         min_dust_temp = _min_dust_temp;
+    }
+    
+    void setQBOffsetRange(double _min_abs_ini, double _max_abs_ini)
+    {
+        max_abs_ini = _max_abs_ini;
+        min_abs_ini = _min_abs_ini;
     }
 
     void setalignedRadiusRange(double a_min, double a_max)
@@ -3362,6 +3410,10 @@ class CGridBasic
             	case GRIDabar_high_upper:
             		data_pos_barnet_high_J_upper_list.push_back(i);
             		break;
+            		
+            	case GRIDabs_ini:
+                    data_pos_abs_ini_list.push_back(i);
+                    break;
 
                 default:
                     cout << "\nERROR: Unknown data IDs!" << endl;
@@ -3673,6 +3725,10 @@ class CGridBasic
         {
             data_pos_dt_list.push_back(data_offset + tmp_data_offset);
             data_ids.push_back(GRIDdust_temp);
+            tmp_data_offset++;
+            
+            data_pos_abs_ini_list.push_back(data_offset + tmp_data_offset);
+            data_ids.push_back(GRIDabs_ini);
             tmp_data_offset++;
         }
 
@@ -4489,6 +4545,9 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
 
     double max_dust_temp;
     double min_dust_temp;
+    
+    double max_abs_ini;
+    double min_abs_ini;
 
     double max_larm_limit;
     double min_larm_limit;
@@ -4651,6 +4710,7 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     uilist data_pos_barnet_low_J_upper_list;
     uilist data_pos_barnet_high_J_lower_list;
     uilist data_pos_barnet_high_J_upper_list;
+    uilist data_pos_abs_ini_list;
 
     double turbulent_velocity;
 
@@ -4695,6 +4755,7 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     bool plt_barnet_low_upper;
     bool plt_barnet_high_lower;
     bool plt_barnet_high_upper;
+    bool plt_abs_ini;
 
     bool dust_is_mass_density, gas_is_mass_density;
     bool velocity_field_needed;
@@ -4748,6 +4809,7 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     double ** buffer_barnet_low_upper;
     double ** buffer_barnet_high_lower;
     double ** buffer_barnet_high_upper;
+    double ** buffer_abs_ini;
     
     double ** CextMeanTab;
     double ** CabsMeanTab;

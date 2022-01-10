@@ -116,7 +116,9 @@ void CGridBasic::updateDataRange(cell_basic * cell, parameters & param)
     double abar_low_upper = 0; 
     double abar_high_lower = 0;
     double abar_high_upper = 0;
+    double abs_ini_temp = 0;
     double dust_temp = 0;
+    double abs_ini = 0;
     double gas_temp = 0;
     double mach = 0;
     double delta = 0;
@@ -428,6 +430,18 @@ void CGridBasic::updateDataRange(cell_basic * cell, parameters & param)
             if(abar_high_upper < float(abar_high_upper_min))
                 abar_high_upper_min = (double)abar_high_upper;
         }
+    }
+    
+    // conversion from initial dust temperature to default absorption rate in the grid
+    if(!data_pos_abs_ini_list.empty())
+    {
+        abs_ini = cell->getData(data_pos_abs_ini_list[0]);
+        // to do if conversion is implemented
+
+        if(abs_ini > max_abs_ini)
+            max_abs_ini = abs_ini;
+        if(abs_ini < min_abs_ini)
+            min_abs_ini = abs_ini;
     }
  
     double Bfield = sqrt(mx * mx + my * my + mz * mz);
@@ -857,6 +871,7 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
     // do if dust denity is possible
     bool plt_gas_temp = (data_pos_tg != MAX_UINT) && param.isInPlotList(GRIDgas_temp);
     bool plt_dust_temp = (!data_pos_dt_list.empty()) && param.isInPlotList(GRIDdust_temp);
+    bool plt_abs_ini = (!data_pos_abs_ini_list.empty()) && param.isInPlotList(GRIDabs_ini);
     bool plt_mag = (data_pos_mx != MAX_UINT) && param.isInPlotList(GRIDgas_dens);
 
     plt_mag = (data_pos_mx != MAX_UINT) && (data_pos_my != MAX_UINT) && (data_pos_my != MAX_UINT) &&
@@ -885,13 +900,14 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
     string barnet_low_upper_filename = path + "abar_low_upper.am"; 
     string barnet_high_lower_filename = path + "abar_high_lower.am";
     string barnet_high_upper_filename = path + "abar_high_upper.am";
+    string abs_ini_filename = path + "abs_ini.am";
     string d_filename = path + "delta.am";
 
     ofstream dens_writer, rat_writer;
     ofstream disr_writer, max_disr_writer, param_modif_writer;
     ofstream barnet_low_lower_writer, barnet_low_upper_writer;
     ofstream barnet_high_lower_writer, barnet_high_upper_writer;
-    ofstream gas_writer, dust_writer;
+    ofstream gas_writer, dust_writer, abs_ini_writer;
     ofstream magvec_writer, magf_writer;
     ofstream velvec_writer, velf_writer;
     ofstream d_writer;
@@ -1018,6 +1034,16 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
         }
     }
     
+    if(plt_abs_ini)
+    {
+        abs_ini_writer.open(abs_ini_filename.c_str(), ios::out);
+        if(abs_ini_writer.fail())
+        {
+            cout << "\nERROR: Cannot write to:\n " << abs_ini_filename << endl;
+            return false;
+        }
+    }
+    
     if(plt_delta)
     {
         d_writer.open(d_filename.c_str(), ios::out);
@@ -1119,6 +1145,7 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
     dens_writer << point_header.str();
     gas_writer << point_header.str();
     dust_writer << point_header.str();
+    abs_ini_writer << point_header.str();
     magf_writer << point_header.str();
     velf_writer << point_header.str();
 
@@ -1182,12 +1209,14 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
                     barnet_low_upper_writer << uint(0) << endl; 
                     barnet_high_lower_writer << uint(0) << endl;
                     barnet_high_upper_writer << uint(0) << endl;
+                    abs_ini_writer << uint(0) << endl;
                 }
                 else
                 {
                     dens_writer << float(log10(getGasDensity(pp))) << endl;
                     gas_writer << float((getGasTemperature(pp))) << endl;
                     dust_writer << float((getDustTemperature(pp))) << endl;
+                    abs_ini_writer << float((getQBOffset(pp))) << endl;
 
                     if(plt_mag)
                     {
@@ -1271,6 +1300,7 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
     barnet_low_upper_writer.close(); 
     barnet_high_lower_writer.close();
     barnet_high_upper_writer.close();
+    abs_ini_writer.close();
     d_writer.close();
 
     cout << "- Writing AMIRA files                  : done" << endl;
@@ -1571,7 +1601,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         plt_mol_dens = (nrOfDensRatios>0 && param.isInPlotList(GRIDratio) );
         plt_dust_dens = (size_dd_list > 0) && param.isInPlotList(GRIDdust_dens);
         plt_gas_temp = (data_pos_tg != MAX_UINT) && param.isInPlotList(GRIDgas_temp);
-
+        
         plt_mag = (data_pos_mx != MAX_UINT) && (data_pos_my != MAX_UINT) && (data_pos_my != MAX_UINT) &&
                   param.isInPlotList(GRIDmx) && param.isInPlotList(GRIDmy) && param.isInPlotList(GRIDmz);
 
@@ -1623,9 +1653,11 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         }
 
         if(cmd != CMD_TEMP && cmd != CMD_TEMP_RAT && CMD_TEMP_DISR && CMD_TEMP_RAT_DISR)
+        {
             plt_dust_temp = (!data_pos_dt_list.empty()) && param.isInPlotList(GRIDdust_temp);
-            
- 
+         	plt_abs_ini = (!data_pos_abs_ini_list.empty()) && param.isInPlotList(GRIDabs_ini);
+ 		}
+ 		
         // if(getRadiationFieldAvailable())
         {
             switch(param.getWriteRadiationField())
@@ -1693,6 +1725,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         plt_barnet_low_upper = false; 
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
+        plt_abs_ini = false;
 
         if(cmd == CMD_TEMP || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_TEMP_RAT_DISR)
         {
@@ -1700,6 +1733,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                 plt_gas_temp = param.isInPlotList(GRIDgas_temp);
 
             plt_dust_temp = param.isInPlotList(GRIDdust_temp);
+            plt_abs_ini = param.isInPlotList(GRIDabs_ini);
         }
 
         if(cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_TEMP_RAT_DISR)
@@ -1770,7 +1804,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                          uint(plt_u_rad) + uint(plt_n_th) + uint(plt_T_e) + uint(plt_n_cr) + uint(plt_g_min) +
                          uint(plt_g_max) + uint(plt_p) + uint(plt_avg_th) + uint(plt_avg_dir) + uint(plt_disr) +
                          uint(plt_max_disr) + uint(plt_param_modif) + uint(plt_barnet_low_lower) + uint(plt_barnet_low_upper) + 
-                         uint(plt_barnet_high_lower) + uint(plt_barnet_high_upper);
+                         uint(plt_barnet_high_lower) + uint(plt_barnet_high_upper) + uint(plt_abs_ini);
 
     if(nr_parameters == 0)
         return res;
@@ -1783,6 +1817,9 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             nr_parameters += nr_densities;
     if(plt_dust_temp)
         if(nr_densities > 1 && data_pos_dt_list.size() >= nr_densities)
+            nr_parameters += nr_densities;
+    if(plt_abs_ini)
+        if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
             nr_parameters += nr_densities;
     if(plt_mol_dens)
         nr_parameters += nrOfDensRatios;
@@ -1910,6 +1947,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
     valarray<double> array_barnet_low_upper(nelements); 
     valarray<double> array_barnet_high_lower(nelements);
     valarray<double> array_barnet_high_upper(nelements);
+    valarray<double> array_abs_ini(nelements);
 
     if(plt_gas_dens)
     {
@@ -2071,6 +2109,20 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         for(long i_cell = 0; i_cell < nelements; i_cell++)
             buffer_barnet_high_upper[i_cell] = new double[data_pos_barnet_high_J_upper_list.size()];
     }
+    if(plt_abs_ini)
+    {
+        buffer_abs_ini = new double *[nelements];
+        for(long i_cell = 0; i_cell < nelements; i_cell++)
+        {
+            // +1 for the average/sum of the quantity, but only if multiple quantities are
+            // in the grid
+            if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+                buffer_abs_ini[i_cell] = new double[nr_densities + 1];
+            else
+                buffer_abs_ini[i_cell] = new double[nr_densities];
+        }
+    }
+    
 
     vector<long> fpixel(4);
 
@@ -2470,6 +2522,25 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                     pFits->pHDU().write(fpixel, nelements, array_barnet_high_upper);
                 }
             }
+            
+            if(plt_abs_ini)
+            {
+                for(long i_cell = 0; i_cell < nelements; i_cell++)
+                    array_abs_ini[i_cell] = buffer_abs_ini[i_cell][0];
+                fpixel[3]++;
+                pFits->pHDU().write(fpixel, nelements, array_dust_temp);
+
+                if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+                {
+                    for(uint i_density = 0; i_density < nr_densities; i_density++)
+                    {
+                        for(long i_cell = 0; i_cell < nelements; i_cell++)
+                            array_abs_ini[i_cell] = buffer_abs_ini[i_cell][i_density + 1];
+                        fpixel[3]++;
+                        pFits->pHDU().write(fpixel, nelements, array_dust_temp);
+                    }
+             	}
+            }
         }
     }
     else
@@ -2862,6 +2933,25 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
 
                     fpixel[3]++;
                     pFits->pHDU().write(fpixel, nelements, array_barnet_high_upper);
+                }
+            }
+            
+            if(plt_abs_ini)
+            {
+                for(long i_cell = 0; i_cell < nelements; i_cell++)
+                    array_abs_ini[i_cell] = buffer_abs_ini[i_cell][0];
+                fpixel[3]++;
+                pFits->pHDU().write(fpixel, nelements, array_abs_ini);
+
+                if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+                {
+                    for(uint i_density = 0; i_density < nr_densities; i_density++)
+                    {
+                        for(long i_cell = 0; i_cell < nelements; i_cell++)
+                            array_abs_ini[i_cell] = buffer_abs_ini[i_cell][i_density + 1];
+                        fpixel[3]++;
+                        pFits->pHDU().write(fpixel, nelements, array_abs_ini);
+                    }
                 }
             }
         }
@@ -3374,6 +3464,25 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             pFits->pHDU().addKey(str_1, "barnet_high_J_upper_limit_radius [m]", str_2);
         }
     }
+    
+    if(plt_abs_ini)
+    {
+        counter++;
+        updateMidplaneString(str_1, str_2, counter);
+        if(nr_densities > 1)
+        {
+            pFits->pHDU().addKey(str_1, "initial_absorption_rate", str_2);
+            for(uint i_density = 1; i_density <= nr_densities; i_density++)
+            {
+                counter++;
+                updateMidplaneString(str_1, str_2, counter);
+                string str_3 = getDensityString("initial_absorption_rate_%i", i_density);
+                pFits->pHDU().addKey(str_1, str_3, str_2);
+            }
+        }
+        else
+            pFits->pHDU().addKey(str_1, "initial_absorption_rate", str_2);
+    }
 
     cout << CLR_LINE;
     cout << "Memory cleanup of the plotting arrays ...     \r" << flush;
@@ -3404,6 +3513,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             delete[] buffer_dust_temp[i_cell];
         delete[] buffer_dust_temp;
     }
+    
     if(plt_rat)
         delete[] buffer_rat;
 
@@ -3480,7 +3590,12 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         delete[] buffer_barnet_high_lower;
     if(plt_barnet_high_upper)
         delete[] buffer_barnet_high_upper;
-        
+    if(plt_abs_ini)
+    {
+        for(long i_cell = 0; i_cell < nelements; i_cell++)
+            delete[] buffer_abs_ini[i_cell];
+        delete[] buffer_abs_ini;
+    }
     cout << CLR_LINE;
     cout << "- Writing of midplane files     : done" << endl;
 

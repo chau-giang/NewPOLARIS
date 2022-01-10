@@ -434,6 +434,7 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     plt_barnet_low_upper = (!data_pos_barnet_low_J_upper_list.empty());     // 13
     plt_barnet_high_lower = (!data_pos_barnet_high_J_lower_list.empty());     // 14
     plt_barnet_high_upper = (!data_pos_barnet_high_J_upper_list.empty());     // 15
+    plt_abs_ini = (!data_pos_abs_ini_list.empty()); // 16
 
     plt_mag = (data_pos_mx != MAX_UINT); // 0
     plt_vel = (data_pos_vx != MAX_UINT); // 1
@@ -457,6 +458,7 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         plt_barnet_low_upper = false;
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
+        plt_abs_ini = false;
     }
     
     else
@@ -484,6 +486,7 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     string dens_dust_filename = path + "grid_dust_density.py";
     string temp_gas_filename = path + "grid_gas_temp.py";
     string temp_dust_filename = path + "grid_dust_temp.py";
+    string abs_ini_filename = path + "grid_abs_ini.py";
     string rat_filename = path + "grid_RAT.py";
     string delta_filename = path + "grid_data.dat";
     string larm_filename = path + "grid_mag.py";
@@ -499,7 +502,7 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     string vel_filename = path + "grid_vel.py";
 
 
-    ofstream point_fields[16];
+    ofstream point_fields[17];
     ofstream vec_fields[2];
 
     point_fields[0].open(grid_filename.c_str());
@@ -677,6 +680,17 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         }
     }
 
+    if(plt_abs_ini)
+    {
+        point_fields[16].open(abs_ini_filename.c_str());
+
+        if(point_fields[16].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << abs_ini_filename << endl;
+            return false;
+        }
+    }
+    
     if(plt_mag)
     {
         vec_fields[0].open(mag_filename.c_str());
@@ -1230,6 +1244,29 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
     
+    // 15 abs_ini: initial absorption rate of dust grains inside the grid
+    point_fields[16] << point_header.str();
+    point_fields[16] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[16] << "set title \'3D initial dust absorption rate (min: " << min_abs_ini
+                    << "; max: " << max_abs_ini << ")\' font \'Arial,12\'" << endl;
+    point_fields[16] << "set cblabel \'absorption rate\'" << endl;
+
+    if(min_abs_ini == 0 && max_abs_ini == 0)
+    {
+        min_abs_ini = 0.1;
+        max_abs_ini = 1;
+    }
+
+    if(min_abs_ini / max_abs_ini > 0.9)
+        min_abs_ini = 0.9 * max_abs_ini;
+
+    point_fields[16] << "set cbrange[" << float(min_abs_ini) << ":" << float(max_abs_ini) << "]" << endl;
+    point_fields[16] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[16] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+    
+    
     // 0 mag
     vec_fields[0] << vec_header.str();
     vec_fields[0] << "set palette defined (0 1 0 0, 0.5 0.0 0.9 0,  0.75 0.0 0.9 1, 0.9 0 0.1 0.9)" << endl;
@@ -1373,6 +1410,13 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                         point_fields[15] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
                                         << a_bar_high_upper << endl;
                     }
+                    
+                    if(plt_abs_ini)
+                    {
+                        double abs_ini = getQBOffset(tmp_cell_pos);
+                        point_fields[16] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << abs_ini << endl;
+                    }
                 }
 
                 if(line_counter % nrOfPlotVectors == 0)
@@ -1455,6 +1499,10 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                      << basic_grid_l1.str() << "\ne" << endl;
                      
 	point_fields[15] << "\ne\n" //GRIDabar_high_upper
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+	point_fields[16] << "\ne\n" //GRIDabs_ini
                       << basic_grid_l0.str() << "\ne\n"
                      << basic_grid_l1.str() << "\ne" << endl;
                      
@@ -1552,6 +1600,10 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     point_fields[10].close();
     point_fields[11].close();
     point_fields[12].close();
+    point_fields[13].close();
+    point_fields[14].close();
+    point_fields[15].close();
+    point_fields[16].close();
 
     for(uint pos = 0; pos < 2; pos++)
         vec_fields[pos].close();

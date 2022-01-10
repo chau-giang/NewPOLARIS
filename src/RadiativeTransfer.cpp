@@ -464,7 +464,6 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(parameters & param, uint c
 
         if(!param.isRATDSimulation())
         {
-        	cout << "here" << endl;
             #if (USE_PRECALC_TABLE)
                 int nr_of_dust_wavelengths = dust->getNrOfWavelength();
                 ulong nr_of_cells = grid->getMaxDataCells();
@@ -1905,7 +1904,7 @@ void CRadiativeTransfer::convertTempInQB(double min_gas_density, bool use_gas_te
     }
 
     cout << CLR_LINE;
-    // cout << "- Converting emissivities             : done" << endl;
+    cout << "- Converting emissivities             : done" << endl;
 }
 
 void CRadiativeTransfer::calcAlignedRadii()
