@@ -2278,8 +2278,10 @@ bool CDustComponent::writeComponent(string path_data, string path_plot)
     data_writer << f_highJ << endl;
     data_writer << "#f_correlation" << endl;
     data_writer << f_cor << endl;
-    data_writer << "#G(cos2(zeta)" << endl;
-    data_writer << wrong_internal_factor << endl;
+    data_writer << "#G(cos2(zeta) at low J" << endl;
+    data_writer << wrong_internal_factor_lowJ << endl;
+    data_writer << "#G(cos2(zeta) at high J" << endl;
+    data_writer << wrong_internal_factor_highJ << endl;
    
     
     data_writer << "Ordinary paramagnetic grain" << endl;
@@ -3109,7 +3111,8 @@ bool CDustComponent::add(double ** size_fraction, CDustComponent * comp, uint **
         f_highJ = comp->getFHighJ();
         tensile_strength = comp->getTensileStrength();
         size_choice = comp->getSizeChoice();
-        wrong_internal_factor = comp->getWrongInternalRAT();
+        wrong_internal_factor_lowJ = comp->getWrongInternalRATlowJ();
+        wrong_internal_factor_highJ = comp->getWrongInternalRAThighJ();
         larm_f = comp->getLarmF();
         number_cluster = comp->getNumberIronCluster();
         volume_filling_cluster = comp->getVolumeFillingFactor();
@@ -3565,46 +3568,45 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
      	   
         if(a_eff[a] > a_alig)
         {
+        	// If assume imperfect internal alignment
             if((alignment & ALIG_INTERNAL) == ALIG_INTERNAL)
          	{
-         		//If account for right and wrong internal alignment
-         		if(getWrongInternalRAT() != 0)
+         		//If account for right and wrong internal alignment at low J attractor
+         		if(getWrongInternalRATlowJ() != 0)
          		{
          			// Internal alignment at low J attractor
          	    	abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
      				abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
      				
             		if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
-            		{
             			Rrat_low_J = getInternalRAT();
-            		}
             		else
-            		{
- 						Rrat_low_J = getWrongInternalRAT();
-            		}
+ 						Rrat_low_J = getWrongInternalRATlowJ();
+            	}
+            	else   // assume all dust grains have right internal alignment
+            		Rrat_low_J = getInternalRAT();
             		
+            		
+            	// if account for right and wrong internal alignment at high j attractor
+            	if(getWrongInternalRAThighJ() != 0)
+            	{
             		// Internal alignment at high J attractor
             		abar_highJ_lower = grid->getBarnetHighLowerRadius(pp, i_density);
      				abar_highJ_upper = grid->getBarnetHighUpperRadius(pp, i_density);
      				
             		if (a_eff[a] > abar_highJ_lower && a_eff[a] < abar_highJ_upper) 
-            		{
             			Rrat_high_J = 1;
-            		}
             		else
-            		{
- 						Rrat_high_J = getWrongInternalRAT();
-            		}
-            		
-            		Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
+ 						Rrat_high_J = getWrongInternalRAThighJ();
             	}
-            	
-            	// If assume all dust grains have right internal alignment
             	else
-            	{
-            		Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
- 				}
+            		Rrat_high_J = 1;
+            	
+            	// Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor		
+            	Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
             }
+            
+            // If assume perfect internal alignment
             else
                 Rrat = 1;
         }
@@ -6432,7 +6434,8 @@ bool CDustMixture::createDustMixtures(parameters & param, string path_data, stri
             single_component[i_comp].setFHighJ(param.getFHighJ());
             single_component[i_comp].setQref(param.getQref());
             single_component[i_comp].setAlphaQ(param.getAlphaQ());
-            single_component[i_comp].setWrongInternalRAT(param.getWrongInternalRAT());
+            single_component[i_comp].setWrongInternalRATlowJ(param.getWrongInternalRATlowJ());
+            single_component[i_comp].setWrongInternalRAThighJ(param.getWrongInternalRAThighJ());
 
             single_component[i_comp].setDelta0(param.getDelta0());
             

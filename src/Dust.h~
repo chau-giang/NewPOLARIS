@@ -82,7 +82,8 @@ class CDustComponent
         tensile_strength = 0;
         size_choice = 0;
         gold_g_factor = 0;
-        wrong_internal_factor = 0;
+        wrong_internal_factor_lowJ = 0;
+        wrong_internal_factor_highJ = 0;
         dust_mass_fraction = 0;
 
         Q_ref = 0.4;
@@ -1949,9 +1950,14 @@ class CDustComponent
         alpha_Q = val;
     }
 
-    void setWrongInternalRAT(double val)
+    void setWrongInternalRATlowJ(double val)
     {
-        wrong_internal_factor = val;
+        wrong_internal_factor_lowJ = val;
+    }
+    
+    void setWrongInternalRAThighJ(double val)
+    {
+        wrong_internal_factor_highJ = val;
     }
     
     double getQrat(uint a, uint w, double theta) const
@@ -2397,9 +2403,14 @@ class CDustComponent
         return f_cor;
     }
     
-    double getWrongInternalRAT() const
+    double getWrongInternalRATlowJ() const
     {
-        return wrong_internal_factor;
+        return wrong_internal_factor_lowJ;
+    }
+    
+    double getWrongInternalRAThighJ() const
+    {
+        return wrong_internal_factor_highJ;
     }
 
     bool isAligned() const
@@ -2678,7 +2689,9 @@ class CDustComponent
     double material_density;
     double tensile_strength;
     double size_choice;
-    double wrong_internal_factor;
+    double wrong_internal_factor_lowJ;
+    double wrong_internal_factor_highJ;
+
     double dust_mass_fraction;
     // double min_temp;
     double max_temp;

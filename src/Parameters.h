@@ -112,7 +112,8 @@ class parameters
         f_highJ = 0.25;
         Q_ref = 0.4;
         alpha_Q = 3.0;
-        wrong_internal_factor = 0;
+        wrong_internal_factor_lowJ = 0;
+        wrong_internal_factor_highJ = 0;
 
         f_cor = 0.6;
         //a_disr = 0;
@@ -773,16 +774,17 @@ class parameters
         return f_cor;
     }
     
-    double getWrongInternalRAT() const
+    double getWrongInternalRATlowJ() const
     {
-        return wrong_internal_factor;
+        return wrong_internal_factor_lowJ;
+    }
+    
+    double getWrongInternalRAThighJ() const
+    {
+        return wrong_internal_factor_highJ;
     }
 
-    //double getDisruptionSize() const
-    //{
-    //    return a_disr;
-    //}
-
+ 
 
     double getAdjTgas() const
     {
@@ -1464,9 +1466,15 @@ class parameters
         f_cor = val;
     }
     
-    void setWrongInternalRAT(double val)
+    void setWrongInternalRATlowJ(double val)
     {
-        wrong_internal_factor = val;
+        wrong_internal_factor_lowJ = val;
+    }
+
+
+    void setWrongInternalRAThighJ(double val)
+    {
+        wrong_internal_factor_highJ = val;
     }
 
     //void setDisruptionSize(double val)
@@ -2487,7 +2495,8 @@ class parameters
     //double a_disr;
     double Q_ref;
     double alpha_Q;
-    double wrong_internal_factor;
+    double wrong_internal_factor_lowJ;
+    double wrong_internal_factor_highJ;
 
     double adjTgas;
     double isrf_g_zero;

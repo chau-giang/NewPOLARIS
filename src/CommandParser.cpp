@@ -3098,9 +3098,15 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
     
-    if(cmd.compare("<wrong_g_zeta>") == 0)
+    if(cmd.compare("<wrong_g_zeta_low_J>") == 0)
     {
-        param->setWrongInternalRAT(atof(data.c_str()));
+        param->setWrongInternalRATlowJ(atof(data.c_str()));
+        return true;
+    }
+    
+    if(cmd.compare("<wrong_g_zeta_high_J>") == 0)
+    {
+        param->setWrongInternalRAThighJ(atof(data.c_str()));
         return true;
     }
 
