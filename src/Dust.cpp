@@ -3538,24 +3538,24 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     
     // Calculate the maximum alignment grain constrained by larmor timescale and gas damping timescale
     double a_limit;
-    //if (Ncl == 0) // if no Iron cluster is found, dust is paramagnetic grains
-    //{
-    //	double fp = getIronFraction();  
-    // 	if (fp == 0) //if no iron fraction is used, use defaul calculation of amax,B from the original code
-    //	{
-    //    	double larm_f = getLarmF();	
-    // 		a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
-    //	}
-    //	else 		//if iron fraction is used, use new calculation of amax,B  
-    //		a_limit = CMathFunctions::calc_larm_limit_para(Blen, Td, Tg, ng, aspect_ratio, fp);
-    //}
-    //else 	//if Iron cluster is found, dust is super paramagnetic grains
-    //{
-	//	double phi_sp = getVolumeFillingFactor();
-    //	a_limit = CMathFunctions::calc_larm_limit_super(Blen, Td, Tg, ng, aspect_ratio, Ncl, phi_sp);
-    //}
-    double larm_f = getLarmF();	
-    a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
+    if (Ncl == 0) // if no Iron cluster is found, dust is paramagnetic grains
+    {
+    	double fp = getIronFraction();  
+     	if (fp == 0) //if no iron fraction is used, use defaul calculation of amax,B from the original code
+    	{
+        	double larm_f = getLarmF();	
+     		a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
+    	}
+    	else 		//if iron fraction is used, use new calculation of amax,B  
+    		a_limit = CMathFunctions::calc_larm_limit_para(Blen, Td, Tg, ng, aspect_ratio, fp);
+    }
+    else 	//if Iron cluster is found, dust is super paramagnetic grains
+    {
+		double phi_sp = getVolumeFillingFactor();
+    	a_limit = CMathFunctions::calc_larm_limit_super(Blen, Td, Tg, ng, aspect_ratio, Ncl, phi_sp);
+    }
+    //double larm_f = getLarmF();	
+    //a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
 
     // Calculate the parameters for radiative torque alignment
     if((alignment & ALIG_RAT) == ALIG_RAT)
@@ -3566,18 +3566,18 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
         {
             if((alignment & ALIG_INTERNAL) == ALIG_INTERNAL)
          	{
-         	    abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
-     			abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
-            	if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
-            	{
-            		Rrat_low_J = getInternalRAT();
-            	}
-            	else
-            	{
- 					Rrat_low_J = getWrongInternalRAT();
-            	}
-            	Rrat = f_highJ + (1 - f_highJ) * Rrat_low_J;
-            	//Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
+         	    //abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
+     			//abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
+            	//if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
+            	//{
+            	//	Rrat_low_J = getInternalRAT();
+            	//}
+            	//else
+            //	{
+ 				//	Rrat_low_J = getWrongInternalRAT();
+            //	}
+            	//Rrat = f_highJ + (1 - f_highJ) * Rrat_low_J;
+            	Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
  
             }
             else
