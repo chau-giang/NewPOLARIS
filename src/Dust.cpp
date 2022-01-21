@@ -310,8 +310,8 @@ bool CDustComponent::readDustParameterFile(parameters & param, uint dust_compone
                 break;
 
             case 2:
-                // The second line needs 9 values
-                if(values.size() != 9)
+                // The second line needs 8 values
+                if(values.size() != 8)
                 {
                     cout << "\nERROR: Line " << line_counter << " wrong amount of numbers!" << endl;
                     return false;
@@ -352,11 +352,6 @@ bool CDustComponent::readDustParameterFile(parameters & param, uint dust_compone
                     is_align = true;
                 else
                     is_align = false;
-
-                if(values[8] == 1)
-                    is_disr = true;
-                else
-                    is_disr = false;
 
                 // Calculate the GOLD alignment g factor
                 gold_g_factor = 0.5 * (aspect_ratio * aspect_ratio - 1);
@@ -587,7 +582,7 @@ bool CDustComponent::readDustParameterFile(parameters & param, uint dust_compone
                 }
 
                 // Set the splines of the dust grain optical properties
-                if(isAligned() || isDisrupted())
+                if(isAligned())
                 {
                     Qext1[a][w] = eff_wl[a * NR_OF_EFF + 0].getValue(wavelength_list[w]);
                     Qext2[a][w] = eff_wl[a * NR_OF_EFF + 1].getValue(wavelength_list[w]);
@@ -745,8 +740,8 @@ bool CDustComponent::readDustRefractiveIndexFile(parameters & param,
                 break;
 
             case 2:
-                // The second line needs 8 values
-                if(values.size() != 8)
+                // The second line needs 7 values
+                if(values.size() != 7)
                 {
                     cout << "\nERROR: Line " << line_counter << " wrong amount of numbers!" << endl;
                     return false;
@@ -776,12 +771,6 @@ bool CDustComponent::readDustRefractiveIndexFile(parameters & param,
                     is_align = true;
                 else
                     is_align = false;
-
-                // The boolean value if the dust catalog is disrupted or not
-                if(values[7] == 1)
-                    is_disr = true;
-                else
-                    is_disr = false;
 
                 // Calculate the GOLD alignment g factor
                 gold_g_factor = 0.5 * (aspect_ratio * aspect_ratio - 1);
@@ -2263,38 +2252,14 @@ bool CDustComponent::writeComponent(string path_data, string path_plot)
     }
     data_writer << "#can align" << endl;
     data_writer << is_align << endl;
-    data_writer << "#can disrupt" << endl;
-    data_writer << is_disr << endl;
     data_writer << "#density [kg]" << endl;
     data_writer << getMaterialDensity() << endl;
-    data_writer << "#tensile_strength" << endl;
-    data_writer << tensile_strength << endl;
-    data_writer << "#size_choice_of_dust_temperature" << endl;
-    data_writer << size_choice << endl;
-    
     data_writer << "#gold g factor" << endl;
     data_writer << gold_g_factor << endl;
     data_writer << "#f_highJ" << endl;
     data_writer << f_highJ << endl;
     data_writer << "#f_correlation" << endl;
     data_writer << f_cor << endl;
-    data_writer << "#G(cos2(zeta) at low J" << endl;
-    data_writer << wrong_internal_factor_lowJ << endl;
-    data_writer << "#G(cos2(zeta) at high J" << endl;
-    data_writer << wrong_internal_factor_highJ << endl;
-   
-    
-    data_writer << "Ordinary paramagnetic grain" << endl;
-    data_writer << larm_f << endl;
-    data_writer << "Iron_fraction" << endl;
-    data_writer << iron_fraction << endl;
-    
-    data_writer << "Superparamagnetic grain" << endl;
-    data_writer << "Number of iron insdie one cluster:" << endl;
-    data_writer << number_cluster << endl;
-    data_writer << "Volume filling factor of Iron clusters inside grains:" << endl;
-    data_writer << volume_filling_cluster << endl;
-    
     data_writer << "#min. grain size\tmax. grain size" << endl;
     data_writer << a_min_global << "\t" << a_max_global << endl;
     data_writer << "#min. radius\tmax. radius [m]" << endl;
@@ -3109,14 +3074,6 @@ bool CDustComponent::add(double ** size_fraction, CDustComponent * comp, uint **
         nr_of_calorimetry_temperatures = comp->getNrOfCalorimetryTemperatures();
         f_cor = comp->getCorrelationFactor();
         f_highJ = comp->getFHighJ();
-        tensile_strength = comp->getTensileStrength();
-        size_choice = comp->getSizeChoice();
-        wrong_internal_factor_lowJ = comp->getWrongInternalRATlowJ();
-        wrong_internal_factor_highJ = comp->getWrongInternalRAThighJ();
-        larm_f = comp->getLarmF();
-        number_cluster = comp->getNumberIronCluster();
-        volume_filling_cluster = comp->getVolumeFillingFactor();
-        iron_fraction = comp->getIronFraction();
 
         // Init dust properties to be filled with grain properties
         initDustProperties();
@@ -3250,7 +3207,7 @@ bool CDustComponent::add(double ** size_fraction, CDustComponent * comp, uint **
                 CscaMean[a][w] = PI * a_eff_2[a] * (2.0 * getQsca1(a, w) + getQsca2(a, w)) / 3.0;
             }
 
-    if(comp->isAligned() || comp->isDisrupted())
+    if(comp->isAligned())
     {
         // Show progress
         printIDs();
@@ -3322,7 +3279,7 @@ bool CDustComponent::add(double ** size_fraction, CDustComponent * comp, uint **
     return true;
 }
 
-uint CDustComponent::getInteractingDust(CGridBasic * grid, photon_package * pp, uint i_density, CRandomGenerator * rand_gen, uint cross_section) const
+uint CDustComponent::getInteractingDust(CGridBasic * grid, photon_package * pp, CRandomGenerator * rand_gen, uint cross_section) const
 {
     // Get wavelength index from photon package
     uint w = pp->getDustWavelengthID();
@@ -3330,12 +3287,6 @@ uint CDustComponent::getInteractingDust(CGridBasic * grid, photon_package * pp, 
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, *pp);
     double a_max = getSizeMax(grid, *pp);
-
-    double a_disr = grid->getDisruptRadius(*pp, i_density);
-    double a_disr_max = grid->getMaxDisruptRadius(*pp, i_density);
-
-    // Get local size parameter for size distribution
-    double size_param_modif = grid->getSizeParamModify(*pp, i_density);
 
     // If only one grain size is used -> return this size (interpolation instead?)
     if(a_min == a_max)
@@ -3345,17 +3296,17 @@ uint CDustComponent::getInteractingDust(CGridBasic * grid, photon_package * pp, 
     {
         case CROSS_ABS:
             if(abs_prob != 0)
-                return findSizeID(pp, abs_prob[w], a_min, a_disr, a_disr_max, a_max, rand_gen);
+                return findSizeID(pp, abs_prob[w], a_min, a_max, rand_gen);
             break;
 
         case CROSS_SCA:
             if(sca_prob != 0)
-                return findSizeID(pp, sca_prob[w], a_min, a_disr, a_disr_max, a_max, rand_gen);
+                return findSizeID(pp, sca_prob[w], a_min, a_max, rand_gen);
             break;
 
         default:
             if(dust_prob != 0)
-                return findSizeID(pp, dust_prob[w], a_min, a_disr, a_disr_max, a_max, rand_gen);
+                return findSizeID(pp, dust_prob[w], a_min, a_max, rand_gen);
             break;
     }
 
@@ -3367,76 +3318,19 @@ uint CDustComponent::getInteractingDust(CGridBasic * grid, photon_package * pp, 
     {
         if(sizeIndexUsed(a, a_min, a_max))
         {
-            if (a_disr == 0 && a_disr_max == 0)
+            switch(cross_section)
             {
-                switch(cross_section)
-                {
-                    case CROSS_ABS:
-                        amount[a] = a_eff_3_5[a] * getCabsMean(a, w);
-                        break;
+                case CROSS_ABS:
+                    amount[a] = a_eff_3_5[a] * getCabsMean(a, w);
+                    break;
 
-                    case CROSS_SCA:
-                        amount[a] = a_eff_3_5[a] * getCscaMean(a, w);
-                        break;
+                case CROSS_SCA:
+                    amount[a] = a_eff_3_5[a] * getCscaMean(a, w);
+                    break;
 
-                    default:
-                        amount[a] = a_eff_3_5[a];
-                        break;
-                }
-            }
-            else
-            {
-                switch(cross_section)
-                {
-                    case CROSS_ABS:
-                        if(a_eff[a] <= a_disr)
-                        {
-                            amount[a] = a_eff_3_5[a] * pow(1/a_eff[a], size_param_modif) * getCabsMean(a, w);
-                        }
-                        else if (a_eff[a] >= a_disr_max)
-                        {
-                            if(a_disr_max == a_max)
-                                amount[a] = 0;
-                            else
-                                amount[a] = a_eff_3_5[a] * getCabsMean(a, w);
-                        }
-                        else
-                            amount[a] = 0;
-                        break;
-
-                    case CROSS_SCA:
-                        if(a_eff[a] <= a_disr)
-                        {
-                            amount[a] = a_eff_3_5[a] * pow(1/a_eff[a], size_param_modif) * getCscaMean(a, w);
-                        }
-                        else if (a_eff[a] >= a_disr_max)
-                        {
-                            if(a_disr_max == a_max)
-                                amount[a] = 0;
-                            else
-                                amount[a] = a_eff_3_5[a] * getCscaMean(a, w);
-                        }
-                        else
-                            amount[a] = 0;
-                        break;
-
-                    default:
-                        if(a_eff[a] <= a_disr)
-                        {
-                            amount[a] = a_eff_3_5[a] * pow(1/a_eff[a], size_param_modif);
-                        }
-                        else if (a_eff[a] >= a_disr_max)
-                        {
-                            if(a_disr_max == a_max)
-                                amount[a] = 0;
-                            else
-                                amount[a] = a_eff_3_5[a];
-                        }
-                        else
-                            amount[a] = 0;
-                        break;
-
-                }
+                default:
+                    amount[a] = a_eff_3_5[a];
+                    break;
             }
         }
         else
@@ -3451,7 +3345,7 @@ uint CDustComponent::getInteractingDust(CGridBasic * grid, photon_package * pp, 
 
     delete[] amount;
 
-    uint a = findSizeID(pp, prob, a_min, a_disr, a_disr_max, a_max, rand_gen);
+    uint a = findSizeID(pp, prob, a_min, a_max, rand_gen);
 
     return a;
 }
@@ -3500,9 +3394,11 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     // Get wavelength index
     uint w = pp.getDustWavelengthID();
 
+	//cout << is_align << endl;
     // For random alignment use average cross-sections
     if(!is_align || alignment == ALIG_RND)
     {
+    	cout << "hereh" << endl;
         cs.Cext = getCextMean(a, w);
         cs.Cabs = getCabsMean(a, w);
         cs.Csca = getCscaMean(a, w);
@@ -3518,13 +3414,8 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
 
     // Init variables
     double Rrat = 0, Rgold = 0, Ridg = 0, Rent = 1;
-    double Rrat_low_J = 0, Rrat_high_J = 0;
     double delta = 1;
     double a_alig = 1;
-    double abar_lowJ_lower = 1;
-    double abar_lowJ_upper = 1;
-    double abar_highJ_lower = 1;
-    double abar_highJ_upper = 1;
 
     // Get dust temperature from grid
     double Td;
@@ -3538,75 +3429,16 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     double Blen = B.length();
     double Tg = grid->getGasTemperature(pp);
     double ng = grid->getGasNumberDensity(pp);
-
-    double Ncl = getNumberIronCluster();
-    
-    // Calculate the maximum alignment grain constrained by larmor timescale and gas damping timescale
-    double a_limit;
-    if (Ncl == 0) // if no Iron cluster is found, dust is paramagnetic grains
-    {
-    	double fp = getIronFraction();  
-     	if (fp == 0) //if no iron fraction is used, use defaul calculation of amax,B from the original code
-    	{
-        	double larm_f = getLarmF();	
-     		a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
-    	}
-    	else 		//if iron fraction is used, use new calculation of amax,B  
-    		a_limit = CMathFunctions::calc_larm_limit_para(Blen, Td, Tg, ng, aspect_ratio, fp);
-    }
-    else 	//if Iron cluster is found, dust is super paramagnetic grains
-    {
-		double phi_sp = getVolumeFillingFactor();
-    	a_limit = CMathFunctions::calc_larm_limit_super(Blen, Td, Tg, ng, aspect_ratio, Ncl, phi_sp);
-    }
-    
+    double a_limit = CMathFunctions::calc_larm_limit(Blen, Td, Tg, ng, aspect_ratio, larm_f);
 
     // Calculate the parameters for radiative torque alignment
     if((alignment & ALIG_RAT) == ALIG_RAT)
     {
         a_alig = grid->getAlignedRadius(pp, i_density);
-     	   
         if(a_eff[a] > a_alig)
         {
-        	// If assume imperfect internal alignment
             if((alignment & ALIG_INTERNAL) == ALIG_INTERNAL)
-         	{
-         		//If account for right and wrong internal alignment at low J attractor
-         		if(getWrongInternalRATlowJ() != 0)
-         		{
-         			// Internal alignment at low J attractor
-         	    	abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
-     				abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
-     				
-            		if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
-            			Rrat_low_J = getInternalRAT();
-            		else
- 						Rrat_low_J = getWrongInternalRATlowJ();
-            	}
-            	else   // assume all dust grains have right internal alignment
-            		Rrat_low_J = getInternalRAT();
-            		
-            		
-            	// if account for right and wrong internal alignment at high j attractor
-            	if(getWrongInternalRAThighJ() != 0)
-            	{
-            		// Internal alignment at high J attractor
-            		abar_highJ_lower = grid->getBarnetHighLowerRadius(pp, i_density);
-     				abar_highJ_upper = grid->getBarnetHighUpperRadius(pp, i_density);
-     				
-            		if (a_eff[a] > abar_highJ_lower && a_eff[a] < abar_highJ_upper) 
-            			Rrat_high_J = 1;
-            		else
- 						Rrat_high_J = getWrongInternalRAThighJ();
-            	}
-            	else
-            		Rrat_high_J = 1;
-            	
-            	// Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor		
-            	Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
-            }
-            
-            // If assume perfect internal alignment
+                Rrat = f_highJ + (1 - f_highJ) * getInternalRAT();
             else
                 Rrat = 1;
         }
@@ -3709,15 +3541,17 @@ void CDustComponent::convertTempInQB(CGridBasic * grid,
     double temp_offset;
     double * rel_weight = 0;
 
-
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, *cell);
     double a_max = getSizeMax(grid, *cell);
 
+    // Get local size parameter for size distribution
+    double size_param = getSizeParam(grid, *cell);
+
     if(grid->getTemperatureFieldInformation() != TEMP_FULL)
     {
         // Get integration over the dust size distribution
-        rel_weight = getRelWeight(grid, *cell, i_density);
+        rel_weight = getRelWeight(a_min, a_max, size_param);
     }
 
     // Get temperature from grid as offset (assuming only ONE dust/gas temperature in
@@ -3741,9 +3575,9 @@ void CDustComponent::convertTempInQB(CGridBasic * grid,
     {
         if(sizeIndexUsed(a, a_min, a_max))
         {
+            // Get offset energy of dust grain with tID
             qb_offset[a] = getQB(a, tID);
 
-            // Get offset energy of dust grain with tID
             if(grid->getTemperatureFieldInformation() == TEMP_FULL)
             {
                 // Save offset energy to grid
@@ -3753,7 +3587,7 @@ void CDustComponent::convertTempInQB(CGridBasic * grid,
             {
                 // Multiply it with the amount of dust grains in the current bin
                 qb_offset[a] *= rel_weight[a];
-             }
+            }
         }
         else
         {
@@ -3761,7 +3595,6 @@ void CDustComponent::convertTempInQB(CGridBasic * grid,
             qb_offset[a] = 0;
         }
     }
-
 
     if(grid->getTemperatureFieldInformation() != TEMP_FULL)
     {
@@ -3775,7 +3608,6 @@ void CDustComponent::convertTempInQB(CGridBasic * grid,
 
     // Delete pointer array
     delete[] qb_offset;
-
     if(grid->getTemperatureFieldInformation() != TEMP_FULL)
         delete[] rel_weight;
 }
@@ -3794,11 +3626,9 @@ bool CDustComponent::adjustTempAndWavelengthBW(CGridBasic * grid,
     double rnd1 = rand_gen->getRND();
 
     // Get the interacting dust grain size
-    uint a = getInteractingDust(grid, pp, i_density, rand_gen);
-    //cout << "Problem here [absorption]!" << endl;
+    uint a = getInteractingDust(grid, pp, rand_gen);
 
     // Get dust temperature of the emitting grains in current cell
-
     t_dust_new = updateDustTemperature(grid, *pp, i_density, a, use_energy_density);
 
     // If new dust grain temperature is larger zero -> start reemission
@@ -3868,22 +3698,20 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
     // Calculate the temperature only for cells with a density not zero
     if(getNumberDensity(grid, *cell, i_density) == 0)
         return;
-        
+
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, *cell);
     double a_max = getSizeMax(grid, *cell);
-    double a_disr = grid->getDisruptRadius(*cell, i_density);
-    double a_disr_max = grid->getMaxDisruptRadius(*cell, i_density);
 
+    // Get local size parameter for size distribution
+    double size_param = getSizeParam(grid, *cell);
 
     // Get integration over the dust size distribution
-    double * rel_weight = getRelWeight(grid, *cell, i_density);
+    double * rel_weight = getRelWeight(a_min, a_max, size_param);
 
     // Init temporary pointer arrays for absorption rate and temperature
-    double * abs_rate = new double[nr_of_dust_species]; //array of absorption rate of grain size
-    double * abs_temp = new double[nr_of_dust_species]; //array of Td[a], no Disruption Simulation
-    double t_dust; //dust temperature variable of each grain size to save to grid
-    spline temp_size(nr_of_dust_species);
+    double * abs_rate = new double[nr_of_dust_species];
+    double temp;
 
     for(uint a = 0; a < nr_of_dust_species; a++)
     {
@@ -3900,7 +3728,6 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
                 for(uint w = 0; w < WL_STEPS; w++)
                 {
                     double abs_rate_wl_tmp = grid->getRadiationField(*cell, w) * getCabsMean(a, w);
-                    //cout << "Value here" << abs_rate_wl_tmp << endl;
                     abs_rate_per_wl.setValue(w, wavelength_list[w], abs_rate_wl_tmp);
                 }
 
@@ -3919,6 +3746,7 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
                     uint tID = findTemperatureID(calorimetry_temperatures[t]);
                     abs_rate[a] += temp_probability[t] * getQB(a, tID);
                 }
+
                 // Delete pointer array
                 delete[] temp_probability;
             }
@@ -3932,26 +3760,19 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
             if(dust_offset)
             {
                 if(grid->getTemperatureFieldInformation() == TEMP_FULL)
-                {
                     abs_rate[a] += grid->getQBOffset(*cell, i_density, a);
-                }
                 else if(grid->getTemperatureFieldInformation() == TEMP_EFF ||
                         grid->getTemperatureFieldInformation() == TEMP_SINGLE)
                     abs_rate[a] += grid->getQBOffset(*cell, i_density);
             }
 
- 
             // Calculate temperature from absorption rate
-            t_dust = max(double(TEMP_MIN), findTemperature(a, abs_rate[a]));
-            abs_temp[a] =  max(double(TEMP_MIN), findTemperature(a, abs_rate[a]));
-            temp_size.setValue(a, a_eff[a], t_dust);
-			
-		
+            temp = max(double(TEMP_MIN), findTemperature(a, abs_rate[a]));
+
             // Consider sublimation temperature
             if(sublimate && grid->getTemperatureFieldInformation() == TEMP_FULL)
-                if(t_dust >= sub_temp)
-                    t_dust = TEMP_MIN;
- 
+                if(temp >= sub_temp)
+                    temp = TEMP_MIN;
 
             if(grid->getTemperatureFieldInformation() == TEMP_EFF ||
                grid->getTemperatureFieldInformation() == TEMP_SINGLE)
@@ -3964,66 +3785,32 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
                     (grid->getTemperatureFieldInformation() == TEMP_STOCH &&
                      a_eff[a] <= getStochasticHeatingMaxSize()))
             {
-                if ((a_disr != 0) && (a_disr_max != 0))
-                {
-                    if ((a_eff[a] > a_disr) && (a_eff[a] < a_disr_max))
-                    {
-                        abs_temp[a] = TEMP_MIN;
-                        t_dust = TEMP_MIN;
-                    }
-                }
-
                 // Set dust temperature in grid
-                grid->setDustTemperature(cell, i_density, a, t_dust);
+                grid->setDustTemperature(cell, i_density, a, temp);
 
                 // Update min and max temperatures for visualization
-                max_temp = max(max_temp, t_dust);
- 
+                max_temp = max(max_temp,temp);
+                // if(temp < min_temp)
+                //     min_temp = temp;
             }
-            // Multiply with the amount of dust grains in the current bin for integration
-            abs_temp[a] *= rel_weight[a];
         }
         else
         {
             // Set absorption rate to zero
-            abs_temp[a] = 0;
             abs_rate[a] = 0;
-            temp_size.setValue(a, a_eff[a], abs_temp[a]);
         }
     }
-    temp_size.createSpline();
 
     // Get average absorption rate via interpolation
-    double avg_temp;
+    double avg_abs_rate =
+        CMathFunctions::integ_dust_size(a_eff, abs_rate, nr_of_dust_species, a_min, a_max);
 
-    if(grid->getTemperatureFieldInformation() == TEMP_EFF ||
-       grid->getTemperatureFieldInformation() == TEMP_SINGLE)
-    {
-        // Get average absorption rate via interpolation
-        double avg_abs_rate =
-            CMathFunctions::integ_dust_size(a_eff, abs_rate, nr_of_dust_species, a_min, a_max);
+    // Calculate average temperature from absorption rate
+    double avg_temp = findTemperature(grid, cell, avg_abs_rate);
 
-        // Calculate average temperature from absorption rate
-        avg_temp = findTemperature(grid, cell, i_density, avg_abs_rate);
-    }
-    else
-    {
- 
-        double size_choice = getSizeChoice();
-        if((size_choice == 0) || (size_choice < a_min))
-        {
-            avg_temp = CMathFunctions::integ_dust_size(a_eff, abs_temp, nr_of_dust_species, a_min, a_max);
-        }
-        else
-        {
-         // Calculate dust temperature of chosen radius and set it as Tdust of a grid
-            avg_temp = temp_size.getValue(size_choice);
-        }
-    }
     // Delete pointer array
     delete[] rel_weight;
     delete[] abs_rate;
-    delete[] abs_temp;
 
     if(sublimate)
         if(avg_temp >= sub_temp)
@@ -4044,123 +3831,14 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
     max_temp = max(max_temp,avg_temp);
     // if(avg_temp < min_temp)
     //     min_temp = avg_temp;
-
 }
-
-
-double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i_density, uint a)
-{
-	// ************************************************************************************************************
-	// *   a: grain size (um). This function is to calculate the maximum angular speed gained by RATs, neglecing
-	// *   the dependence between the radiation field and the magnetic field. Therefore, this function is only
-	// *   use for calculating the disruption size, maximum disruption size, barnet size, and super_barnet size.
- 	// ************************************************************************************************************
- 	
-    // Aspect ratio of the grain
-    double s = getAspectRatio();
-
-    // alpha_1 ~ delta
-    double alpha_1 = 1; // getDeltaRat();
-
-    // Get grid values
-        // Get grid values
-    double T_gas = grid->getGasTemperature(*cell);
-    double n_g = grid->getGasNumberDensity(*cell);
-    double vol = grid->getVolume(*cell);
- 
-
-    // Get average molecular weight
-    double mu = grid->getMu();
-    
-    // Get thermal velocity
-    double v_th = sqrt(2.0 * con_kB * T_gas / (mu * m_H));
- 
-    // Minor and major axis
-    double a_minor = a_eff[a] * pow(s, 2. / 3.);
-    double a_major = a_eff[a] * pow(s, -1. / 3.);
-
-    // Moment of inertia along a_1
-    double I_p = 8. * PI / 15. * getMaterialDensity(a) * a_minor * pow(a_major, 4);
-
-    // Init. pointer arrays
-    double * arr_product = new double[nr_of_wavelength];
-    double * du = new double[nr_of_wavelength];
-
-    for(uint w = 0; w < nr_of_wavelength; w++)
-    {
-        // Init variables
-        Vector3D en_dir;
-        double arr_en_dens = 0;
-
-        // Get radiation field (4 * PI * vol * J)
-        grid->getSpecLength(*cell, w, &arr_en_dens, &en_dir); // arr_en_dens = 4*pi*vol*J
-
-        // If the radiation field is zero -> set arrays to zero and move on
-        if(arr_en_dens == 0)
-        {
-            arr_product[w] = 0;
-            du[w] = 0;
-            continue;
-        }
-        
-		// Get angle between magnetic field and radiation field
-        double theta = grid->getTheta(*cell, en_dir);
-                
-        // Anisotropy parameter
-        double gamma = en_dir.length() / arr_en_dens;
-
-        // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
-        arr_en_dens /= double(vol * con_c); //arr_en_dens = u_lambda = 4*pi*I/c
-
-        du[w] = wavelength_list[w] * arr_en_dens;
-                
-        // Radiative torque efficiency as a power-law
-        double Qr = Q_ref;
-
-        if(wavelength_list[w] > 1.8 * a_eff[a])
-            Qr = Q_ref / pow(wavelength_list[w] / (1.8 * a_eff[a]), alpha_Q);
-
-		//double cos_theta = abs(cos(theta));
-		
-		//Qr *= cos_theta;
-		
-		
-        // Qr=getQrat(a, w, 0.0);
-        arr_product[w] = arr_en_dens * (wavelength_list[w] / PIx2) * Qr * gamma * PI * pow(a_eff[a], 2);
-        // Gamma_RAT = u_lambda*(lambda/(2*pi))*Qr*gamma_lambda*pi*a**2
-
-    }	
-	// total radiative toruque acting on grain of size a
-    double gamma_rat = CMathFunctions::integ(wavelength_list, arr_product, 0, nr_of_wavelength - 1); 
-            
-    // Total radiation field strength
-    double u = CMathFunctions::integ(wavelength_list, du, 0, nr_of_wavelength - 1);
-    
-    // Drag by gas collision
-    double tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4));
-
-    // drag by thermal emission
-    double FIR = 1.40e10 * pow(u, 2. / 3.) / (a_eff[a] * n_g * sqrt(T_gas));
-
-	// total damping timescale due to gas collision and thermal emission
-    double tau_damp = tau_gas / (1. + FIR); //t_damp
-
-	delete[] arr_product;
-	delete[] du;
-	
-    // Saturated angular speed
- 	return gamma_rat * tau_damp / I_p;   //w_RAT
-}
-
 
 void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
 {
     // Calculate the aligned radii only for cells with a non-zero density
-    //cout <<  getNumberDensity(grid, *cell, i_density) << endl;
-        
     if(getNumberDensity(grid, *cell, i_density) == 0)
     {
-        grid->setAlignedRadius(cell, i_density, a_eff[0]);
+        grid->setAlignedRadius(cell, i_density, a_eff[nr_of_dust_species - 1]);
         return;
     }
 
@@ -4169,7 +3847,7 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
     double a_max = getSizeMax(grid, *cell);
 
     // default value of the alignment radius
-    double a_alig = a_max;
+    double a_alig = getSizeMax(grid, *cell);
     double th = 0;
     double dir = 0;
 
@@ -4254,7 +3932,7 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
                 double cos_theta = abs(cos(theta));
 
                 Qr *= cos_theta;
-                
+
                 // Qr=getQrat(a, w, 0.0);
                 arr_product[w] =
                     arr_en_dens * (wavelength_list[w] / PIx2) * Qr * gamma * PI * pow(a_eff[a], 2);
@@ -4329,1003 +4007,6 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
         max_a_alig = a_alig;
 }
 
- 
-
-double CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density, uint Smax)
-{
-    // Get local min and max grain sizes
-    double a_min = getSizeMin(grid, *cell);
-    double a_max = getSizeMax(grid, *cell);
-
-    // default value of the disruption radius
-    double a_disr = getSizeMax(grid, *cell);
-    double DISRUPTION_LIMIT = 1;
-
-    // Loop over all considered grain sizes
-    double omega_old = 0;
-
-    for(uint a = 0; a < nr_of_dust_species; a++)
-    {
-        if(sizeIndexUsed(a, a_min, a_max))
-        {
-            // Saturated angular speed
-            double omega_rat = calcRATSpeed(grid, cell, i_density, a);
-
-            // Disruption threshold
-            double omega_disr = 2 / a_eff[a] * sqrt(Smax / getMaterialDensity(a));
-            
-            // Fraction of saturated and disrupted angular speed
-            double omega_frac = omega_rat / omega_disr;
-
-            if(omega_frac >= DISRUPTION_LIMIT)
-            {
-                // Find disruption size
-                // linear interpolation
-                if(a > 1) //grain size > amin
-                {
-                    double a1 = a_eff[a - 1]; //previous grain size
-                    double a2 = a_eff[a]; //calculated grain size
-
-                    double o1 = omega_old - DISRUPTION_LIMIT;
-                    double o2 = omega_frac - DISRUPTION_LIMIT;
-
-                    a_disr = a1 - o1 * (a2 - a1) / (o2 - o1);
-                }
-                else
-                    a_disr = a_min;
-                break;
-
-            }
-            // keep the prev. omega fraction for interpolation
-            omega_old = omega_frac;
-        }
-    }
-
-    // Check for proper size range
-    if(a_disr < a_min)
-        a_disr = a_min;
-
-    if(a_disr > a_max)
-        a_disr = a_max;
-
-    return a_disr;
-}
-
-void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
-{
-    double a_min = getSizeMin(grid, *cell);
-
-    // Calculate the disrupt radii only for cells with a density not zero
-    if(getNumberDensity(grid, *cell, i_density) == 0)
-    {
-        grid->setDisruptRadius(cell, i_density, a_min);
-        return;
-    }
-
-    double a_define = 5e-8;
-
-    double S_max;
-    S_max = 1e10;
-    double a_disr_compact = calcDisruptRadii(grid, cell, i_density, S_max);
-
-    S_max = getTensileStrength();
-    double a_disr_porous = calcDisruptRadii(grid,  cell, i_density, S_max);
-
-    double a_disr;
-
-    if(a_disr_compact <= a_define)
-    	a_disr = a_disr_compact;
-    else
-    {
-    	if (a_disr_porous <= a_define)
-            a_disr = a_define;
-        else
-            a_disr = a_disr_porous;
-    }
-
-    // Set disrupted grain size in grid
-    grid->setDisruptRadius(cell, i_density, a_disr);
-
-    // Update disrupted grain size limits
-    if(a_disr < min_a_disr)
-        min_a_disr = a_disr;
-    if(a_disr > max_a_disr)
-        max_a_disr = a_disr;
-
-//*********************************************************************************************************
-	double a_alig = grid->getAlignedRadius(*cell, i_density);
-	if (a_alig == 0)
-	{
-		// If no calculation of anisotropic radiation field distribution and angle radiation-magnetic field
-		// dependence before, calculate it?
-		
-		// Calculate <Dir> and <Theta>
-		double th = 0;
-		double dir = 0;
-		double vol = grid->getVolume(*cell);
-
-		// Init. pointer arrays
-		double * arr_product = new double[nr_of_wavelength];
-		double * du = new double[nr_of_wavelength];
-		double * ddir = new double[nr_of_wavelength];
-		double * dth = new double[nr_of_wavelength];
-
-		for(uint w = 0; w < nr_of_wavelength; w++)
-		{
-			// Init variables
-			Vector3D en_dir;
-			double arr_en_dens = 0;
-
-			// Get radiation field (4 * PI * vol * J)
-			grid->getSpecLength(*cell, w, &arr_en_dens, &en_dir); // arr_en_dens = 4*pi*vol*J
-
-			// If the radiation field is zero -> set arrays to zero and move on
-			if(arr_en_dens == 0)
-			{
-				arr_product[w] = 0;
-				du[w] = 0;
-				ddir[w] = 0;
-				dth[w] = 0;
-				continue;
-			}
-
-
-			// Get angle between magnetic field and radiation field
-			double theta = grid->getTheta(*cell, en_dir);
-
-			// Anisotropy parameter
-			double gamma = en_dir.length() / arr_en_dens;
-
-			// arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
-			arr_en_dens /= double(vol * con_c); //arr_en_dens = u_lambda = 4*pi*I/c
-
-			du[w] = wavelength_list[w] * arr_en_dens; // lambda*u_lambda
-
-			double cos_theta = abs(cos(theta));
-
-			ddir[w] = wavelength_list[w] * arr_en_dens * gamma;
-			dth[w] = wavelength_list[w] * arr_en_dens * cos_theta;
-		}
-
-		// Perform integration for total radiation field
-		double u = CMathFunctions::integ(wavelength_list, du, 0, nr_of_wavelength - 1);
-		dir = CMathFunctions::integ(wavelength_list, ddir, 0, nr_of_wavelength - 1);
-		th = CMathFunctions::integ(wavelength_list, dth, 0, nr_of_wavelength - 1);
-
-		dir /= u;
-		th /= u;
-
-		// Delete pointer array
-		delete[] arr_product;
-		delete[] du;
-		delete[] ddir;
-		delete[] dth;
-
-		grid->setAvgDir(cell, dir);
-		grid->setAvgTheta(cell, th);
-	}
-}
-
-void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
-{
-    double a_min = getSizeMin(grid, *cell);
-    double a_max = getSizeMax(grid, *cell);
-
-    double a_disr = grid->getDisruptRadius(*cell, i_density);
-
-    if(a_disr == a_min)
-    {
-        grid->setMaxDisruptRadius(cell, i_density, a_max);
-    }
-
-    // default value of the maximum disruption radius
-    double a_disr_max = a_max;
-    double DISRUPTION_LIMIT = 1;
-
-    double Smax = getTensileStrength();
-
-    // Loop over all considered grain sizes
-    double omega_old = 0;
-
-	uint test = 0;
-	uint index_size_max;
-	
-    for(uint a = nr_of_dust_species; a > 0; a--)
-    {
-        if(sizeIndexUsed(a, a_min, a_max))
-        {
-            if (test == 0)
-		    {
-		    	index_size_max = a;
-		    	test +=1 ;
-		    }   
-		    	
-            // Saturated angular speed
-            double omega_rat = calcRATSpeed(grid, cell, i_density, a);
-
-            // Disruption threshold
-            double omega_disr = 2 / a_eff[a] * sqrt(Smax / getMaterialDensity(a));
-            
-            // Fraction of saturated and disrupted angular speed
-            double omega_frac = omega_rat/omega_disr;
-
-            if(omega_frac > DISRUPTION_LIMIT)
-            {
-                if (a < index_size_max)
-                {
-                    // Find disruption size
-                    // linear interpolation
-                    double a1 = a_eff[a + 1]; //previous grain size
-                    double a2 = a_eff[a]; //calculated grain size
-
-                    double o1 = omega_old - DISRUPTION_LIMIT;
-                    double o2 = omega_frac - DISRUPTION_LIMIT;
-
-                    a_disr_max = a1 - o1 * (a2 - a1) / (o2 - o1);
-                }
-                else
-                    a_disr_max = a_max;
-                break;
- 			}
-            // keep the prev. omega fraction for interpolation
-            omega_old = omega_frac;
-        }
-    }
-
-    // Check for proper size range
-    if(a_disr_max < a_disr)
-        a_disr_max = a_disr;
-
-    if(a_disr_max > a_max)
-        a_disr_max = a_max;
-
-
-    // Update disrupted grain size limits
-    if(a_disr_max < min_a_disr_max)
-        min_a_disr_max = a_disr_max;
-    if(a_disr_max > max_a_disr_max)
-        max_a_disr_max = a_disr_max;
-
-    // Set max disrupted grain size in grid
-    grid->setMaxDisruptRadius(cell, i_density, a_disr_max);
-}
-
-void CDustComponent::calcSizeParamModify(CGridBasic * grid, cell_basic * cell, uint i_density)
-{
-
-    // get a_min, a_max, a_disr, and a_disr_max
-    double a_min = getSizeMin(grid, *cell);
-    double a_max = getSizeMax(grid, *cell);
-
-    double a_disr = grid->getDisruptRadius(*cell, i_density);
-    double a_disr_max = grid->getMaxDisruptRadius(*cell, i_density);
-
-
-    // get standard slope of MRN distribution
-    double size_param_origin = getSizeParam(grid, *cell); //initial: size_param_origin = 0.
-// Because rel_weight = a^{-3.5}.a^{size_param_modify]}
-
-    if (a_disr == a_disr_max)
-    {
-        grid->setSizeParamModify(cell, i_density, size_param_origin);
-        return;
-    }
-
-    // Grain mass from a_min to a_disr_max
-    double mass_ini = TotalMass(grid, *cell, a_min, a_disr_max, size_param_origin);
-
-
-    uint number_of_slope = 51;
-    double * slope = new double[number_of_slope];
-
-    // Initial grain mass from a_min to a_disr_max [empty]
-    double * mass_later = new double[number_of_slope];
-
-    // Init spline for dust mass interpolation
-    spline dust_mass;
-    dust_mass.resize(number_of_slope);
-
-    // Find mass from a_min to a_disr with different value of "slope"
-    for(uint i = 0; i < number_of_slope; i++)
-    {
-        slope[i] = i*0.008;
-        mass_later[i] = TotalMass(grid, *cell, a_min, a_disr, slope[i]);
-
-         // Calculate QB integrated over all wavelengths
-        dust_mass.setValue(i, mass_later[i], slope[i]);
-    }
-    // Create spline for interpolation
-    dust_mass.createSpline();
-
-    double new_size_param = dust_mass.getValue(mass_ini); // delta_mass = 0 mean mass_ini = mass_later
-
-    // Check for new slope
-    if (new_size_param < 0)
-        new_size_param = 0;
-    if (new_size_param > slope[50])
-        new_size_param = slope[50];
-
-    // Set new slope from a_min to a_disr in the grid
-    grid->setSizeParamModify(cell, i_density, new_size_param);
-
-    delete[] mass_later;
-    delete[] slope;
-
-    // Update max disrupted grain size limits
-    if(new_size_param < min_size_param_modify)
-        min_size_param_modify = new_size_param;
-    if(new_size_param > max_size_param_modify)
-        max_size_param_modify = new_size_param;
-}
-
-void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
-{
-	// Output: threshold (grain size) for true internal alignment (a // J) at low J attractor point (w = w_ther)
-	
-    // Calculate the aligned radii only for cells with a non-zero density
-    //cout <<  getNumberDensity(grid, *cell, i_density) << endl;
-        
-    if(getNumberDensity(grid, *cell, i_density) == 0)
-    {
-        grid->setBarnetLowLowerRadius(cell, i_density, a_eff[0]);
-        grid->setBarnetLowUpperRadius(cell, i_density, a_eff[0]);
-        return;
-    }
-
-    // Get local min and max grain sizes
-    double a_min = getSizeMin(grid, *cell); //m
-    double a_max = getSizeMax(grid, *cell); //m
-
-    // default value of the alignment radius
-    double a_bar_low_J_lower = a_max; //m
- 	double a_bar_low_J_upper = a_max; //m
- 	
-    // Aspect ratio of the grain
-    double s = getAspectRatio();
-   
-    // ratio h between the ineria moment of axis parallel  and perpendicular with the axis of maximum inertia moment ( symmetric axis)
-	double h = 2 / (1 + pow(s, 2));
- 
-    // Get grid values
-    double T_gas = grid->getGasTemperature(*cell); //K
-    double T_dust;
-    double n_g = grid->getGasNumberDensity(*cell); //m-3
-    
-    // Get average molecular weight
-    double mu = grid->getMu();
-    
-    // alpha_1 ~ delta
-    double alpha_1 = 1; // getDeltaRat();
-	
-    // Get thermal velocity
-    double v_th = sqrt(2.0 * con_kB * T_gas / (mu * m_H)); // [m/s]
-
-    // Loop over all considered grain sizes
-    double t_compare_old_low_J = 0;
-    
-    // Fraction of iron in paramagnetic grains
-    double fp = getIronFraction();
-    double Ncl = getNumberIronCluster();
-	double phi_sp = getVolumeFillingFactor();
-	
-	
-	// Check the dust temperature choice in the calculation:
-	uint temp_info = grid->getTemperatureFieldInformation();
-	//uint count = 0;
-	
-    for(uint a = 0; a < nr_of_dust_species; a++)
-    {
-        if(sizeIndexUsed(a, a_min, a_max))
-        {   
-            //****************************************************************************************
-			//*
-			//*
-			//*		 PART TO CALCULATE THE GAS DAMPING TIMESCALE DUE TO GAS COLLISION
-			//*				calculation here is in SI unit
-			//*
-			//****************************************************************************************
- 
-            // Minor and major axis
-            double a_minor = a_eff[a] * pow(s, 2. / 3.);   //a_eff[a] [m]
-            double a_major = a_eff[a] * pow(s, -1. / 3.);  //a_eff[a] [m]
-				
-            // Moment of inertia along a_1 (a_1: symmetric axis, axis of maximum inertia moment)
-            double I_p = 8. * PI / 15. * getMaterialDensity(a) * a_minor * pow(a_major, 4); // SI unit
-
-            // Thermal angular momentum
-            double J_th = sqrt(I_p * con_kB * T_gas); // SI unit
-           
-            // Drag by gas collision following evaporation of H2
-            double tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4)); //[s]
-
-            
-			//*************************************************************************************************
-			//*
-			//*
-			//*			PART TO CALCULATE THE BARNET TIMESCALE
-			//*				calculation here is in CGS unit
-			//*
-			//**************************************************************************************************
-            			
-			// Dust temperature of grain size a
-            if (temp_info == TEMP_FULL)
-            {
-            	T_dust = grid->getDustTemperature(*cell, i_density, a_eff[a]); //[K]
-			}
-			else
-			{
-				T_dust = grid->getDustTemperature(*cell, i_density); //[K]
-			}
-			
-				// From this part, calculation is in the cgs unit :))
-
-			double e = 4.80325e-10;  // charge of electron [esu]
-			double me = 9.10938e-28;   // mass of electron [g]
-			double c = 2.99792e10;		  // speed of light [cm/s]
-			double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
-			double rho = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
-			double gamma_g = e / (me * c);
-			
-			// Minor and major axis
-            double a_minor_cgs = a_eff[a]*1e2 * pow(s, 2. / 3.);   //a_eff[a] [cm]
-            double a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
-			
-			// Moment of inertia along a_1 in CGS unit
-            double I_p_cgs = 8. * PI / 15. * rho * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
-            
-            // Thermal angular speed
-            double omega_rat_low_J = pow((kB_cgs * T_dust / (I_p_cgs * (h-1))), 0.5);  // at low J attractor point with J = Jth
- 
-			// Volume of grain size a
-			double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
- 
-
-			// The imagine part of magnetic suscepbility of grain size a at frequency w 			
-			double K_w_low_J;
-			
-			if (fp != 0) // grain is paramagnetic grains
- 			{	
-				K_w_low_J = CMathFunctions::calc_K_w(T_dust, fp, omega_rat_low_J); //here is in CGS unit	
-			}
-			else // grain is superparamagnetic grains
-			{			
-				K_w_low_J = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat_low_J); //here is also in CGS unit
-			}
-            
-			// Barnet relaxation timescale [for	internal alignment]
-			double t_bar_low_J = I_p_cgs * pow(gamma_g, 2) / (V * K_w_low_J * pow(h,2) * (h-1) * pow(omega_rat_low_J, 2));
-			
-			//****************************************************************************************************
-			//*
-			//*
-			//*				FIND THE UPPER LIMIT OF PERFECT INTERNAL ALIGNMENT" TBAR < TGAS
-			//*
-			//*
-			//*****************************************************************************************************
-			double t_compare_low_J = t_bar_low_J / tau_gas;
-			
-			// if barnet timescale is larger than gas damping timescale
-            if(t_compare_low_J <= 1)
-            {
-                // linear interpolation
-                if(a > 1) //grain size > amin
-                {
-                    double a1 = a_eff[a - 1]; //previous grain size
-                    double a2 = a_eff[a]; //calculated grain size
-
-                    double o1 = t_compare_old_low_J - 1;
-                    double o2 = t_compare_low_J - 1;
-
-                    a_bar_low_J_lower = a1 - o1 * (a2 - a1) / (o2 - o1);
-                }
-                else
-                    a_bar_low_J_lower = a_min;
-                break;
-
-            }
-
-            // keep the prev. omega fraction for interpolation
-            t_compare_old_low_J = t_compare_low_J;
-        }
-	}
-	
-	uint test = 0;
-	uint index_size_max;
-	
-	if (a_bar_low_J_lower == a_max)
-		a_bar_low_J_upper = a_max;
-	else
-	{	
-		// find the upper limit for true internal alignment at high J
-		for(uint a = nr_of_dust_species; a > 0 ; a--)
-		{
-		    if(sizeIndexUsed(a, a_min, a_max))
-		    {   
-		    	if (test == 0)
-		    	{
-		    		index_size_max = a;
-		    		test +=1 ;
-		    	}   
-		        //****************************************************************************************
-				//*
-				//*
-				//*		 PART TO CALCULATE THE GAS DAMPING TIMESCALE DUE TO GAS COLLISION
-				//*				calculation here is in SI unit
-				//*
-				//****************************************************************************************
-	 
-		        // Minor and major axis
-		        double a_minor = a_eff[a] * pow(s, 2. / 3.);   //a_eff[a] [m]
-		        double a_major = a_eff[a] * pow(s, -1. / 3.);  //a_eff[a] [m]
-					
-		        // Moment of inertia along a_1 (a_1: symmetric axis, axis of maximum inertia moment)
-		        double I_p = 8. * PI / 15. * getMaterialDensity(a) * a_minor * pow(a_major, 4); // SI unit
-
-		        // Thermal angular momentum
-		        double J_th = sqrt(I_p * con_kB * T_gas); // SI unit
-		       
-		        // Drag by gas collision following evaporation of H2
-		        double tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4)); //[s]
-
-		        
-				//*************************************************************************************************
-				//*
-				//*
-				//*			PART TO CALCULATE THE BARNET TIMESCALE
-				//*				calculation here is in CGS unit
-				//*
-				//**************************************************************************************************
-		        			
-				// Dust temperature of grain size a
-		        if (temp_info == TEMP_FULL)
-		        {
-		        	T_dust = grid->getDustTemperature(*cell, i_density, a_eff[a]); //[K]
-				}
-				else
-				{
-					T_dust = grid->getDustTemperature(*cell, i_density); //[K]
-				}
-				
-					// From this part, calculation is in the cgs unit :))
-
-				double e = 4.80325e-10;  // charge of electron [esu]
-				double me = 9.10938e-28;   // mass of electron [g]
-				double c = 2.99792e10;		  // speed of light [cm/s]
-				double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
-				double rho = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
-				double gamma_g = e / (me * c);
-				
-				// Minor and major axis
-		        double a_minor_cgs = a_eff[a]*1e2 * pow(s, 2. / 3.);   //a_eff[a] [cm]
-		        double a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
-				
-				// Moment of inertia along a_1 in CGS unit
-		        double I_p_cgs = 8. * PI / 15. * rho * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
-		        
-            	// Thermal angular speed
-            	double omega_rat_low_J = pow((kB_cgs * T_dust / (I_p_cgs * (h-1))), 0.5);  // at low J attractor point with J = Jth
-
-				// Volume of grain size a
-				double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
-
-				// The imagine part of magnetic suscepbility of grain size a at frequency w 			
-				double K_w_low_J;
-				
-				if (fp != 0) // grain is paramagnetic grains
-	 			{
-					K_w_low_J = CMathFunctions::calc_K_w(T_dust, fp, omega_rat_low_J); //here is in CGS unit		
-				}
-				else // grain is superparamagnetic grains
-				{			
-					K_w_low_J = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat_low_J); //here is also in CGS unit
-				}
-		        
-				// Barnet relaxation timescale [for	internal alignment]
-				double t_bar_low_J = I_p_cgs * pow(gamma_g, 2) / (V * K_w_low_J * pow(h,2) * (h-1) * pow(omega_rat_low_J, 2));
-				
-				//****************************************************************************************************
-				//*
-				//*
-				//*				FIND THE UPPER LIMIT OF PERFECT INTERNAL ALIGNMENT" TBAR < TGAS
-				//*
-				//*
-				//*****************************************************************************************************
-				double t_compare_low_J = t_bar_low_J / tau_gas;
-
-				
-				// if barnet timescale is larger than gas damping timescale
-		        if(t_compare_low_J < 1)
-		        {
-		            // Find disruption size
-		            // linear interpolation
-		            if(a < index_size_max) //grain size > amin
-		            {
-		                double a1 = a_eff[a - 1]; //previous grain size
-		                double a2 = a_eff[a]; //calculated grain size
-
-		                double o1 = t_compare_old_low_J - 1;
-		                double o2 = t_compare_low_J - 1;
-
-		                a_bar_low_J_upper = a1 - o1 * (a2 - a1) / (o2 - o1);
-		            }
-		            else
-		                a_bar_low_J_upper = a_max;
-		            break;
-
-		        }
-
-		        // keep the prev. omega fraction for interpolation
-		        t_compare_old_low_J = t_compare_low_J;
-		    }
-		}
-    }
-	
-	
-	
-	
-    // Check for lower limit of true internal alignment at low J attractor point
-    if(a_bar_low_J_lower < a_min)
-        a_bar_low_J_lower = a_min;
-
-    if(a_bar_low_J_lower > a_max)
-        a_bar_low_J_lower = a_max;
-        
-    // Check for upper limit of true internal alignment at low J attractor point
-    if(a_bar_low_J_upper < a_min)
-        a_bar_low_J_upper = a_min;
-
-    if(a_bar_low_J_upper > a_max)
-        a_bar_low_J_upper = a_max;
- 
-    // Set limit for true internal alignment at low J in grid
-    grid->setBarnetLowLowerRadius(cell, i_density, a_bar_low_J_lower);
-    grid->setBarnetLowUpperRadius(cell, i_density, a_bar_low_J_upper);
-
-    // Update lower limit for true internal alignment at low J
-    if(a_bar_low_J_lower < min_a_bar_low_J_lower)
-        min_a_bar_low_J_lower = a_bar_low_J_lower;
-    if(a_bar_low_J_lower > max_a_bar_low_J_lower)
-        max_a_bar_low_J_lower = a_bar_low_J_lower;
-        
-    // Update upper limit for true internal alignment at low J
-    if(a_bar_low_J_upper < min_a_bar_low_J_upper)
-        min_a_bar_low_J_upper = a_bar_low_J_upper;
-    if(a_bar_low_J_upper > max_a_bar_low_J_upper)
-        max_a_bar_low_J_upper = a_bar_low_J_upper;
-}
-
-
-void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
-{
-	// Output: threshold (grain size) for true internal alignment at high J attractor point (w = w_RAT)
- 
-        
-    if(getNumberDensity(grid, *cell, i_density) == 0)
-    {
-        grid->setBarnetHighLowerRadius(cell, i_density, a_eff[0]);
-        grid->setBarnetHighUpperRadius(cell, i_density, a_eff[0]);
-        return;
-    }
-
-    // Get local min and max grain sizes
-    double a_min = getSizeMin(grid, *cell); //m
-    double a_max = getSizeMax(grid, *cell); //m
-
-    // default value of the alignment radius
-    double a_bar_high_J_lower = a_max; //m
-    double a_bar_high_J_upper = a_max; //m
- 
-    // Aspect ratio of the grain
-    double s = getAspectRatio();
-   
-    // ratio h between the ineria moment of axis parallel  and perpendicular with the axis of maximum inertia moment ( symmetric axis)
-	double h = 2 / (1 + pow(s, 2));
- 
-    // Get grid values
-    double T_gas = grid->getGasTemperature(*cell); //K
-    double T_dust;
-    double n_g = grid->getGasNumberDensity(*cell); //m-3
-    
-    // Get average molecular weight
-    double mu = grid->getMu();
-    
-    // alpha_1 ~ delta
-    double alpha_1 = 1; // getDeltaRat();
-	
-    // Get thermal velocity
-    double v_th = sqrt(2.0 * con_kB * T_gas / (mu * m_H)); // [m/s]
-
-    // Loop over all considered grain sizes
-    double t_compare_old_high_J = 0;
-    
-    // Fraction of iron in paramagnetic grains
-    double fp = getIronFraction();
-    double Ncl = getNumberIronCluster();
-	double phi_sp = getVolumeFillingFactor();
-	
-	
-	// Check the dust temperature choice in the calculation:
-	uint temp_info = grid->getTemperatureFieldInformation();
- 
-	// Find the lower limit for true internal alignment at high J
-    for(uint a = 0; a < nr_of_dust_species ; a++)
-    {
-        if(sizeIndexUsed(a, a_min, a_max))
-        {   
-            //****************************************************************************************
-			//*
-			//*
-			//*		 PART TO CALCULATE THE GAS DAMPING TIMESCALE DUE TO GAS COLLISION
-			//*				calculation here is in SI unit
-			//*
-			//****************************************************************************************
- 
-            // Minor and major axis
-            double a_minor = a_eff[a] * pow(s, 2. / 3.);   //a_eff[a] [m]
-            double a_major = a_eff[a] * pow(s, -1. / 3.);  //a_eff[a] [m]
-				
-            // Moment of inertia along a_1 (a_1: symmetric axis, axis of maximum inertia moment)
-            double I_p = 8. * PI / 15. * getMaterialDensity(a) * a_minor * pow(a_major, 4); // SI unit
-
-            // Thermal angular momentum
-            double J_th = sqrt(I_p * con_kB * T_gas); // SI unit
-           
-            // Drag by gas collision following evaporation of H2
-            double tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4)); //[s]
-
-            
-			//*************************************************************************************************
-			//*
-			//*
-			//*			PART TO CALCULATE THE BARNET TIMESCALE
-			//*				calculation here is in CGS unit
-			//*
-			//**************************************************************************************************
-            			
-			// Dust temperature of grain size a
-            if (temp_info == TEMP_FULL)
-            {
-            	T_dust = grid->getDustTemperature(*cell, i_density, a_eff[a]); //[K]
-			}
-			else
-			{
-				T_dust = grid->getDustTemperature(*cell, i_density); //[K]
-			}
-			
-				// From this part, calculation is in the cgs unit :))
-
-			double e = 4.80325e-10;  // charge of electron [esu]
-			double me = 9.10938e-28;   // mass of electron [g]
-			double c = 2.99792e10;		  // speed of light [cm/s]
-			double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
-			double rho = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
-			double gamma_g = e / (me * c);
-			
-			// Minor and major axis
-            double a_minor_cgs = a_eff[a]*1e2 * pow(s, 2. / 3.);   //a_eff[a] [cm]
-            double a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
-			
-			// Moment of inertia along a_1 in CGS unit
-            double I_p_cgs = 8. * PI / 15. * rho * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
-            
-			// Saturated angular speed
-            double omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
-
-			// Volume of grain size a
-			double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
-
-			// The imagine part of magnetic suscepbility of grain size a at frequency w 			
-			double K_w_high_J;
-			
-			if (fp != 0) // grain is paramagnetic grains
- 			{
-				K_w_high_J = CMathFunctions::calc_K_w(T_dust, fp, omega_rat_high_J); //here is in CGS unit		
-			}
-			else // grain is superparamagnetic grains
-			{			
-				K_w_high_J = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat_high_J); //here is also in CGS unit
-			}
-            
-			// Barnet relaxation timescale [for	internal alignment]
-			double t_bar_high_J = I_p_cgs * pow(gamma_g, 2) / (V * K_w_high_J * pow(h,2) * (h-1) * pow(omega_rat_high_J, 2));
-			
-			//****************************************************************************************************
-			//*
-			//*
-			//*				FIND THE UPPER LIMIT OF PERFECT INTERNAL ALIGNMENT" TBAR < TGAS
-			//*
-			//*
-			//*****************************************************************************************************
-			double t_compare_high_J = t_bar_high_J / tau_gas;
-			
-			// if barnet timescale is larger than gas damping timescale
-            if(t_compare_high_J <= 1)
-            {
-                // Find disruption size
-                // linear interpolation
-                if(a > 1) //grain size > amin
-                {
-                    double a1 = a_eff[a - 1]; //previous grain size
-                    double a2 = a_eff[a]; //calculated grain size
-
-                    double o1 = t_compare_old_high_J - 1;
-                    double o2 = t_compare_high_J - 1;
-
-                    a_bar_high_J_lower = a1 - o1 * (a2 - a1) / (o2 - o1);
-                }
-                else
-                    a_bar_high_J_lower = a_min;
-                break;
-
-            }
-
-            // keep the prev. omega fraction for interpolation
-            t_compare_old_high_J = t_compare_high_J;
-        }
-	}
-	
-	uint test = 0;
-	uint index_size_max;
-	
-	if (a_bar_high_J_lower == a_max)
-		a_bar_high_J_upper = a_max;
-	else
-	{	
-		// find the upper limit for true internal alignment at high J
-		for(uint a = nr_of_dust_species; a > 0 ; a--)
-		{
-		    if(sizeIndexUsed(a, a_min, a_max))
-		    {
-		    	if (test == 0)
-		    	{
-		    		index_size_max = a;
-		    		test +=1 ;
-		    	}   
-		        //****************************************************************************************
-				//*
-				//*
-				//*		 PART TO CALCULATE THE GAS DAMPING TIMESCALE DUE TO GAS COLLISION
-				//*				calculation here is in SI unit
-				//*
-				//****************************************************************************************
-	 
-		        // Minor and major axis
-		        double a_minor = a_eff[a] * pow(s, 2. / 3.);   //a_eff[a] [m]
-		        double a_major = a_eff[a] * pow(s, -1. / 3.);  //a_eff[a] [m]
-					
-		        // Moment of inertia along a_1 (a_1: symmetric axis, axis of maximum inertia moment)
-		        double I_p = 8. * PI / 15. * getMaterialDensity(a) * a_minor * pow(a_major, 4); // SI unit
-
-		        // Thermal angular momentum
-		        double J_th = sqrt(I_p * con_kB * T_gas); // SI unit
-		       
-		        // Drag by gas collision following evaporation of H2
-		        double tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4)); //[s]
-
-		        
-				//*************************************************************************************************
-				//*
-				//*
-				//*			PART TO CALCULATE THE BARNET TIMESCALE
-				//*				calculation here is in CGS unit
-				//*
-				//**************************************************************************************************
-		        			
-				// Dust temperature of grain size a
-		        if (temp_info == TEMP_FULL)
-		        {
-		        	T_dust = grid->getDustTemperature(*cell, i_density, a_eff[a]); //[K]
-				}
-				else
-				{
-					T_dust = grid->getDustTemperature(*cell, i_density); //[K]
-				}
-				
-					// From this part, calculation is in the cgs unit :))
-
-				double e = 4.80325e-10;  // charge of electron [esu]
-				double me = 9.10938e-28;   // mass of electron [g]
-				double c = 2.99792e10;		  // speed of light [cm/s]
-				double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
-				double rho = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
-				double gamma_g = e / (me * c);
-				
-				// Minor and major axis
-		        double a_minor_cgs = a_eff[a]*1e2 * pow(s, 2. / 3.);   //a_eff[a] [cm]
-		        double a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
-				
-				// Moment of inertia along a_1 in CGS unit
-		        double I_p_cgs = 8. * PI / 15. * rho * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
-		        
-				// Saturated angular speed
-		        double omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
-
-				// Volume of grain size a
-				double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
-
-				// The imagine part of magnetic suscepbility of grain size a at frequency w 			
-				double K_w_high_J;
-				
-				if (fp != 0) // grain is paramagnetic grains
-	 			{
-					K_w_high_J = CMathFunctions::calc_K_w(T_dust, fp, omega_rat_high_J); //here is in CGS unit		
-				}
-				else // grain is superparamagnetic grains
-				{			
-					K_w_high_J = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat_high_J); //here is also in CGS unit
-				}
-		        
-				// Barnet relaxation timescale [for	internal alignment]
-				double t_bar_high_J = I_p_cgs * pow(gamma_g, 2) / (V * K_w_high_J * pow(h,2) * (h-1) * pow(omega_rat_high_J, 2));
-				
-				//****************************************************************************************************
-				//*
-				//*
-				//*				FIND THE UPPER LIMIT OF PERFECT INTERNAL ALIGNMENT" TBAR < TGAS
-				//*
-				//*
-				//*****************************************************************************************************
-				double t_compare_high_J = t_bar_high_J / tau_gas;
-
-				
-				// if barnet timescale is larger than gas damping timescale
-		        if(t_compare_high_J < 1)
-		        {
-		            // Find disruption size
-		            // linear interpolation
-		            if(a < index_size_max) //grain size > amin
-		            {
-		                double a1 = a_eff[a - 1]; //previous grain size
-		                double a2 = a_eff[a]; //calculated grain size
-
-		                double o1 = t_compare_old_high_J - 1;
-		                double o2 = t_compare_high_J - 1;
-
-		                a_bar_high_J_upper = a1 - o1 * (a2 - a1) / (o2 - o1);
-		            }
-		            else
-		                a_bar_high_J_upper = a_max;
-		            break;
-
-		        }
-
-		        // keep the prev. omega fraction for interpolation
-		        t_compare_old_high_J = t_compare_high_J;
-		    }
-		}
-    }
-        
-    // Check a_bar_high_J_lower is within considered range 
-    if(a_bar_high_J_lower < a_min)
-        a_bar_high_J_lower = a_min;
-
-    if(a_bar_high_J_lower > a_max)
-        a_bar_high_J_lower = a_max;
-        
-    // Check a_bar_high_J_upper is within considered range 
-    if(a_bar_high_J_upper < a_min)
-        a_bar_high_J_upper = a_min;
-
-    if(a_bar_high_J_upper > a_max)
-        a_bar_high_J_upper = a_max;
-    
-    // Set maximum grain size for true internal alignment at high J in grid
-    grid->setBarnetHighLowerRadius(cell, i_density, a_bar_high_J_lower);
-    grid->setBarnetHighUpperRadius(cell, i_density, a_bar_high_J_upper);
-        
-    // Update for true internal alignment at high J
-    if(a_bar_high_J_lower < min_a_bar_high_J_lower)
-        min_a_bar_high_J_lower = a_bar_high_J_lower;
-    if(a_bar_high_J_lower > max_a_bar_high_J_lower)
-        max_a_bar_high_J_lower = a_bar_high_J_lower;
-        
-    // Update for true internal alignment at high J
-    if(a_bar_high_J_upper < min_a_bar_high_J_upper)
-        min_a_bar_high_J_upper = a_bar_high_J_upper;
-    if(a_bar_high_J_upper > max_a_bar_high_J_upper)
-        max_a_bar_high_J_upper = a_bar_high_J_upper;
-}
-
 double CDustComponent::calcGoldReductionFactor(const Vector3D & v, const Vector3D & B) const
 {
     // Init variables
@@ -5384,7 +4065,6 @@ double CDustComponent::calcGoldReductionFactor(const Vector3D & v, const Vector3
     return R;
 }
 
-
 void CDustComponent::calcStochasticHeatingPropabilities(CGridBasic * grid,
                                                         cell_basic * cell,
                                                         uint i_density,
@@ -5393,14 +4073,6 @@ void CDustComponent::calcStochasticHeatingPropabilities(CGridBasic * grid,
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, *cell);
     double a_max = getSizeMax(grid, *cell);
-    double a_disr = grid->getDisruptRadius(*cell, i_density);
-    double a_disr_max = grid->getMaxDisruptRadius(*cell, i_density);
-
-    if (a_disr == 0 && a_disr_max == 0)
-    {
-        a_disr = a_max;
-        a_disr_max = a_max;
-    }
 
     if(getNumberDensity(grid, *cell, i_density) == 0)
     {
@@ -5413,39 +4085,30 @@ void CDustComponent::calcStochasticHeatingPropabilities(CGridBasic * grid,
 
     for(uint a = 0; a < nr_of_dust_species; a++)
     {
-
         // Check if dust grains should have been stochastically heated
         if(a_eff[a] <= getStochasticHeatingMaxSize() && sizeIndexUsed(a, a_min, a_max))
         {
-            if((a_eff[a] <= a_disr) || (a_eff[a] >= a_disr_max))
-            {
-                // Init and resize spline for absorbed energy per wavelength
-                spline abs_rate_per_wl;
-                abs_rate_per_wl.resize(WL_STEPS);
+            // Init and resize spline for absorbed energy per wavelength
+            spline abs_rate_per_wl;
+            abs_rate_per_wl.resize(WL_STEPS);
 
-                // Get radiation field and calculate absorbed energy for each wavelength
-                for(uint w = 0; w < WL_STEPS; w++)
-                    abs_rate_per_wl.setValue(
-                        w, wavelength_list_full[w], grid->getRadiationField(*cell, w) * getCabsMean(a, w));
+            // Get radiation field and calculate absorbed energy for each wavelength
+            for(uint w = 0; w < WL_STEPS; w++)
+                abs_rate_per_wl.setValue(
+                    w, wavelength_list_full[w], grid->getRadiationField(*cell, w) * getCabsMean(a, w));
 
-                // Activate spline of absorbed energy for each wavelength
-                abs_rate_per_wl.createSpline();
+            // Activate spline of absorbed energy for each wavelength
+            abs_rate_per_wl.createSpline();
 
-                // Get pointer array of the temperature propabilities
-                long double * temp_probability = getStochasticProbability(a, abs_rate_per_wl);
+            // Get pointer array of the temperature propabilities
+            long double * temp_probability = getStochasticProbability(a, abs_rate_per_wl);
 
-                // Set the temperature propabilities in the grid
-                for(uint t = 0; t < getNrOfCalorimetryTemperatures(); t++)
-                    grid->setDustTempProbability(cell, i_density, a, t, temp_probability[t]);
+            // Set the temperature propabilities in the grid
+            for(uint t = 0; t < getNrOfCalorimetryTemperatures(); t++)
+                grid->setDustTempProbability(cell, i_density, a, t, temp_probability[t]);
 
-                // Delete pointer array
-                delete[] temp_probability;
-            }
-            else
-            {
-                // set similar to the case of no dust (gas) density
-                grid->setDustTempProbability(cell, i_density, a, 0, 1.0);
-            }
+            // Delete pointer array
+            delete[] temp_probability;
         }
     }
 }
@@ -5504,22 +4167,12 @@ long double * CDustComponent::getStochasticProbability(uint a, const spline & ab
     // Go through each possible transition between temperature states and set B matrix
     // values
     for(uint f = nr_of_calorimetry_temperatures - 1; f > 0; f--)
-    {
         if(f == nr_of_calorimetry_temperatures - 1)
-        {
             for(uint i = 0; i < nr_of_calorimetry_temperatures - 1; i++)
-            {
                 B_mat(f, i) = getCalorimetryA(a, f, i, abs_rate_per_wl);
-            }
-        }
         else
-        {
             for(uint i = 0; i < f; i++)
-            {
                 B_mat(f, i) = (B_mat(f + 1, i) + getCalorimetryA(a, f, i, abs_rate_per_wl));
-            }
-        }
-    }
 
     // Init propability array
     long double * X_vec = new long double[nr_of_calorimetry_temperatures];
@@ -5536,14 +4189,10 @@ long double * CDustComponent::getStochasticProbability(uint a, const spline & ab
         if(caloA > 0)
         {
             for(uint j = 0; j < i; j++)
-            {
                 X_vec[i] += (long double)B_mat(i, j) * X_vec[j] / caloA;
-            }
         }
         else
-        {
             X_vec[i] = 0;
-        }
     }
 
     // Init sum for normalization
@@ -5551,9 +4200,7 @@ long double * CDustComponent::getStochasticProbability(uint a, const spline & ab
 
     // Calculate the sum of the propability
     for(uint t = 0; t < nr_of_calorimetry_temperatures; t++)
-    {
         X_sum += X_vec[t];
-    }
 
     // Perform normalization or  reset propability
     for(uint t = 0; t < nr_of_calorimetry_temperatures; t++)
@@ -5576,8 +4223,8 @@ void CDustComponent::calcEmissivityHz(CGridBasic * grid,
                                       StokesVector * dust_emissivity) const
 {
     // Get extinction and absorption cross-sections
-    double Cext = getCextMean(grid, pp, i_density);
-    double Cabs = getCabsMean(grid, pp, i_density);
+    double Cext = getCextMean(grid, pp);
+    double Cabs = getCabsMean(grid, pp);
 
     // Get wavelength index
     uint w = pp.getDustWavelengthID();
@@ -5605,8 +4252,11 @@ double CDustComponent::calcEmissivity(CGridBasic * grid, const photon_package & 
     double a_min = getSizeMin(grid, pp);
     double a_max = getSizeMax(grid, pp);
 
+    // Get local size parameter for size distribution
+    double size_param = getSizeParam(grid, pp);
+
     // Get integration over the dust size distribution
-    double * rel_weight = getRelWeight(grid, pp, i_density);
+    double * rel_weight = getRelWeight(a_min, a_max, size_param);
 
     // Get wavelength index of photon package
     uint w = pp.getDustWavelengthID();
@@ -5680,6 +4330,9 @@ StokesVector CDustComponent::getRadFieldScatteredFraction(CGridBasic * grid,
     double a_min = getSizeMin(grid, pp);
     double a_max = getSizeMax(grid, pp);
 
+    // Get local size parameter for size distribution
+    double size_param = getSizeParam(grid, pp);
+
     // Init  and calculate the cross-sections
     cross_sections cs;
 
@@ -5693,7 +4346,7 @@ StokesVector CDustComponent::getRadFieldScatteredFraction(CGridBasic * grid,
     double scattering_theta = acos(en_dir * pp.getDirection());
 
     // Get integration over the dust size distribution
-    double * rel_weight = getRelWeight(grid, pp, i_density);
+    double * rel_weight = getRelWeight(a_min, a_max, size_param);
 
     // Init temporary Stokes array for integration
     StokesVector * scatter_stokes = new StokesVector[nr_of_dust_species];
@@ -5776,6 +4429,9 @@ StokesVector CDustComponent::calcEmissivityEmi(CGridBasic * grid,
     double a_min = getSizeMin(grid, pp);
     double a_max = getSizeMax(grid, pp);
 
+    // Get local size parameter for size distribution
+    double size_param = getSizeParam(grid, pp);
+
     // Init  and calculate the cross-sections
     cross_sections cs;
 
@@ -5790,7 +4446,7 @@ StokesVector CDustComponent::calcEmissivityEmi(CGridBasic * grid,
     double cos_2ph = cos(2.0 * phi);
 
     // Get integration over the dust size distribution
-    double * rel_weight = getRelWeight(grid, pp, i_density);
+    double * rel_weight = getRelWeight(a_min, a_max, size_param);
 
     // If dust temperature is const for all grains, calc planck only once
     if(temp_info != TEMP_FULL)
@@ -5857,7 +4513,7 @@ StokesVector CDustComponent::calcEmissivityEmi(CGridBasic * grid,
 
 #if BENCHMARK == CAMPS
                 // To perform Camps et. al (2015) benchmark.
-                tmp_stokes[a].addQ(cs.Cabs * pl);
+                tmp_stokes[a].addQ(cs.Cabs * pl;
 #else
                 // Add relative emissivity from this temperature
                 tmp_stokes[a].addI(cs.Cabs * pl);
@@ -5935,8 +4591,11 @@ void CDustComponent::calcExtCrossSections(CGridBasic * grid,
     // Get angle between the magnetic field and the photon direction
     double mag_field_theta = !is_align || alignment == ALIG_RND ? 0 : grid->getThetaMag(pp);
 
+    // Get local size parameter for size distribution
+    double size_param = getSizeParam(grid, pp);
+
     // Get integration over the dust size distribution
-    double * rel_weight = getRelWeight(grid, pp, i_density);
+    double * rel_weight = getRelWeight(a_min, a_max, size_param);
 
     // Init temporary cross-section array for integration
     double * Cext = new double[nr_of_dust_species];
@@ -6136,8 +4795,11 @@ double CDustComponent::getCellEmission(CGridBasic * grid, const photon_package &
     double a_min = getSizeMin(grid, pp);
     double a_max = getSizeMax(grid, pp);
 
+    // Get local size parameter for size distribution
+    double size_param = getSizeParam(grid, pp);
+
     // Get integration over the dust size distribution
-    double * rel_weight = getRelWeight(grid, pp, i_density);
+    double * rel_weight = getRelWeight(a_min, a_max, size_param);
 
     // Get Volume of current cell
     double vol = grid->getVolume(pp);
@@ -6429,23 +5091,12 @@ bool CDustMixture::createDustMixtures(parameters & param, string path_data, stri
 
             // Get material density and similar user defined parameters
             single_component[i_comp].setMaterialDensity(param.getMaterialDensity(dust_component_choice));
-            single_component[i_comp].setTensileStrength(param.getTensileStrength());
-            single_component[i_comp].setSizeChoice(param.getSizeChoice());
             single_component[i_comp].setFHighJ(param.getFHighJ());
             single_component[i_comp].setQref(param.getQref());
             single_component[i_comp].setAlphaQ(param.getAlphaQ());
-            single_component[i_comp].setWrongInternalRATlowJ(param.getWrongInternalRATlowJ());
-            single_component[i_comp].setWrongInternalRAThighJ(param.getWrongInternalRAThighJ());
 
             single_component[i_comp].setDelta0(param.getDelta0());
-            
-            single_component[i_comp].setLarmF(param.getLarmF()); // for default calculation of amax,B of paramagnetic grains
-            
-            single_component[i_comp].setNumberIronCluster(param.getNumberIronCluster()); // for amax,B of superparamagnetic grains
-            single_component[i_comp].setVolumeFillingFactor(param.getVolumeFillingFactor());  
-             
-            single_component[i_comp].setIronFraction(param.getIronFraction()); // for new calculation of amax,B of paramagnetic grains
- 
+            single_component[i_comp].setLarmF(param.getLarmF());
             single_component[i_comp].setMu(param.getMu());
             // single_component[i_comp].setPhaseFunctionID(param.getPhaseFunctionID());
             single_component[i_comp].setPhaseFunctionID(param.getPhaseFunctionID(dust_component_choice));
@@ -6587,7 +5238,6 @@ void CDustMixture::printParameters(parameters & param, CGridBasic * grid)
         else
             cout << "not available (This should not happen!)" << endl;
 
-		// Information of aligned dust grains
         if(param.getAligRAT())
         {
             cout << "- Alignment radii         : ";
@@ -6596,26 +5246,6 @@ void CDustMixture::printParameters(parameters & param, CGridBasic * grid)
             else if(grid->useDustChoice() && grid->getNrAlignedRadii() == 1)
                 cout << "found a common radius for all dust mixtures and density dist." << endl;
             else if(!grid->useDustChoice() && grid->getNrAlignedRadii() == getNrOfMixtures())
-                cout << "found a separate radius for each density distribution" << endl;
-            else
-                cout << "ERROR: This should not happen!" << endl;
-        }
-
-		// Information of type dust
-        if (param.getNumberIronCluster() == 0)
-	    	cout << "Aligned dust grains are the paramagnetic dust" << endl;
-		else
-	    	cout << "Aligned dust grains are the superparagnetic dust" << endl;
-	    	
-	    // Information of disrupted dust grains
-        if(param.getDisrRATD())
-        {
-            cout << "- Disruption radii        : ";
-            if(grid->useDustChoice() && grid->getNrDisruptRadii() == 1)
-                cout << "found a common radius for all dust mixtures" << endl;
-            else if(grid->useDustChoice() && grid->getNrDisruptRadii() == 1)
-                cout << "found a common radius for all dust mixtures and density dist." << endl;
-            else if(!grid->useDustChoice() && grid->getNrDisruptRadii() == getNrOfMixtures())
                 cout << "found a separate radius for each density distribution" << endl;
             else
                 cout << "ERROR: This should not happen!" << endl;
@@ -6755,13 +5385,7 @@ void CDustMixture::printParameters(parameters & param, CGridBasic * grid)
                 cout << "- Affected by alignment   : Yes" << endl;
             else
                 cout << "- Affected by alignment   : No" << endl;
-
-            if(mixed_component[i_mixture].isDisrupted())
-                cout << "- Affected by disruption   : Yes" << endl;
-            else
-                cout << "- Affected by disruption   : No" << endl;
         }
-
 
         double total_dust_mass = 0;
         for(ulong i_cell = 0; i_cell < grid->getMaxDataCells(); i_cell++)
@@ -6776,13 +5400,13 @@ void CDustMixture::printParameters(parameters & param, CGridBasic * grid)
     cout << SEP_LINE;
 
     // If dust optical properties are constant -> pre calc some values
-    if(!param.isRATDSimulation() || !param.getDisrRATD())
+    if(grid->useConstantGrainSizes())
     {
         preCalcEffProperties(param);
         #if (USE_PRECALC_TABLE)
             preCalcRelWeight();
         #endif
-   }
+    }
 }
 
 bool CDustMixture::mixComponents(parameters & param, uint i_mixture)
@@ -6829,7 +5453,6 @@ bool CDustMixture::mixComponents(parameters & param, uint i_mixture)
         // Check if the components have the same amount of grain sizes
         if(nr_of_dust_species != single_component[i_comp].getNrOfDustSpecies())
         {
-            //cout << single_component[i_comp].getNrOfDustSpecies() << endl;
             cout << "\nERROR: Component Nr. " << i_comp + 1 << " has a different amount of dust species!"
                  << endl;
             return false;
@@ -6856,9 +5479,6 @@ bool CDustMixture::mixComponents(parameters & param, uint i_mixture)
         // Only if no component can be aligned, do not use alignment of mixture
         if(single_component[i_comp].isAligned())
             mixed_component[i_mixture].setIsAligned(true);
-
-        if(single_component[i_comp].isDisrupted())
-            mixed_component[i_mixture].setIsDisrupted(true);
 
         if(single_component[i_comp].getIndividualDustMassFractions())
             mixed_component[i_mixture].setIndividualDustMassFractions(true);
@@ -6979,8 +5599,6 @@ bool CDustMixture::preCalcDustProperties(parameters & param, uint i_mixture)
         mixed_component[i_mixture].setAlignmentMechanism(ALIG_RND);
     else
         mixed_component[i_mixture].setAlignmentMechanism(param.getAlignmentMechanism());
-
-    mixed_component[i_mixture].setDisruptionMechanism(param.getDisruptionMechanism());
 
     return true;
 }

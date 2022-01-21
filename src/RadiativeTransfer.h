@@ -155,7 +155,7 @@ class CRadiativeTransfer
     }
 
     // Temperature calculation and RATs
-    bool calcMonteCarloRadiationField(parameters & param, uint command, bool use_energy_density, bool disable_reemission = false);
+    bool calcMonteCarloRadiationField(uint command, bool use_energy_density, bool disable_reemission = false);
     bool calcMonteCarloLvlPopulation(uint i_species, uint global_seed);
     void rayThroughCellForLvlPop(photon_package * pp,
                                  uint i_species,
@@ -348,11 +348,6 @@ class CRadiativeTransfer
     void calcFinalTemperature(bool use_energy_density);
     void calcStochasticHeating();
     void calcAlignedRadii();
-    void calcDisruptRadii();
-    void calcMaxDisruptRadii();
-    void calcSizeParamModify();
-    void calcBarnetLowJRadii();
-    void calcBarnetHighJRadii();
 
     bool isInvalid(double val)
     {

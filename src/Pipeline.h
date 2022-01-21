@@ -159,7 +159,6 @@ class CPipeline
         cout << "- Conv. length in SI           : " << param.getSIConvLength() << endl;
         cout << "- Conv. vel. field in SI.      : " << param.getSIConvVField() << endl;
         cout << "- Conv. mag. field in SI.      : " << param.getSIConvBField() << endl;
-        cout << "- Conv. tensile. strength in SI.      : " << param.getSIConvSmax() << endl;
         if(param.getIndividualDustMassFractions())
             cout << "- Mass fraction (Mdust/Mgas)   : set by the dust components" << endl;
         else
@@ -230,27 +229,12 @@ class CPipeline
                 cout << "- IDG (paramagnetic alignment)" << endl;
             if(param.getAligRAT())
                 cout << "- RAT (radiative torques); f_highJ: " << param.getFHighJ() << endl;
-            if(param.getIronFraction() != 0)
-            	cout << "- Dust is paramagnetic grains" << endl;
-            else
-            	cout << "- Dust is superparamagnetic grains" << endl;
             if(param.getAligGOLD())
                 cout << "- GOLD (mechanical alignment)" << endl;
             if(param.getAligINTERNAL())
                 cout << "- Internal alignment; f_c: " << param.getFcorr() << endl;
         }
     }
-
-    void printDisruptionParameters(parameters & param)
-    {
-        cout << "Dust grain disruption" << endl;
-
-        if(param.getnoRATD())
-            cout << "- No disruption" << endl;
-        else if(param.getDisrRATD())
-            cout << "- Account disruption" << param.getTensileStrength() << endl;
-    }
-
 
     void printSourceParameters(parameters & param, bool show_dust = false)
     {
@@ -448,3 +432,4 @@ class CPipeline
 };
 
 #endif
+

@@ -14,12 +14,10 @@ class parameters
         // phID = PH_HG;
         conv_l_in_SI = 1;
         conv_dH_in_SI = 1;
-        conv_Smax_in_SI = 1;
         conv_B_in_SI = 1;
         conv_V_in_SI = 1;
         conv_mass_fraction = 0.01;
         align = 0;
-        adisr = 0;
         nr_ofThreads = 1;
 
         mu = 2.0;
@@ -51,10 +49,6 @@ class parameters
 
         delta0 = 8.28e23 * 2.5e-12 * 1e8 * 1e-6 * 1e6;
         larm_f = 4.1e-19;
-        number_cluster = 0;
-        volume_filling_cluster = 0;
-        iron_fraction = 0;
-
 
         nr_of_mc_lvl_pop_photons = 0;
         mc_lvl_pop_seed = 0;
@@ -106,17 +100,11 @@ class parameters
         nr_ofInpMidDataPoints = 0;
         nr_ofOutMidDataPoints = 0;
 
-        disruption_size = 0;
-        tensile_strength = 0;
-        size_choice = 0;
         f_highJ = 0.25;
         Q_ref = 0.4;
         alpha_Q = 3.0;
-        wrong_internal_factor_lowJ = 0;
-        wrong_internal_factor_highJ = 0;
 
         f_cor = 0.6;
-        //a_disr = 0;
         adjTgas = 0;
         isrf_g_zero = 0;
         isrf_radius = 0;
@@ -247,21 +235,14 @@ class parameters
 
     bool isRatSimulation() const
     {
-        if(getCommand() == CMD_RAT || getCommand() == CMD_TEMP_RAT || getCommand() == CMD_TEMP_RAT_DISR)
-            return true;
-        return false;
-    }
-
-    bool isRATDSimulation() const
-    {
-        if(getCommand() == CMD_TEMP_DISR || getCommand() == CMD_DISR || getCommand() == CMD_TEMP_RAT_DISR)
+        if(getCommand() == CMD_RAT || getCommand() == CMD_TEMP_RAT)
             return true;
         return false;
     }
 
     bool isMonteCarloSimulation() const
     {
-        if(getCommand() == CMD_TEMP || getCommand() == CMD_TEMP_RAT || getCommand() == CMD_RAT || getCommand() == CMD_DISR || getCommand() == CMD_TEMP_DISR || getCommand() == CMD_TEMP_RAT_DISR)
+        if(getCommand() == CMD_TEMP || getCommand() == CMD_TEMP_RAT || getCommand() == CMD_RAT)
             return true;
         return false;
     }
@@ -276,7 +257,7 @@ class parameters
 
     bool isTemperatureSimulation() const
     {
-        if(getCommand() == CMD_TEMP || getCommand() == CMD_TEMP_RAT || getCommand() == CMD_TEMP_DISR || getCommand() == CMD_TEMP_RAT_DISR)
+        if(getCommand() == CMD_TEMP || getCommand() == CMD_TEMP_RAT)
             return true;
         return false;
     }
@@ -411,26 +392,6 @@ class parameters
         return larm_f;
     }
 
-    double getNumberIronCluster() const
-    {
-        return number_cluster;
-    }
-   
-    double getVolumeFillingFactor() const
-    {
-        return volume_filling_cluster;
-    }
- 
-    double getIronFraction() const
-    {
-        return iron_fraction;
-    }
-
-    double getSIConvSmax() const
-    {
-        return conv_Smax_in_SI;
-    }
-
     double getSIConvBField() const
     {
         return conv_B_in_SI;
@@ -471,7 +432,6 @@ class parameters
         return a_max_global[i];
     }
 
-
     double getMaterialDensity(uint i) const
     {
         return material_density[i];
@@ -502,19 +462,9 @@ class parameters
         return align;
     }
 
-    uint getDisr() const
-    {
-        return adisr;
-    }
-
     bool getAligRANDOM() const
     {
         return align == 0;
-    }
-
-    bool getnoRATD() const
-    {
-        return adisr == 0;
     }
 
     bool getAligPA() const
@@ -530,11 +480,6 @@ class parameters
     bool getAligRAT() const
     {
         return (align & ALIG_RAT) == ALIG_RAT;
-    }
-
-    bool getDisrRATD() const
-    {
-        return (adisr & RATD) == RATD;
     }
 
     bool getAligGOLD() const
@@ -664,11 +609,6 @@ class parameters
         return align;
     }
 
-    uint getDisruptionMechanism() const
-    {
-        return adisr;
-    }
-
     double getMinObserverDistance() const
     {
         return min_obs_distance;
@@ -744,21 +684,6 @@ class parameters
         return f_highJ;
     }
 
-    double getTensileStrength() const
-    {
-        return tensile_strength;
-    }
-
-    double getSizeChoice() const
-    {
-        return size_choice;
-    }
-
-    double getDisruptionSizeInput() const
-    {
-        return disruption_size;
-    }
-
     double getQref() const
     {
         return Q_ref;
@@ -773,18 +698,6 @@ class parameters
     {
         return f_cor;
     }
-    
-    double getWrongInternalRATlowJ() const
-    {
-        return wrong_internal_factor_lowJ;
-    }
-    
-    double getWrongInternalRAThighJ() const
-    {
-        return wrong_internal_factor_highJ;
-    }
-
- 
 
     double getAdjTgas() const
     {
@@ -1103,21 +1016,6 @@ class parameters
         larm_f = val;
     }
 
-    void setNumberIronCluster(double val)
-    {
-        number_cluster = val;
-    }
-    
-    void setVolumeFillingFactor(double val)
-    {
-        volume_filling_cluster = val;
-    }
- 
-    void setIronFraction(double val)
-    {
-        iron_fraction = val;
-    }
-
     void setMRW(bool val)
     {
         b_mrw = val;
@@ -1308,11 +1206,6 @@ class parameters
         conv_dH_in_SI = val;
     }
 
-    void setSIConvSmax(double val)
-    {
-        conv_Smax_in_SI = val;
-    }
-
     void setSIConvBField(double val)
     {
         conv_B_in_SI = val;
@@ -1337,14 +1230,6 @@ class parameters
             cout << "\nHINT: <conv_dens> may not be used multiple times!" << endl
                  << "      -> No problem if <path_grid_cgs> was used!" << endl;
         conv_dH_in_SI *= val;
-    }
-
-    void updateSIConvSmax(double val)
-    {
-        if(conv_Smax_in_SI != 1 && val != 1)
-            cout << "\nHINT: <conv_tensile> may not be used multiple times!" << endl
-                 << "      -> No problem if <path_grid_cgs> was used!" << endl;
-        conv_Smax_in_SI *= val;
     }
 
     void updateSIConvBField(double val)
@@ -1376,11 +1261,6 @@ class parameters
     void addAlignmentMechanism(uint val)
     {
         align |= val;
-    }
-
-    void addDisruptionMechanism(uint val)
-    {
-        adisr |= val;
     }
 
     void updateObserverDistance(double val)
@@ -1435,22 +1315,6 @@ class parameters
         f_highJ = val;
     }
 
-    void setTensileStrength(double val)
-    {
-        tensile_strength = val;
-    }
-
-    void setSizeChoice(double val)
-    {
-        size_choice = val;
-    }
-
-
-    void setDisruptionSizeInput(double val)
-    {
-        disruption_size = val;
-    }
-
     void setQref(double val)
     {
         Q_ref = val;
@@ -1465,22 +1329,6 @@ class parameters
     {
         f_cor = val;
     }
-    
-    void setWrongInternalRATlowJ(double val)
-    {
-        wrong_internal_factor_lowJ = val;
-    }
-
-
-    void setWrongInternalRAThighJ(double val)
-    {
-        wrong_internal_factor_highJ = val;
-    }
-
-    //void setDisruptionSize(double val)
-    //{
-    //    a_disr = val;
-    //}
 
     void setAdjTgas(double val)
     {
@@ -2375,7 +2223,6 @@ class parameters
 
     double conv_l_in_SI;
     double conv_dH_in_SI;
-    double conv_Smax_in_SI;
     double conv_B_in_SI;
     double conv_V_in_SI;
     double conv_mass_fraction;
@@ -2392,7 +2239,6 @@ class parameters
     double max_ray_map_shift_x, max_ray_map_shift_y;
 
     uint align;
-    uint adisr;
     uint min_detector_pixel_x, max_detector_pixel_x;
     uint min_detector_pixel_y, max_detector_pixel_y;
     uint nr_ofInpAMIRAPoints;
@@ -2435,9 +2281,6 @@ class parameters
     double stochastic_heating_max_size;
     double delta0;
     double larm_f;
-    double number_cluster;
-    double volume_filling_cluster;
-    double iron_fraction;
     double acceptance_angle;
     double offset_min_gas_dens;
 
@@ -2487,16 +2330,10 @@ class parameters
     uint start;
     uint stop;
 
-    double disruption_size;
-    double tensile_strength;
-    double size_choice;
     double f_highJ;
     double f_cor;
-    //double a_disr;
     double Q_ref;
     double alpha_Q;
-    double wrong_internal_factor_lowJ;
-    double wrong_internal_factor_highJ;
 
     double adjTgas;
     double isrf_g_zero;

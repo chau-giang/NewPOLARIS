@@ -127,23 +127,11 @@ void CPipeline::Run()
                 result = calcMonteCarloRadiationField(param);
                 break;
 
-            case CMD_TEMP_DISR:
-                result = calcMonteCarloRadiationField(param);
-                break;
-
             case CMD_TEMP_RAT:
                 result = calcMonteCarloRadiationField(param);
                 break;
 
-            case CMD_TEMP_RAT_DISR:
-                result = calcMonteCarloRadiationField(param);
-                break;
-
             case CMD_RAT:
-                result = calcMonteCarloRadiationField(param);
-                break;
-
-            case CMD_DISR:
                 result = calcMonteCarloRadiationField(param);
                 break;
 
@@ -211,9 +199,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     // In case of (save radiation field), (calc RATs), and (calc stochastic heating
     // temperatures)
     bool use_energy_density = false;
-    if(param.getSaveRadiationField() || param.isRATDSimulation() || param.isRatSimulation() || param.getStochasticHeatingMaxSize() > 0)
+    if(param.getSaveRadiationField() || param.isRatSimulation() || param.getStochasticHeatingMaxSize() > 0)
         use_energy_density = true;
-        
 
     CGridBasic * grid = 0;
     CDustMixture * dust = new CDustMixture();
@@ -272,48 +259,16 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
             rad.convertTempInQB(param.getOffsetMinGasDensity(), true);
     }
 
-    rad.calcMonteCarloRadiationField(param, param.getCommand(),
-                                            use_energy_density,
-                                            false); //(param.getCommand() == CMD_RAT))
-        
-        
+    rad.calcMonteCarloRadiationField(param.getCommand(),
+                                     use_energy_density,
+                                     false); //(param.getCommand() == CMD_RAT));
+
     if(param.isTemperatureSimulation())
         rad.calcFinalTemperature(use_energy_density);
-        
-    if(param.isRATDSimulation())
-    {
-        cout << "\n DISRUPTION SIMULATION \n" << endl;
-        cout << "\n First loop\n" << endl;
-        rad.calcDisruptRadii();
-        rad.calcMaxDisruptRadii();
-        rad.calcSizeParamModify();
 
-        cout << "\n Second loop \n" << endl;
-        rad.calcMonteCarloRadiationField(param, param.getCommand(),
-                                        use_energy_density,
-                                       false); //(param.getCommand() == CMD_RAT));
-        rad.calcFinalTemperature(use_energy_density);
-        rad.calcDisruptRadii();
-        rad.calcMaxDisruptRadii();
-        rad.calcSizeParamModify();
-
-        cout << "\n Final temperature and alignment \n" << endl;
-        rad.calcMonteCarloRadiationField(param, param.getCommand(),
-                                         use_energy_density,
-                                         false); //(param.getCommand() == CMD_RAT))
-
-        rad.calcFinalTemperature(use_energy_density);
-        rad.calcDisruptRadii();
-        rad.calcMaxDisruptRadii();
-        rad.calcSizeParamModify();
-    }
-        
     if(param.isRatSimulation())
-    {
-    	rad.calcAlignedRadii();
-        rad.calcBarnetLowJRadii();
-        rad.calcBarnetHighJRadii();
-    }
+        rad.calcAlignedRadii();
+
     cout << SEP_LINE;
 
     if(!grid->writeMidplaneFits(path_data + "output_", param, param.getOutMidDataPoints()))
@@ -333,15 +288,12 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         grid->saveBinaryGridFile(param.getPathOutput() + "grid_temp.dat");
     else if(param.getCommand() == CMD_RAT)
         grid->saveBinaryGridFile(param.getPathOutput() + "grid_rat.dat");
-    else if(param.getCommand() == CMD_DISR)
-        grid->saveBinaryGridFile(param.getPathOutput() + "grid_ratd.dat");
 
     delete grid;
     delete dust;
     deleteSourceLists();
 
     return true;
-
 }
 
 bool CPipeline::calcPolarizationMapsViaMC(parameters & param)
@@ -470,7 +422,7 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
     // Calculate radiation field before raytracing (if sources defined and no radiation
     // field in grid)
     if(!grid->isRadiationFieldAvailable() && dust->getScatteringToRay() && !sources_mc.empty())
-        rad.calcMonteCarloRadiationField(param, param.getCommand(), true, true);
+        rad.calcMonteCarloRadiationField(param.getCommand(), true, true);
 
     if(!rad.calcPolMapsViaRaytracing(param))
         return false;
@@ -1314,14 +1266,6 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printPlotParameters(param);
             break;
 
-       case CMD_TEMP_DISR:
-            cout << "- Command          : TEMPERATURE DISTRIBUTION and RATD DISRUPTION" << endl;
-            printPathParameters(param);
-            printSourceParameters(param);
-            printConversionParameters(param);
-            printPlotParameters(param);
-            break;
-
         case CMD_FORCE:
             cout << "- Command          : RADIATION FORCE" << endl;
             printPathParameters(param);
@@ -1338,24 +1282,8 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printPlotParameters(param);
             break;
 
-        case CMD_TEMP_RAT_DISR:
-            cout << "- Command          : TEMPERATURE DISTRIBUTION, RAT ALIGNMENT, and RATD DISRUPTION" << endl;
-            printPathParameters(param);
-            printSourceParameters(param);
-            printConversionParameters(param);
-            printPlotParameters(param);
-            break;
-
         case CMD_RAT:
             cout << "- Command          : RAT ALIGNMENT" << endl;
-            printPathParameters(param);
-            printSourceParameters(param, true);
-            printConversionParameters(param);
-            printPlotParameters(param);
-            break;
-
-        case CMD_DISR:
-            cout << "- Command          : RATD DISRUPTION" << endl;
             printPathParameters(param);
             printSourceParameters(param, true);
             printConversionParameters(param);
@@ -1368,7 +1296,6 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printSourceParameters(param, true);
             printConversionParameters(param);
             printAlignmentParameters(param);
-            printDisruptionParameters(param);
             printDetectorParameters(param);
             printPlotParameters(param);
             break;
@@ -1389,7 +1316,6 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printSourceParameters(param, true);
             printConversionParameters(param);
             printAlignmentParameters(param);
-            printDisruptionParameters(param);
             printDetectorParameters(param, true);
             printPlotParameters(param);
             break;
@@ -1421,11 +1347,8 @@ bool CPipeline::createWavelengthList(parameters & param, CDustMixture * dust, CG
     switch(param.getCommand())
     {
         case CMD_TEMP:
-        case CMD_TEMP_DISR:
         case CMD_TEMP_RAT:
-        case CMD_TEMP_RAT_DISR:
         case CMD_RAT:
-        case CMD_DISR:
             dust->addToWavelengthGrid(WL_MIN, WL_MAX, WL_STEPS);
             break;
 

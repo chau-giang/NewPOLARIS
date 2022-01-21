@@ -590,7 +590,7 @@ bool CGridOcTree::loadGridFromBinrayFile(parameters & param, uint _data_len)
             }
 
             // assignOpiateID(&cell_oc_pos->getChildren()[cube_pos]);
-            updateDataRange(&cell_oc_pos->getChildren()[cube_pos], param);
+            updateDataRange(&cell_oc_pos->getChildren()[cube_pos]);
 
             if(cube_pos > 7)
             {

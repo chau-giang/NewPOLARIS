@@ -760,21 +760,9 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             return true;
         }
 
-        if(data.compare("CMD_TEMP_DISR") == 0)
-        {
-            param->setCommand(CMD_TEMP_DISR);
-            return true;
-        }
-
         if(data.compare("CMD_TEMP_RAT") == 0)
         {
             param->setCommand(CMD_TEMP_RAT);
-            return true;
-        }
-
-        if(data.compare("CMD_TEMP_RAT_DISR") == 0)
-        {
-            param->setCommand(CMD_TEMP_RAT_DISR);
             return true;
         }
 
@@ -787,12 +775,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         if(data.compare("CMD_RAT") == 0)
         {
             param->setCommand(CMD_RAT);
-            return true;
-        }
-
-        if(data.compare("CMD_DISR") == 0)
-        {
-            param->setCommand(CMD_DISR);
             return true;
         }
 
@@ -821,27 +803,11 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
 
     if(cmd.compare("<larm_f>") == 0)
     {
-        param->setLarmF(atof(data.c_str()));
+        double val = atof(data.c_str());
+        param->setLarmF(val);
         return true;
     }
 
-    if(cmd.compare("<number_cluster>") == 0)
-    {
-        param->setNumberIronCluster(atof(data.c_str()));
-        return true;
-    }
- 
-    if(cmd.compare("<volume_filling_cluster>") == 0)
-    {
-        param->setVolumeFillingFactor(atof(data.c_str()));
-        return true;
-    }
-
-    if(cmd.compare("<iron_fraction>") == 0)
-    {
-        param->setIronFraction(atof(data.c_str()));
-        return true;
-    }    
     if(cmd.compare("<plot_list>") == 0)
     {
         dlist ids = parseValues(data);
@@ -2820,16 +2786,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         }
     }
 
-    if(cmd.compare("<disrupt>") == 0)
-    {
-        if(data.compare("RATD") == 0)
-        {
-            param->addDisruptionMechanism(RATD);
-            return true;
-        }
-    }
-
-
     if(cmd.compare("<mu>") == 0)
     {
         param->setMu(atof(data.c_str()));
@@ -3068,18 +3024,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
-    if(cmd.compare("<tensile_strength>") == 0)
-    {
-        param->setTensileStrength(atof(data.c_str()));
-        return true;
-    }
-
-    if(cmd.compare("<size_choice>") == 0)
-    {
-        param->setSizeChoice(atof(data.c_str()));
-        return true;
-    }
-
     if(cmd.compare("<f_highJ>") == 0)
     {
         param->setFhighJ(atof(data.c_str()));
@@ -3097,19 +3041,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         param->setAlphaQ(atof(data.c_str()));
         return true;
     }
-    
-    if(cmd.compare("<wrong_g_zeta_low_J>") == 0)
-    {
-        param->setWrongInternalRATlowJ(atof(data.c_str()));
-        return true;
-    }
-    
-    if(cmd.compare("<wrong_g_zeta_high_J>") == 0)
-    {
-        param->setWrongInternalRAThighJ(atof(data.c_str()));
-        return true;
-    }
-
 
     if(cmd.compare("<f_c>") == 0)
     {
@@ -3159,12 +3090,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
     if(cmd.compare("<conv_len>") == 0)
     {
         param->updateSIConvLength(atof(data.c_str()));
-        return true;
-    }
-
-    if(cmd.compare("<conv_tensile>") == 0)
-    {
-        param->updateSIConvSmax(atof(data.c_str()));
         return true;
     }
 

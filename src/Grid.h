@@ -64,7 +64,6 @@ class CGridBasic
   public:
     CGridBasic()
     {
-        //a_disr_ini = 1e-7;
         basic_path = 0;
         buffer_size = 0;
 
@@ -92,9 +91,6 @@ class CGridBasic
 
         min_dust_temp = 0;
         max_dust_temp = 0;
-        
-        min_abs_ini = 0;
-        max_abs_ini = 0;
 
         min_gas_dens = 0;
         max_gas_dens = 0;
@@ -104,28 +100,6 @@ class CGridBasic
 
         aalg_min = 0;
         aalg_max = 0;
-
-        adisr_min = 0;
-        adisr_max = 0;
-
-        max_adisr_min = 0;
-        max_adisr_max = 0;
-
-        size_param_modif_min = 0;
-        size_param_modif_max = 0;
-
-        abar_low_lower_min = 0;
-        abar_low_lower_max = 0;
-        
-        abar_low_upper_min = 0;
-        abar_low_upper_max = 0;
- 
-        
-        abar_high_lower_min = 0;
-        abar_high_lower_max = 0;
-        
-        abar_high_upper_min = 0;
-        abar_high_upper_max = 0;
 
         a_min_min = 0;
         a_min_max = 0;
@@ -154,7 +128,6 @@ class CGridBasic
 
         conv_length_in_SI = 1;
         conv_dens_in_SI = 1;
-        conv_Smax_in_SI = 1;
         conv_Bfield_in_SI = 1;
         conv_Vfield_in_SI = 1;
 
@@ -249,15 +222,6 @@ class CGridBasic
         plt_avg_dir = false;
         plt_avg_th = false;
 
-        plt_disr = false;
-        plt_max_disr = false;
-        plt_param_modif = false;
-        plt_barnet_low_lower = false;
-        plt_barnet_low_upper = false; 
-        plt_barnet_high_lower = false;
-        plt_barnet_high_upper = false;
-        plt_abs_ini = false;
-
         total_volume = 0;
         cell_volume = 0;
 
@@ -294,15 +258,6 @@ class CGridBasic
 
         buffer_avg_dir = 0;
         buffer_avg_th = 0;
-
-        buffer_disr = 0;
-        buffer_max_disr = 0;
-        buffer_param_modif = 0;
-        buffer_barnet_low_lower = 0;
-        buffer_barnet_low_upper = 0;
-        buffer_barnet_high_lower = 0;
-        buffer_barnet_high_upper = 0;
-        buffer_abs_ini = 0;
 
         turbulent_velocity = 0;
 
@@ -390,7 +345,6 @@ class CGridBasic
 
     void resetGridValues()
     {
-        //a_disr_ini = 1e-7;
         max_cells = 0;
         max_value = 0;
         max_data = 0;
@@ -410,12 +364,9 @@ class CGridBasic
 
         max_dust_temp = -1e300;
         min_dust_temp = 1e300;
-        
-        max_abs_ini = -1e-300;
-        min_abs_ini = 1e300;
 
         max_larm_limit = -1e300;
-        min_larm_limit = 1e-300;
+        min_larm_limit = 1e300;
 
         max_delta = -1e300;
         min_delta = 1e300;
@@ -426,27 +377,6 @@ class CGridBasic
         aalg_max = -1e300;
         aalg_min = 1e300;
 
-        adisr_max = -1e300;
-        adisr_min = 1e300;
-
-        max_adisr_max = -1e300;
-        max_adisr_min = 1e300;
-
-        size_param_modif_max = -1e300;
-        size_param_modif_min = 1e300;
-
-        abar_low_lower_max = -1e300;
-        abar_low_lower_min = 1e300;
-        
-        abar_low_upper_max = -1e300;
-        abar_low_upper_min = 1e300;
-        
-        abar_high_lower_max = -1e300;
-        abar_high_lower_min = 1e300;
-        
-        abar_high_upper_max = -1e300;
-        abar_high_upper_min = 1e300;
-        
         a_min_min = 1e300;
         a_min_max = -1e300;
 
@@ -548,15 +478,6 @@ class CGridBasic
         plt_avg_dir = false;
         plt_avg_th = false;
 
-        plt_disr = false;
-        plt_max_disr = false;
-        plt_param_modif = false;
-        plt_barnet_low_lower = false;
-        plt_barnet_low_upper = false;
-        plt_barnet_high_lower = false;
-        plt_barnet_high_upper = false;
-        plt_abs_ini = false;
-
         total_volume = 0;
         cell_volume = 0;
 
@@ -594,15 +515,6 @@ class CGridBasic
         buffer_avg_dir = 0;
         buffer_avg_th = 0;
 
-        buffer_disr = 0;
-        buffer_max_disr = 0;
-        buffer_param_modif = 0;
-        buffer_barnet_low_lower = 0;
-        buffer_barnet_low_upper = 0;
-        buffer_barnet_high_lower = 0;
-        buffer_barnet_high_upper = 0;
-        buffer_abs_ini = 0;
-
         turbulent_velocity = 0;
 
         CextMeanTab = 0;
@@ -620,8 +532,8 @@ class CGridBasic
     double getTotalCellEmissionTab(uint cellID) const;
 
     void setCextMeanTab(double Cext, uint cellID, uint wID);
-    void setCabsMeanTab(double Cabs, uint cellID, uint wID);
-    void setCscaMeanTab(double Csca, uint cellID, uint wID);
+    void setCabsMeanTab(double Cext, uint cellID, uint wID);
+    void setCscaMeanTab(double Cext, uint cellID, uint wID);
     void setNumberDensityTab(double density, uint cellID);
     void setTotalCellEmissionTab(double cell_emission, uint cellID);
 
@@ -641,7 +553,7 @@ class CGridBasic
         return getTurbulentVelocity(pp->getPositionCell());
     }
 
-    void updateDataRange(cell_basic * cell, parameters & param);
+    void updateDataRange(cell_basic * cell);
 
     void updateVelocity(cell_basic * cell, parameters & param)
     {
@@ -796,10 +708,8 @@ class CGridBasic
 
         delta0 = param.getDelta0();
         larm_f = param.getLarmF();
-        Smax = param.getTensileStrength();
 
         conv_dens_in_SI = abs(param.getSIConvDH());
-        conv_Smax_in_SI = param.getSIConvSmax();
         conv_Bfield_in_SI = param.getSIConvBField();
         conv_Vfield_in_SI = param.getSIConvVField();
     }
@@ -1384,16 +1294,29 @@ class CGridBasic
         cell->setData(data_pos_gd_list[i_density], dens);
     }
 
+    double getQBOffset(const cell_basic & cell, uint i_density) const
+    {
+        if(data_pos_dt_list.size() == 1)
+            return cell.getData(data_pos_dt_list[0]);
+        else if(data_pos_dt_list.size() > i_density)
+            return cell.getData(data_pos_dt_list[i_density]);
+        else
+            return 0;
+    }
 
+    double getQBOffset(const photon_package & pp, uint i_density) const
+    {
+        return getQBOffset(*pp.getPositionCell(), i_density);
+    }
 
     double getQBOffset(const cell_basic & cell, uint i_density, uint a) const
     {
-        if(!data_pos_abs_ini_list.empty())
+        if(!data_pos_dt_list.empty())
         {
             uint id = a + nr_densities;
             for(uint i = 0; i < i_density; i++)
                 id += size_skip[i];
-            return cell.getData(data_pos_abs_ini_list[id]);
+            return cell.getData(data_pos_dt_list[id]);
         }
         else
             return 0;
@@ -1404,96 +1327,29 @@ class CGridBasic
         return getQBOffset(*pp.getPositionCell(), i_density, a);
     }
 
-
-    double getQBOffset(const cell_basic & cell, uint i_density) const
+    void setQBOffset(cell_basic * cell, uint i_density, uint a, double temp)
     {
-        if(data_pos_abs_ini_list.size() == 1)
-            return cell.getData(data_pos_abs_ini_list[0]);
-        else if(data_pos_abs_ini_list.size() > i_density)
-            return cell.getData(data_pos_abs_ini_list[i_density]);
-        else
-            return 0;
-    }
-    
-    double getQBOffset(const photon_package & pp, uint i_density) const
-    {
-        return getQBOffset(*pp.getPositionCell(), i_density);
-    }
-    
-    
-    double getQBOffset(const cell_basic & cell) const
-    {
-        double sum = 0;
-        for(uint i_density = 0; i_density < nr_densities; i_density++)
-            sum += getQBOffset(cell, i_density) * getRelativeDustDensity(cell, i_density);
-        return sum;
-    }
-
-    double getQBOffset(const photon_package & pp) const
-    {
-        return getQBOffset(*pp.getPositionCell());
-    }
-    
-    void setQBOffset(cell_basic * cell, uint i_density, uint a, double abs_ini)
-    {
-        if(!data_pos_abs_ini_list.empty())
+        if(!data_pos_dt_list.empty())
         {
             uint id = a + nr_densities;
             for(uint i = 0; i < i_density; i++)
                 id += size_skip[i];
-            cell->setData(data_pos_abs_ini_list[id], abs_ini);
+            cell->setData(data_pos_dt_list[id], temp);
         }
     }
 
-    void setQBOffset(cell_basic * cell, uint i_density, double abs_ini)
+    void setQBOffset(cell_basic * cell, uint i_density, double temp)
     {
-        if(data_pos_abs_ini_list.size() == 1)
-            cell->setData(data_pos_abs_ini_list[0], abs_ini);
+        if(data_pos_dt_list.size() == 1)
+            cell->setData(data_pos_dt_list[0], temp);
         else if(data_pos_dt_list.size() > 1)
-            cell->setData(data_pos_abs_ini_list[i_density], abs_ini);
+            cell->setData(data_pos_dt_list[i_density], temp);
     }
 
-//*******************************************************************************
     uint getNrAlignedRadii()
     {
         return data_pos_aalg_list.size();
     }
-
-    uint getNrDisruptRadii()
-    {
-        return data_pos_adisr_list.size();
-    }
-
-    uint getNrMaxDisruptRadii()
-    {
-        return data_pos_max_adisr_list.size();
-    }
-
-    uint getNrSizeParamModify()
-    {
-        return data_pos_param_modif_list.size();
-    }
-
-    uint getNrBarnetLowLowerRadii()
-    {
-        return data_pos_barnet_low_J_lower_list.size();
-    }
-    
-    uint getNrBarnetLowUpperRadii()
-    {
-        return data_pos_barnet_low_J_upper_list.size();
-    }
-    
-    uint getNrBarnetHighLowerRadii()
-    {
-        return data_pos_barnet_high_J_lower_list.size();
-    }
-    
-    uint getNrBarnetHighUpperRadii()
-    {
-        return data_pos_barnet_high_J_upper_list.size();
-    }
-//*****************************************************************************
 
     double getAlignedRadius(const cell_basic & cell, uint i_density) const
     {
@@ -1515,165 +1371,6 @@ class CGridBasic
         cell->setData(data_pos_aalg_list[i_density], _a_alg);
     }
 
-//*********************************************************************************
-
-    double getDisruptRadius(const cell_basic & cell, uint i_density) const
-    {
-        if(data_pos_adisr_list.size() == 1)
-            return cell.getData(data_pos_adisr_list[0]);
-        else if(data_pos_adisr_list.size() > i_density)
-            return cell.getData(data_pos_adisr_list[i_density]);
-        else
-            return 0;
-    }
-
-    double getDisruptRadius(const photon_package & pp, uint i_density) const
-    {
-        return getDisruptRadius(*pp.getPositionCell(), i_density);
-    }
-
-    void setDisruptRadius(cell_basic * cell, uint i_density, double _adisr)
-    {
-        cell->setData(data_pos_adisr_list[i_density], _adisr);
-    }
-
-
-//*********************************************************************************
-
-    double getMaxDisruptRadius(const cell_basic & cell, uint i_density) const
-    {
-        if(data_pos_max_adisr_list.size() == 1)
-            return cell.getData(data_pos_max_adisr_list[0]);
-        else if(data_pos_max_adisr_list.size() > i_density)
-            return cell.getData(data_pos_max_adisr_list[i_density]);
-        else
-            return 0;
-    }
-
-    double getMaxDisruptRadius(const photon_package & pp, uint i_density) const
-    {
-        return getMaxDisruptRadius(*pp.getPositionCell(), i_density);
-    }
-
-    void setMaxDisruptRadius(cell_basic * cell, uint i_density, double _max_adisr)
-    {
-        cell->setData(data_pos_max_adisr_list[i_density], _max_adisr);
-    }
-
-//*********************************************************************************
-
-    double getSizeParamModify(const cell_basic & cell, uint i_density) const
-    {
-        if(data_pos_param_modif_list.size() == 1)
-            return cell.getData(data_pos_param_modif_list[0]);
-        else if(data_pos_param_modif_list.size() > i_density)
-            return cell.getData(data_pos_param_modif_list[i_density]);
-        else
-            return 0;
-    }
-
-    double getSizeParamModify(const photon_package & pp, uint i_density) const
-    {
-        return getSizeParamModify(*pp.getPositionCell(), i_density);
-    }
-
-    void setSizeParamModify(cell_basic * cell, uint i_density, double _param_modif)
-    {
-        cell->setData(data_pos_param_modif_list[i_density], _param_modif);
-    }
-
-//*********************************************************************************
-
-    double getBarnetLowLowerRadius(const cell_basic & cell, uint i_density) const
-    {
-        if(data_pos_barnet_low_J_lower_list.size() == 1)
-            return cell.getData(data_pos_barnet_low_J_lower_list[0]);
-        else if(data_pos_barnet_low_J_lower_list.size() > i_density)
-            return cell.getData(data_pos_barnet_low_J_lower_list[i_density]);
-        else
-            return 0;
-    }
-
-    double getBarnetLowLowerRadius(const photon_package & pp, uint i_density) const
-    {
-        return getBarnetLowLowerRadius(*pp.getPositionCell(), i_density);
-    }
-
-    void setBarnetLowLowerRadius(cell_basic * cell, uint i_density, double _abar_low_lower)
-    {
-        cell->setData(data_pos_barnet_low_J_lower_list[i_density], _abar_low_lower);
-    }
-
-
-//*********************************************************************************
-
-    double getBarnetLowUpperRadius(const cell_basic & cell, uint i_density) const
-    {
-        if(data_pos_barnet_low_J_upper_list.size() == 1)
-            return cell.getData(data_pos_barnet_low_J_upper_list[0]);
-        else if(data_pos_barnet_low_J_upper_list.size() > i_density)
-            return cell.getData(data_pos_barnet_low_J_upper_list[i_density]);
-        else
-            return 0;
-    }
-
-    double getBarnetLowUpperRadius(const photon_package & pp, uint i_density) const
-    {
-        return getBarnetLowUpperRadius(*pp.getPositionCell(), i_density);
-    }
-
-    void setBarnetLowUpperRadius(cell_basic * cell, uint i_density, double _abar_low_upper)
-    {
-        cell->setData(data_pos_barnet_low_J_upper_list[i_density], _abar_low_upper);
-    }
-
-//*********************************************************************************
-
-    double getBarnetHighLowerRadius(const cell_basic & cell, uint i_density) const
-    {
-        if(data_pos_barnet_high_J_lower_list.size() == 1)
-            return cell.getData(data_pos_barnet_high_J_lower_list[0]);
-        else if(data_pos_barnet_high_J_lower_list.size() > i_density)
-            return cell.getData(data_pos_barnet_high_J_lower_list[i_density]);
-        else
-            return 0;
-    }
-
-    double getBarnetHighLowerRadius(const photon_package & pp, uint i_density) const
-    {
-        return getBarnetHighLowerRadius(*pp.getPositionCell(), i_density);
-    }
-
-    void setBarnetHighLowerRadius(cell_basic * cell, uint i_density, double _abar_high_lower)
-    {
-        cell->setData(data_pos_barnet_high_J_lower_list[i_density], _abar_high_lower);
-    }
-
-
-//*********************************************************************************
-
-    double getBarnetHighUpperRadius(const cell_basic & cell, uint i_density) const
-    {
-        if(data_pos_barnet_high_J_upper_list.size() == 1)
-            return cell.getData(data_pos_barnet_high_J_upper_list[0]);
-        else if(data_pos_barnet_high_J_upper_list.size() > i_density)
-            return cell.getData(data_pos_barnet_high_J_upper_list[i_density]);
-        else
-            return 0;
-    }
-
-    double getBarnetHighUpperRadius(const photon_package & pp, uint i_density) const
-    {
-        return getBarnetHighUpperRadius(*pp.getPositionCell(), i_density);
-    }
-
-    void setBarnetHighUpperRadius(cell_basic * cell, uint i_density, double _abar_high_upper)
-    {
-        cell->setData(data_pos_barnet_high_J_upper_list[i_density], _abar_high_upper);
-    }
-
-
-//**************************************************************************************
     double getMinGrainRadius(const cell_basic & cell) const
     {
         if(data_pos_amin != MAX_UINT)
@@ -1685,8 +1382,6 @@ class CGridBasic
     {
         return getMinGrainRadius(*pp.getPositionCell());
     }
-
-//***************************************************************************************
 
     double getMaxGrainRadius(const cell_basic & cell) const
     {
@@ -1700,8 +1395,6 @@ class CGridBasic
         return getMaxGrainRadius(*pp.getPositionCell());
     }
 
-//******************************************************************************************
-
     double getGrainSizeParam(const cell_basic & cell) const
     {
         if(data_pos_amax != MAX_UINT)
@@ -1713,8 +1406,6 @@ class CGridBasic
     {
         return getGrainSizeParam(*pp.getPositionCell());
     }
-
-//*******************************************************************************************
 
     uint getDustChoiceID(const photon_package & pp) const
     {
@@ -2233,7 +1924,7 @@ class CGridBasic
         }
     }
 
-    void fillMidplaneBuffer(double tx, double ty, double tz, uint i_cell, parameters & param)
+    void fillMidplaneBuffer(double tx, double ty, double tz, uint i_cell)
     {
         photon_package pp = photon_package();
         pp.setPosition(Vector3D(tx, ty, tz));
@@ -2273,7 +1964,6 @@ class CGridBasic
             if(plt_rat)
                 for(uint i_density = 0; i_density < data_pos_aalg_list.size(); i_density++)
                     buffer_rat[i_cell][i_density] = getAlignedRadius(pp, i_density);
-
             if(plt_delta)
             {
                 double field = getMagField(pp).length();
@@ -2299,35 +1989,13 @@ class CGridBasic
                 buffer_vel_y[i_cell] = vel_field.Y();
                 buffer_vel_z[i_cell] = vel_field.Z();
             }
-			if(plt_larm)
+            if(plt_larm)
             {
                 double field = getMagField(pp).length();
                 double Td = getDustTemperature(pp);
                 double Tg = getGasTemperature(pp);
-                double dens = getGasNumberDensity(pp);
-                double a_limit;
-                //double larm_f = param.getLarmF();
-                //double a_limit = CMathFunctions::calc_larm_limit(field, Td, Tg, dens, 0.5, larm_f);
-                double Ncl = param.getNumberIronCluster(); 
-				if (Ncl == 0) // If no number of iron cluster id found, dust is paramagnetic grains
-				{
-					double fp = param.getIronFraction();
-					if (fp == 0) // If no iron fraction is found, using the default calc_larm_limit function
-					{
-						larm_f = param.getLarmF();
-						a_limit = CMathFunctions::calc_larm_limit_default(field, Td, Tg, dens, 0.5, larm_f);
-					}
-					else // if iron fraction is found, using the new calc_larm_limit function for paramagnetic grain
-					{
-						a_limit = CMathFunctions::calc_larm_limit_para(field, Td, Tg, dens, 0.5, fp);
-					}
-				}
-				else // is number of iron clusters is found, dust is the super paramagnetic grains
-				{
-					double phi_sp = param.getVolumeFillingFactor();
-					a_limit = CMathFunctions::calc_larm_limit_super(field, Td, Tg, dens, 0.5, Ncl, phi_sp);
-				}
-                
+                double dens = getGasDensity(pp);
+                double a_limit = CMathFunctions::calc_larm_limit(field, Td, Tg, dens, 0.5, 4.1e-19);
                 buffer_larm[i_cell] = a_limit;
             }
             if(plt_mach)
@@ -2394,38 +2062,6 @@ class CGridBasic
                 buffer_avg_dir[i_cell] = getAvgDir(pp);
             if(plt_avg_th)
                 buffer_avg_th[i_cell] = getAvgTheta(pp);
-                
-            if(plt_disr)
-                for(uint i_density = 0; i_density < data_pos_adisr_list.size(); i_density++)
-                    buffer_disr[i_cell][i_density] = getDisruptRadius(pp, i_density);
-            if(plt_max_disr)
-                for(uint i_density = 0; i_density < data_pos_max_adisr_list.size(); i_density++)
-                    buffer_max_disr[i_cell][i_density] = getMaxDisruptRadius(pp, i_density);
-            if(plt_param_modif)
-                for(uint i_density = 0; i_density < data_pos_param_modif_list.size(); i_density++)
-                    buffer_param_modif[i_cell][i_density] = getSizeParamModify(pp, i_density);
-                    
-            if(plt_barnet_low_lower)
-                for(uint i_density = 0; i_density < data_pos_barnet_low_J_lower_list.size(); i_density++)
-                    buffer_barnet_low_lower[i_cell][i_density] = getBarnetLowLowerRadius(pp, i_density);
-            if(plt_barnet_low_upper)
-                for(uint i_density = 0; i_density < data_pos_barnet_low_J_upper_list.size(); i_density++)
-                    buffer_barnet_low_upper[i_cell][i_density] = getBarnetLowUpperRadius(pp, i_density);
-                    
-            if(plt_barnet_high_lower)
-                for(uint i_density = 0; i_density < data_pos_barnet_high_J_lower_list.size(); i_density++)
-                    buffer_barnet_high_lower[i_cell][i_density] = getBarnetHighLowerRadius(pp, i_density);
-            if(plt_barnet_high_upper)
-                for(uint i_density = 0; i_density < data_pos_barnet_high_J_upper_list.size(); i_density++)
-                    buffer_barnet_high_upper[i_cell][i_density] = getBarnetHighUpperRadius(pp, i_density);
-                    
-            if(plt_abs_ini)
-            {
-                buffer_abs_ini[i_cell][0] = getQBOffset(pp);
-                if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
-                    for(uint i_density = 0; i_density < nr_densities; i_density++)
-                        buffer_abs_ini[i_cell][i_density + 1] = getQBOffset(pp, i_density);
-            }
         }
         else
         {
@@ -2462,7 +2098,6 @@ class CGridBasic
                 for(uint i_density = 0; i_density < data_pos_aalg_list.size(); i_density++)
                     buffer_rat[i_cell][i_density] = 0;
             }
-
             if(plt_delta)
                 buffer_delta[i_cell] = 0;
             if(plt_mag)
@@ -2515,51 +2150,6 @@ class CGridBasic
                 buffer_avg_dir[i_cell] = 0;
             if(plt_avg_th)
                 buffer_avg_th[i_cell] = 0;
-                
-            if(plt_disr)
-            {
-                for(uint i_density = 0; i_density < data_pos_adisr_list.size(); i_density++)
-                    buffer_disr[i_cell][i_density] = 0;
-            }
-            if(plt_max_disr)
-            {
-                for(uint i_density = 0; i_density < data_pos_max_adisr_list.size(); i_density++)
-                    buffer_max_disr[i_cell][i_density] = 0;
-            }
-            if(plt_param_modif)
-            {
-                for(uint i_density = 0; i_density < data_pos_param_modif_list.size(); i_density++)
-                    buffer_param_modif[i_cell][i_density] = 0;
-            }
-            
-            if(plt_barnet_low_lower)
-            {
-                for(uint i_density = 0; i_density < data_pos_barnet_low_J_lower_list.size(); i_density++)
-                    buffer_barnet_low_lower[i_cell][i_density] = 0;
-            }
-            if(plt_barnet_low_upper)
-            {
-                for(uint i_density = 0; i_density < data_pos_barnet_low_J_upper_list.size(); i_density++)
-                    buffer_barnet_low_upper[i_cell][i_density] = 0;
-            }
-            
-            if(plt_barnet_high_lower)
-            {
-                for(uint i_density = 0; i_density < data_pos_barnet_high_J_lower_list.size(); i_density++)
-                    buffer_barnet_high_lower[i_cell][i_density] = 0;
-            }
-            if(plt_barnet_high_upper)
-            {
-                for(uint i_density = 0; i_density < data_pos_barnet_high_J_upper_list.size(); i_density++)
-                    buffer_barnet_high_upper[i_cell][i_density] = 0;
-            }
-            if(plt_abs_ini)
-            {
-                buffer_abs_ini[i_cell][0] = 0;
-                if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
-                    for(uint i_density = 1; i_density <= nr_densities; i_density++)
-                        buffer_abs_ini[i_cell][i_density] = 0;
-            }
         }
     }
 
@@ -2604,7 +2194,6 @@ class CGridBasic
     {
         return getVolume(*pp.getPositionCell());
     }
-//*************************************************************************************
 
     inline double getGasDensity(const cell_basic & cell) const
     {
@@ -2631,8 +2220,6 @@ class CGridBasic
     {
         return getGasDensity(*pp.getPositionCell(), i_density);
     }
-
-//****************************************************************************************
 
     inline double getGasNumberDensity(const cell_basic & cell) const
     {
@@ -2664,8 +2251,6 @@ class CGridBasic
         return getGasNumberDensity(*pp.getPositionCell(), i_density);
     }
 
-//***********************************************************************************
-
     inline double getGasMassDensity(const cell_basic & cell) const
     {
         double sum = 0;
@@ -2696,8 +2281,6 @@ class CGridBasic
         return getGasMassDensity(*pp.getPositionCell(), i_density);
     }
 
-//************************************************************************************
-
     bool useDustChoice()
     {
         if(size_gd_list > 1 || size_dd_list > 1)
@@ -2719,7 +2302,6 @@ class CGridBasic
         return false;
     }
 
-//******************************************************************************************
     void setDustDensity(cell_basic * cell, double val)
     {
         if(size_dd_list > 0)
@@ -2778,8 +2360,6 @@ class CGridBasic
     {
         return getDustDensity(*pp.getPositionCell(), i_density);
     }
-
-//**************************************************************************************
 
     double getRelativeDustDensity(const cell_basic & cell, uint i_density) const
     {
@@ -2941,62 +2521,12 @@ class CGridBasic
         max_dust_temp = _max_dust_temp;
         min_dust_temp = _min_dust_temp;
     }
-    
-    void setQBOffsetRange(double _min_abs_ini, double _max_abs_ini)
-    {
-        max_abs_ini = _max_abs_ini;
-        min_abs_ini = _min_abs_ini;
-    }
 
     void setalignedRadiusRange(double a_min, double a_max)
     {
         aalg_min = a_min;
         aalg_max = a_max;
     }
-
-    void setdisruptRadiusRange(double a_min, double a_max)
-    {
-        adisr_min = a_min;
-        adisr_max = a_max;
-    }
-
-    void setmaxdisruptRadiusRange(double a_min, double a_max)
-    {
-        max_adisr_min = a_min;
-        max_adisr_max = a_max;
-    }
-
-    void setsizeparamModifyRange(double size_min, double size_max)
-    {
-        size_param_modif_min = size_min;
-        size_param_modif_max = size_max;
-    }
-    
-    void setbarnetLowLowerRadiusRange(double a_min, double a_max)
-    {
-        abar_low_lower_min = a_min;
-        abar_low_lower_max = a_max;
-    }
-
-    void setbarnetLowUpperRadiusRange(double a_min, double a_max)
-    {
-        abar_low_upper_min = a_min;
-        abar_low_upper_max = a_max;
-    }
-
-
-    void setbarnetHighLowerRadiusRange(double a_min, double a_max)
-    {
-        abar_high_lower_min = a_min;
-        abar_high_lower_max = a_max;
-    }
-
-    void setbarnetHighUpperRadiusRange(double a_min, double a_max)
-    {
-        abar_high_upper_min = a_min;
-        abar_high_upper_max = a_max;
-    }
-
 
     bool doPDA(parameters & param, uint pda_id);
 
@@ -3382,39 +2912,6 @@ class CGridBasic
                     data_pos_rz_list.push_back(i);
                     break;
 
-                case GRIDadisr:
-                    data_pos_adisr_list.push_back(i);
-                    break;
-
-                case GRIDadisr_max:
-                    data_pos_max_adisr_list.push_back(i);
-                    break;
-
-                case GRIDparam_modif:
-                    data_pos_param_modif_list.push_back(i);
-                    break;
-                                
-            	case GRIDabar_low_lower:
-            		data_pos_barnet_low_J_lower_list.push_back(i);
-            		break;
-            		
-            	case GRIDabar_low_upper:
-            		data_pos_barnet_low_J_upper_list.push_back(i);
-            		break;
-
-                	
-            	case GRIDabar_high_lower:
-            		data_pos_barnet_high_J_lower_list.push_back(i);
-            		break;
-            		
-            	case GRIDabar_high_upper:
-            		data_pos_barnet_high_J_upper_list.push_back(i);
-            		break;
-            		
-            	case GRIDabs_ini:
-                    data_pos_abs_ini_list.push_back(i);
-                    break;
-
                 default:
                     cout << "\nERROR: Unknown data IDs!" << endl;
                     cout << "         IDs have to be between " << minGRID << " and " << maxGRID << "!"
@@ -3726,10 +3223,6 @@ class CGridBasic
             data_pos_dt_list.push_back(data_offset + tmp_data_offset);
             data_ids.push_back(GRIDdust_temp);
             tmp_data_offset++;
-            
-            data_pos_abs_ini_list.push_back(data_offset + tmp_data_offset);
-            data_ids.push_back(GRIDabs_ini);
-            tmp_data_offset++;
         }
 
         if(param.getSaveRadiationField())
@@ -3780,47 +3273,6 @@ class CGridBasic
                 tmp_data_offset++;
             }
         }
-        
-        if(data_pos_barnet_low_J_lower_list.empty())
-        {
-            for(uint i_density = 0; i_density < nr_densities; i_density++)
-            {
-                data_pos_barnet_low_J_lower_list.push_back(data_offset + tmp_data_offset);
-                data_ids.push_back(GRIDabar_low_lower);
-                tmp_data_offset++;
-            }
-        }
-        
-        if(data_pos_barnet_low_J_upper_list.empty())
-        {
-            for(uint i_density = 0; i_density < nr_densities; i_density++)
-            {
-                data_pos_barnet_low_J_upper_list.push_back(data_offset + tmp_data_offset);
-                data_ids.push_back(GRIDabar_low_upper);
-                tmp_data_offset++;
-            }
-        }
-        
-        if(data_pos_barnet_high_J_lower_list.empty())
-        {
-            for(uint i_density = 0; i_density < nr_densities; i_density++)
-            {
-                data_pos_barnet_high_J_lower_list.push_back(data_offset + tmp_data_offset);
-                data_ids.push_back(GRIDabar_high_lower);
-                tmp_data_offset++;
-            }
-        }
-        
-        if(data_pos_barnet_high_J_upper_list.empty())
-        {
-            for(uint i_density = 0; i_density < nr_densities; i_density++)
-            {
-                data_pos_barnet_high_J_upper_list.push_back(data_offset + tmp_data_offset);
-                data_ids.push_back(GRIDabar_high_upper);
-                tmp_data_offset++;
-            }
-        }
-        
 
         if(data_pos_avg_dir == MAX_UINT)
         {
@@ -3874,93 +3326,6 @@ class CGridBasic
         }
         return 0;
     }
-
-uint CheckRATD(parameters & param, uint & tmp_data_offset)
-    {
-        if(data_pos_adisr_list.empty())
-        {
-            for(uint i_density = 0; i_density < nr_densities; i_density++)
-            {
-                data_pos_adisr_list.push_back(data_offset + tmp_data_offset);
-                data_ids.push_back(GRIDadisr);
-                tmp_data_offset++;
-            }
-        }
-
-        if(data_pos_max_adisr_list.empty())
-        {
-            for(uint i_density = 0; i_density < nr_densities; i_density++)
-            {
-                data_pos_max_adisr_list.push_back(data_offset + tmp_data_offset);
-                data_ids.push_back(GRIDadisr_max);
-                tmp_data_offset++;
-            }
-        }
-
-        if(data_pos_param_modif_list.empty())
-        {
-            for(uint i_density = 0; i_density < nr_densities; i_density++)
-            {
-                data_pos_param_modif_list.push_back(data_offset + tmp_data_offset);
-                data_ids.push_back(GRIDparam_modif);
-                tmp_data_offset++;
-            }
-        }
-
-
-        if(data_pos_avg_dir == MAX_UINT)
-        {
-            data_pos_avg_dir = data_offset + tmp_data_offset;
-            data_ids.push_back(GRIDavg_dir);
-            tmp_data_offset++;
-        }
-
-        if(data_pos_avg_th == MAX_UINT)
-        {
-            data_pos_avg_th = data_offset + tmp_data_offset;
-            data_ids.push_back(GRIDavg_th);
-            tmp_data_offset++;
-        }
-
-        if(getTemperatureFieldInformation() == TEMP_EMPTY)
-        {
-            cout << "\nERROR: Grid contains no dust temperature!" << endl;
-            cout << "       No RATD calculation possible." << endl;
-            return MAX_UINT;
-        }
-        else if(getTemperatureFieldInformation() == MAX_UINT)
-        {
-            cout << "\nERROR: The grid does not include the information for temperature "
-                    "calculations"
-                 << endl;
-            cout << "       No RATD calculation possible." << endl;
-            return MAX_UINT;
-        }
-
-        if(data_pos_tg == MAX_UINT)
-        {
-            cout << "\nERROR: Grid contains no gas temperature!" << endl;
-            cout << "       No RATD calculation possible." << endl;
-            return MAX_UINT;
-        }
-        if(data_pos_mx == MAX_UINT)
-        {
-            cout << "\nWARNING: Grid contains no magnetic Bx component!" << endl;
-            cout << "         No follow up calculations possible." << endl;
-        }
-        if(data_pos_my == MAX_UINT)
-        {
-            cout << "\nWARNING: Grid contains no magnetic By component!" << endl;
-            cout << "         No follow up calculations possible." << endl;
-        }
-        if(data_pos_mz == MAX_UINT)
-        {
-            cout << "\nWARNING: Grid contains no magnetic Bz component!" << endl;
-            cout << "         No follow up calculations possible." << endl;
-        }
-        return 0;
-    }
-
 
     uint CheckDustEmission(parameters & param)
     {
@@ -4073,90 +3438,6 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
                 cout << "        No dust emission with RAT alignment possible." << endl;
                 return MAX_UINT;
             }
-            
-            
-            
-            
-            if(data_pos_barnet_low_J_lower_list.empty() &&  data_pos_barnet_low_J_upper_list.empty())
-            {
-                cout << "\nERROR: Grid contains no condition for perfect internal alignment at low J!" << endl;
-                cout << "        No dust emission with RAT alignment possible." << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_barnet_low_J_lower_list.size() != 1 && data_pos_barnet_low_J_lower_list.size() != nr_densities && data_pos_barnet_low_J_upper_list.size() != 1 && data_pos_barnet_low_J_upper_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at low J"
-                     << endl;
-                cout << "        No dust emission with RAT alignment possible." << endl;
-                return MAX_UINT;
-            }
-            
-            
-            
-            
-            
-            if(data_pos_barnet_high_J_lower_list.empty() &&  data_pos_barnet_high_J_upper_list.empty())
-            {
-                cout << "\nERROR: Grid contains no condition for perfect internal alignment at high J!" << endl;
-                cout << "        No dust emission with RAT alignment possible." << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_barnet_high_J_lower_list.size() != 1 && data_pos_barnet_high_J_lower_list.size() != nr_densities && data_pos_barnet_high_J_upper_list.size() != 1 && data_pos_barnet_high_J_upper_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at high J"
-                     << endl;
-                cout << "        No dust emission with RAT alignment possible." << endl;
-                return MAX_UINT;
-            }
-        }
-
-        if(param.getDisrRATD())
-        {
-            if(data_pos_adisr_list.empty())
-            {
-                cout << "\nERROR: Grid contains no disruption radius for RATD!" << endl;
-                cout << "        No dust emission with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_adisr_list.size() != 1 && data_pos_adisr_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct amount of disruption radii for "
-                        "RATD!"
-                     << endl;
-                cout << "        No dust emission with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-
-            if(data_pos_max_adisr_list.empty())
-            {
-                cout << "\nERROR: Grid contains no maximum disruption radius for RATD!" << endl;
-                cout << "        No dust emission with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_max_adisr_list.size() != 1 && data_pos_max_adisr_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct amount of maximum disruption radii for "
-                        "RATD!"
-                     << endl;
-                cout << "        No dust emission with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-
-
-            if(data_pos_param_modif_list.empty())
-            {
-                cout << "\nERROR: Grid contains no modified size distribution by RATD!" << endl;
-                cout << "        No dust emission with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_param_modif_list.size() != 1 && data_pos_param_modif_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct modified size distribution for "
-                        "disrupted grains by RATD!"
-                     << endl;
-                cout << "        No dust emission with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
         }
         return 0;
     }
@@ -4245,97 +3526,6 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
                 cout << "        No dust scattering calculations with RAT alignment "
                         "possible."
                      << endl;
-                return MAX_UINT;
-            }
-            
-            
-            
-
-            if(data_pos_barnet_low_J_lower_list.empty() && data_pos_barnet_low_J_upper_list.empty())
-            {
-                cout << "\nERROR: Grid contains no condition for perfect internal alignment at low J!" << endl;
-                cout << "        No dust scattering calculations with RAT alignment "
-                        "possible."
-                     << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_barnet_low_J_lower_list.size() != 1 && data_pos_barnet_low_J_lower_list.size() != nr_densities && data_pos_barnet_low_J_upper_list.size() != 1 && data_pos_barnet_low_J_upper_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at high J "
-                     << endl;
-                cout << "        No dust scattering calculations with RAT alignment "
-                        "possible."
-                     << endl;
-                return MAX_UINT;
-            }
-            
-            
-            
-            
-            if(data_pos_barnet_high_J_lower_list.empty() && data_pos_barnet_high_J_upper_list.empty())
-            {
-                cout << "\nERROR: Grid contains no condition for perfect internal alignment at high J!" << endl;
-                cout << "        No dust scattering calculations with RAT alignment "
-                        "possible."
-                     << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_barnet_high_J_lower_list.size() != 1 && data_pos_barnet_high_J_lower_list.size() != nr_densities && data_pos_barnet_high_J_upper_list.size() != 1 && data_pos_barnet_high_J_upper_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct condition for perfect internal alignment at high J "
-                     << endl;
-                cout << "        No dust scattering calculations with RAT alignment "
-                        "possible."
-                     << endl;
-                return MAX_UINT;
-            }
-        }
-
-        if(param.getDisrRATD())
-        {
-            if(data_pos_adisr_list.empty())
-            {
-                cout << "\nERROR: Grid contains no disruption radius for RATD!" << endl;
-                cout << "        No dust scattering with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_adisr_list.size() != 1 && data_pos_adisr_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct amount of disruption radii for "
-                        "RATD!"
-                     << endl;
-                cout << "        No dust scattering with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-
-            if(data_pos_max_adisr_list.empty())
-            {
-                cout << "\nERROR: Grid contains no maxium disruption radius for RATD!" << endl;
-                cout << "        No dust scattering with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_max_adisr_list.size() != 1 && data_pos_max_adisr_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct amount of maximum disruption radii for "
-                        "RATD!"
-                     << endl;
-                cout << "        No dust scattering with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-
-
-            if(data_pos_param_modif_list.empty())
-            {
-                cout << "\nERROR: Grid contains no modified size distribution by RATD!" << endl;
-                cout << "        No dust emission with RATD effect possible." << endl;
-                return MAX_UINT;
-            }
-            else if(data_pos_param_modif_list.size() != 1 && data_pos_param_modif_list.size() != nr_densities)
-            {
-                cout << "\nERROR: Grid contains not the correct modified size distribution for "
-                        "disrupted grains by RATD!"
-                     << endl;
-                cout << "        No dust emission with RATD effect possible." << endl;
                 return MAX_UINT;
             }
         }
@@ -4533,7 +3723,6 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
 
     char * basic_path;
 
-    //double a_disr_ini;
     double max_gas_dens;
     double min_gas_dens;
 
@@ -4545,9 +3734,6 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
 
     double max_dust_temp;
     double min_dust_temp;
-    
-    double max_abs_ini;
-    double min_abs_ini;
 
     double max_larm_limit;
     double min_larm_limit;
@@ -4561,27 +3747,6 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     double aalg_min;
     double aalg_max;
 
-    double adisr_min;
-    double adisr_max;
-
-    double max_adisr_min;
-    double max_adisr_max;
-
-    double size_param_modif_min;
-    double size_param_modif_max;
-    
-    double abar_low_lower_min;
-    double abar_low_lower_max;
-    
-    double abar_low_upper_min;
-    double abar_low_upper_max;
-
-    double abar_high_lower_min;
-    double abar_high_lower_max;
-    
-    double abar_high_upper_min;
-    double abar_high_upper_max;
-    
     double a_min_min;
     double a_min_max;
     double a_max_min;
@@ -4622,7 +3787,7 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     double max_p;
 
     double conv_length_in_SI, conv_dens_in_SI;
-    double conv_Smax_in_SI, conv_Bfield_in_SI, conv_Vfield_in_SI;
+    double conv_Bfield_in_SI, conv_Vfield_in_SI;
 
     double total_gas_mass;
     double mu;
@@ -4703,15 +3868,6 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     uint data_pos_avg_th;
     uint data_pos_avg_dir;
 
-    uilist data_pos_adisr_list;
-    uilist data_pos_max_adisr_list;
-    uilist data_pos_param_modif_list;
-    uilist data_pos_barnet_low_J_lower_list;
-    uilist data_pos_barnet_low_J_upper_list;
-    uilist data_pos_barnet_high_J_lower_list;
-    uilist data_pos_barnet_high_J_upper_list;
-    uilist data_pos_abs_ini_list;
-
     double turbulent_velocity;
 
     uslist data_ids;
@@ -4748,22 +3904,12 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     bool plt_avg_dir;
     bool plt_avg_th;
 
-    bool plt_disr;
-    bool plt_max_disr;
-    bool plt_param_modif;
-    bool plt_barnet_low_lower;
-    bool plt_barnet_low_upper;
-    bool plt_barnet_high_lower;
-    bool plt_barnet_high_upper;
-    bool plt_abs_ini;
-
     bool dust_is_mass_density, gas_is_mass_density;
     bool velocity_field_needed;
     bool spec_length_as_vector;
 
     double delta0;
     double larm_f;
-    double Smax;
 
     double total_volume;
     double cell_volume;
@@ -4802,15 +3948,6 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
     double * buffer_avg_th;
     double * buffer_avg_dir;
 
-    double ** buffer_disr;
-    double ** buffer_max_disr;
-    double ** buffer_param_modif;
-    double ** buffer_barnet_low_lower;
-    double ** buffer_barnet_low_upper;
-    double ** buffer_barnet_high_lower;
-    double ** buffer_barnet_high_upper;
-    double ** buffer_abs_ini;
-    
     double ** CextMeanTab;
     double ** CabsMeanTab;
     double ** CscaMeanTab;

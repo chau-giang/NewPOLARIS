@@ -44,9 +44,6 @@ class CGridSpherical : public CGridBasic
 
         min_dust_temp = 0;
         max_dust_temp = 0;
-        
-        min_abs_ini = 0;
-        max_abs_ini = 0;
 
         min_gas_dens = 0;
         max_gas_dens = 0;
@@ -57,31 +54,6 @@ class CGridSpherical : public CGridBasic
         aalg_min = 1e300;
         aalg_max = 0;
 
-        adisr_min = 1e300;
-        adisr_max = 0;
-
-        max_adisr_min = 1e300;
-        max_adisr_max = 0;
-
-        size_param_modif_min = 1e300;
-        size_param_modif_max = -4;
-        
-
-        abar_low_lower_min = 1e300;
-        abar_low_lower_max = 0;
-        
-        
-        abar_low_upper_min = 1e300;
-        abar_low_upper_max = 0;
-
-
-        abar_high_lower_min = 1e300;
-        abar_high_lower_max = 0;
-        
-        
-        abar_high_upper_min = 1e300;
-        abar_high_upper_max = 0;
-        
         min_larm_limit = 0;
         max_larm_limit = 0;
 
@@ -97,7 +69,6 @@ class CGridSpherical : public CGridBasic
 
         conv_length_in_SI = 1;
         conv_dens_in_SI = 1;
-        conv_Smax_in_SI = 1;
         conv_Bfield_in_SI = 1;
         conv_Vfield_in_SI = 1;
 
@@ -121,7 +92,6 @@ class CGridSpherical : public CGridBasic
         // data_pos_dd = MAX_UINT;
         // data_pos_td = MAX_UINT;
         data_pos_tg = MAX_UINT;
-        //data_pos_abs_ini = MAX_UINT;
         data_pos_mx = MAX_UINT;
         data_pos_my = MAX_UINT;
         data_pos_mz = MAX_UINT;
@@ -167,14 +137,6 @@ class CGridSpherical : public CGridBasic
         plt_larm = false;
         plt_mach = false;
         plt_dust_id = false;
-        plt_disr = false;
-        plt_max_disr = false;
-        plt_param_modif = false;
-        plt_barnet_low_lower = false;
-        plt_barnet_low_upper = false;
-        plt_barnet_high_lower = false;
-        plt_barnet_high_upper = false;
-        plt_abs_ini = false;
 
         total_volume = 0;
         cell_volume = 0;

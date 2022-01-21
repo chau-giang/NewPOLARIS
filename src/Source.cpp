@@ -1649,3 +1649,4 @@ void CSourceLaser::createDirectRay(photon_package * pp, CRandomGenerator * rand_
         pp->initCoordSystem();
     }
 }
+

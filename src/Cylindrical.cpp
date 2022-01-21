@@ -482,7 +482,7 @@ bool CGridCylindrical::loadGridFromBinrayFile(parameters & param, uint _data_len
 
         tmp_cell->setID(line_counter);
 
-        updateDataRange(tmp_cell, param);
+        updateDataRange(tmp_cell);
 
         double tmp_vol = getVolume(*tmp_cell);
         total_gas_mass += getGasMassDensity(*tmp_cell) * tmp_vol;

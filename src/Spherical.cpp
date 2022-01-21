@@ -368,7 +368,7 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
             return false;
         }
 
-        updateDataRange(tmp_cell, param);
+        updateDataRange(tmp_cell);
 
         double tmp_vol = getVolume(*tmp_cell);
         total_gas_mass += getGasMassDensity(*tmp_cell) * tmp_vol;
@@ -427,14 +427,6 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                       // (data_pos_mx != MAX_UINT) && (data_pos_td != MAX_UINT); // 7
     plt_mach = false; // param.getPlot(plIDmach) && (data_pos_vx != MAX_UINT) &&
                       // (data_pos_tg != MAX_UINT); // 8
-    plt_disr = (!data_pos_adisr_list.empty());     // 9
-    plt_max_disr = (!data_pos_max_adisr_list.empty());     // 10
-    plt_param_modif = (!data_pos_param_modif_list.empty());     // 11
-    plt_barnet_low_lower = (!data_pos_barnet_low_J_lower_list.empty());     // 12
-    plt_barnet_low_upper = (!data_pos_barnet_low_J_upper_list.empty());     // 13
-    plt_barnet_high_lower = (!data_pos_barnet_high_J_lower_list.empty());     // 14
-    plt_barnet_high_upper = (!data_pos_barnet_high_J_upper_list.empty());     // 15
-    plt_abs_ini = (!data_pos_abs_ini_list.empty()); // 16
 
     plt_mag = (data_pos_mx != MAX_UINT); // 0
     plt_vel = (data_pos_vx != MAX_UINT); // 1
@@ -451,16 +443,7 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         plt_delta = false;
         plt_larm = false;
         plt_mach = false;
-        plt_disr = false;
-        plt_max_disr = false;
-        plt_param_modif = false;
-        plt_barnet_low_lower = false;
-        plt_barnet_low_upper = false;
-        plt_barnet_high_lower = false;
-        plt_barnet_high_upper = false;
-        plt_abs_ini = false;
     }
-    
     else
         nrOfPlotPoints = max_cells / nrOfPlotPoints;
 
@@ -486,23 +469,14 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     string dens_dust_filename = path + "grid_dust_density.py";
     string temp_gas_filename = path + "grid_gas_temp.py";
     string temp_dust_filename = path + "grid_dust_temp.py";
-    string abs_ini_filename = path + "grid_abs_ini.py";
     string rat_filename = path + "grid_RAT.py";
     string delta_filename = path + "grid_data.dat";
     string larm_filename = path + "grid_mag.py";
     string mach_filename = path + "grid_vel.py";
-    string ratd_filename = path + "grid_RATD.py";
-    string max_ratd_filename = path + "grid_max_RATD.py";
-    string param_modif_filename = path + "grid_param_modif.py";
-    string barnet_low_lower_filename = path + "grid_barnet_low_lower.py";
-    string barnet_low_upper_filename = path + "grid_barnet_low_upper.py";
-    string barnet_high_lower_filename = path + "grid_barnet_high_lower.py";
-    string barnet_high_upper_filename = path + "grid_barnet_high_upper.py";
     string mag_filename = path + "grid_mag.py";
     string vel_filename = path + "grid_vel.py";
 
-
-    ofstream point_fields[17];
+    ofstream point_fields[9];
     ofstream vec_fields[2];
 
     point_fields[0].open(grid_filename.c_str());
@@ -568,7 +542,6 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         }
     }
 
-
     if(plt_delta)
     {
         point_fields[6].open(delta_filename.c_str());
@@ -602,95 +575,6 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         }
     }
 
-    if(plt_disr)
-    {
-        point_fields[9].open(ratd_filename.c_str());
-
-        if(point_fields[9].fail())
-        {
-            cout << "\nERROR: Cannot write to:\n" << ratd_filename << endl;
-            return false;
-        }
-    }
-
-    if(plt_max_disr)
-    {
-        point_fields[10].open(max_ratd_filename.c_str());
-
-        if(point_fields[10].fail())
-        {
-            cout << "\nERROR: Cannot write to:\n" << max_ratd_filename << endl;
-            return false;
-        }
-    }
-
-    if(plt_param_modif)
-    {
-        point_fields[11].open(param_modif_filename.c_str());
-
-        if(point_fields[11].fail())
-        {
-            cout << "\nERROR: Cannot write to:\n" << param_modif_filename << endl;
-            return false;
-        }
-    }
-    
-    if(plt_barnet_low_lower)
-    {
-        point_fields[12].open(barnet_low_lower_filename.c_str());
-
-        if(point_fields[12].fail())
-        {
-            cout << "\nERROR: Cannot write to:\n" << barnet_low_lower_filename << endl;
-            return false;
-        }
-    }
-    
-    if(plt_barnet_low_upper)
-    {
-        point_fields[13].open(barnet_low_upper_filename.c_str());
-
-        if(point_fields[13].fail())
-        {
-            cout << "\nERROR: Cannot write to:\n" << barnet_low_upper_filename << endl;
-            return false;
-        }
-    }
-
-    
-    if(plt_barnet_high_lower)
-    {
-        point_fields[14].open(barnet_high_lower_filename.c_str());
-
-        if(point_fields[14].fail())
-        {
-            cout << "\nERROR: Cannot write to:\n" << barnet_high_lower_filename << endl;
-            return false;
-        }
-    }
-    
-    if(plt_barnet_high_upper)
-    {
-        point_fields[15].open(barnet_high_upper_filename.c_str());
-
-        if(point_fields[15].fail())
-        {
-            cout << "\nERROR: Cannot write to:\n" << barnet_high_upper_filename << endl;
-            return false;
-        }
-    }
-
-    if(plt_abs_ini)
-    {
-        point_fields[16].open(abs_ini_filename.c_str());
-
-        if(point_fields[16].fail())
-        {
-            cout << "\nERROR: Cannot write to:\n" << abs_ini_filename << endl;
-            return false;
-        }
-    }
-    
     if(plt_mag)
     {
         vec_fields[0].open(mag_filename.c_str());
@@ -954,319 +838,6 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
 
-// 9 ratd
-    point_fields[9] << point_header.str();
-    point_fields[9] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
-
-    point_fields[9] << "set title \'3D disrupted radii distribution (min ID: " << adisr_min
-                    << "; max ID: " << adisr_max << ")\' font \'Arial,12\'" << endl;
-
-    point_fields[9] << "set cblabel \'disrupted radius ID\'" << endl;
-
-    if(adisr_min == adisr_max)
-        adisr_max = 1.01 * adisr_min;
-
-    point_fields[9] << "set cbrange[" << adisr_min << ":" << adisr_max << "]" << endl;
-
-    point_fields[9] << "set format cb \'%.03g\'" << endl;
-
-    point_fields[9] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
-
-    vec_header.str("");
-    vec_header << "reset" << endl;
-    vec_header << "#set terminal postscript" << endl;
-    vec_header << "#set output \'\'" << endl;
-    vec_header << "set ticslevel 0" << endl;
-    vec_header << "set size ratio -1" << endl;
-    vec_header << "set view 45,45" << endl;
-
-    vec_header << "set xlabel \'x[m]\'" << endl;
-    vec_header << "set ylabel \'y[m]\'" << endl;
-    vec_header << "set zlabel \'z[m]\'" << endl;
-
-    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-
-    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
-    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
-    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
-
-    vec_header << "set grid" << endl;
-    vec_header << "set nokey" << endl;
-
-
-// 10 ratd_max
-    point_fields[10] << point_header.str();
-    point_fields[10] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
-
-    point_fields[10] << "set title \'3D maximum disrupted radii distribution (min ID: " << max_adisr_min
-                    << "; max ID: " << max_adisr_max << ")\' font \'Arial,12\'" << endl;
-
-    point_fields[10] << "set cblabel \'disrupted radius ID\'" << endl;
-
-    if(max_adisr_min == max_adisr_max)
-        max_adisr_max = 1.01 * max_adisr_min;
-
-    point_fields[10] << "set cbrange[" << max_adisr_min << ":" << max_adisr_max << "]" << endl;
-
-    point_fields[10] << "set format cb \'%.03g\'" << endl;
-
-    point_fields[10] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
-
-    vec_header.str("");
-    vec_header << "reset" << endl;
-    vec_header << "#set terminal postscript" << endl;
-    vec_header << "#set output \'\'" << endl;
-    vec_header << "set ticslevel 0" << endl;
-    vec_header << "set size ratio -1" << endl;
-    vec_header << "set view 45,45" << endl;
-
-    vec_header << "set xlabel \'x[m]\'" << endl;
-    vec_header << "set ylabel \'y[m]\'" << endl;
-    vec_header << "set zlabel \'z[m]\'" << endl;
-
-    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-
-    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
-    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
-    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
-
-    vec_header << "set grid" << endl;
-    vec_header << "set nokey" << endl;
-
-// 10 size_param_modify
-    point_fields[11] << point_header.str();
-    point_fields[11] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
-
-    point_fields[11] << "set title \'3D size distribution slope (min ID: " << size_param_modif_min
-                    << "; max ID: " << size_param_modif_max << ")\' font \'Arial,12\'" << endl;
-
-    point_fields[11] << "set cblabel \'power-law size distribution ID\'" << endl;
-
-    if(size_param_modif_min == size_param_modif_max)
-        size_param_modif_max = 1.01 * size_param_modif_min;
-
-    point_fields[11] << "set cbrange[" << size_param_modif_min << ":" << size_param_modif_max << "]" << endl;
-
-    point_fields[11] << "set format cb \'%.03g\'" << endl;
-
-    point_fields[11] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
-
-    vec_header.str("");
-    vec_header << "reset" << endl;
-    vec_header << "#set terminal postscript" << endl;
-    vec_header << "#set output \'\'" << endl;
-    vec_header << "set ticslevel 0" << endl;
-    vec_header << "set size ratio -1" << endl;
-    vec_header << "set view 45,45" << endl;
-
-    vec_header << "set xlabel \'x[m]\'" << endl;
-    vec_header << "set ylabel \'y[m]\'" << endl;
-    vec_header << "set zlabel \'z[m]\'" << endl;
-
-    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-
-    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
-    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
-    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
-
-    vec_header << "set grid" << endl;
-    vec_header << "set nokey" << endl;
- 
- 
-// 11 abarnet_low_J_lower
-    point_fields[12] << point_header.str();
-    point_fields[12] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
-
-    point_fields[12] << "set title \'3D barnet radii at low J distribution [lower limit] (min ID: " << abar_low_lower_min
-                    << "; max ID: " << abar_low_lower_max << ")\' font \'Arial,12\'" << endl;
-
-    point_fields[12] << "set cblabel \'lower barnett radius at low J ID\'" << endl;
-
-    if(abar_low_lower_min == abar_low_lower_max)
-        abar_low_lower_max = 1.01 * abar_low_lower_min;
-
-    point_fields[12] << "set cbrange[" << abar_low_lower_min << ":" << abar_low_lower_max << "]" << endl;
-
-    point_fields[12] << "set format cb \'%.03g\'" << endl;
-
-    point_fields[12] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
-
-    vec_header.str("");
-    vec_header << "reset" << endl;
-    vec_header << "#set terminal postscript" << endl;
-    vec_header << "#set output \'\'" << endl;
-    vec_header << "set ticslevel 0" << endl;
-    vec_header << "set size ratio -1" << endl;
-    vec_header << "set view 45,45" << endl;
-
-    vec_header << "set xlabel \'x[m]\'" << endl;
-    vec_header << "set ylabel \'y[m]\'" << endl;
-    vec_header << "set zlabel \'z[m]\'" << endl;
-
-    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-
-    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
-    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
-    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
-
-    vec_header << "set grid" << endl;
-    vec_header << "set nokey" << endl;
-
-// 12 abarnet_high_J_upper
-    point_fields[13] << point_header.str();
-    point_fields[13] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
-
-    point_fields[13] << "set title \'3D barnet radii at low J distribution [upper limit] (min ID: " << abar_low_upper_min
-                    << "; max ID: " << abar_low_upper_max << ")\' font \'Arial,12\'" << endl;
-
-    point_fields[13] << "set cblabel \'upper barnett radius at low J ID\'" << endl;
-
-    if(abar_low_upper_min == abar_low_upper_max)
-        abar_low_upper_max = 1.01 * abar_low_upper_min;
-
-    point_fields[13] << "set cbrange[" << abar_low_upper_min << ":" << abar_low_upper_max << "]" << endl;
-
-    point_fields[13] << "set format cb \'%.03g\'" << endl;
-
-    point_fields[13] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
-
-    vec_header.str("");
-    vec_header << "reset" << endl;
-    vec_header << "#set terminal postscript" << endl;
-    vec_header << "#set output \'\'" << endl;
-    vec_header << "set ticslevel 0" << endl;
-    vec_header << "set size ratio -1" << endl;
-    vec_header << "set view 45,45" << endl;
-
-    vec_header << "set xlabel \'x[m]\'" << endl;
-    vec_header << "set ylabel \'y[m]\'" << endl;
-    vec_header << "set zlabel \'z[m]\'" << endl;
-
-    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-
-    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
-    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
-    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
-
-    vec_header << "set grid" << endl;
-    vec_header << "set nokey" << endl;
- 
- 
-// 13 abarnet_high_J_lower
-    point_fields[14] << point_header.str();
-    point_fields[14] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
-
-    point_fields[14] << "set title \'3D barnet radii at high J distribution [lower limit] (min ID: " << abar_high_lower_min
-                    << "; max ID: " << abar_high_lower_max << ")\' font \'Arial,12\'" << endl;
-
-    point_fields[14] << "set cblabel \'lower barnett radius at low J ID\'" << endl;
-
-    if(abar_high_lower_min == abar_high_lower_max)
-        abar_high_lower_max = 1.01 * abar_high_lower_min;
-
-    point_fields[14] << "set cbrange[" << abar_high_lower_min << ":" << abar_high_lower_max << "]" << endl;
-
-    point_fields[14] << "set format cb \'%.03g\'" << endl;
-
-    point_fields[14] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
-
-    vec_header.str("");
-    vec_header << "reset" << endl;
-    vec_header << "#set terminal postscript" << endl;
-    vec_header << "#set output \'\'" << endl;
-    vec_header << "set ticslevel 0" << endl;
-    vec_header << "set size ratio -1" << endl;
-    vec_header << "set view 45,45" << endl;
-
-    vec_header << "set xlabel \'x[m]\'" << endl;
-    vec_header << "set ylabel \'y[m]\'" << endl;
-    vec_header << "set zlabel \'z[m]\'" << endl;
-
-    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-
-    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
-    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
-    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
-
-    vec_header << "set grid" << endl;
-    vec_header << "set nokey" << endl;
-
-// 14 abarnet_high_J_upper
-    point_fields[15] << point_header.str();
-    point_fields[15] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
-
-    point_fields[15] << "set title \'3D barnet radii at high J distribution [upper limit] (min ID: " << abar_high_upper_min
-                    << "; max ID: " << abar_high_upper_max << ")\' font \'Arial,12\'" << endl;
-
-    point_fields[15] << "set cblabel \'upper barnett radius at low J ID\'" << endl;
-
-    if(abar_high_upper_min == abar_high_upper_max)
-        abar_high_upper_max = 1.01 * abar_high_upper_min;
-
-    point_fields[15] << "set cbrange[" << abar_high_upper_min << ":" << abar_high_upper_max << "]" << endl;
-
-    point_fields[15] << "set format cb \'%.03g\'" << endl;
-
-    point_fields[15] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
-
-    vec_header.str("");
-    vec_header << "reset" << endl;
-    vec_header << "#set terminal postscript" << endl;
-    vec_header << "#set output \'\'" << endl;
-    vec_header << "set ticslevel 0" << endl;
-    vec_header << "set size ratio -1" << endl;
-    vec_header << "set view 45,45" << endl;
-
-    vec_header << "set xlabel \'x[m]\'" << endl;
-    vec_header << "set ylabel \'y[m]\'" << endl;
-    vec_header << "set zlabel \'z[m]\'" << endl;
-
-    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
-
-    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
-    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
-    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
-
-    vec_header << "set grid" << endl;
-    vec_header << "set nokey" << endl;
-    
-    // 15 abs_ini: initial absorption rate of dust grains inside the grid
-    point_fields[16] << point_header.str();
-    point_fields[16] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
-
-    point_fields[16] << "set title \'3D initial dust absorption rate (min: " << min_abs_ini
-                    << "; max: " << max_abs_ini << ")\' font \'Arial,12\'" << endl;
-    point_fields[16] << "set cblabel \'absorption rate\'" << endl;
-
-    if(min_abs_ini == 0 && max_abs_ini == 0)
-    {
-        min_abs_ini = 0.1;
-        max_abs_ini = 1;
-    }
-
-    if(min_abs_ini / max_abs_ini > 0.9)
-        min_abs_ini = 0.9 * max_abs_ini;
-
-    point_fields[16] << "set cbrange[" << float(min_abs_ini) << ":" << float(max_abs_ini) << "]" << endl;
-    point_fields[16] << "set format cb \'%.03g\'" << endl;
-
-    point_fields[16] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
-    
-    
     // 0 mag
     vec_fields[0] << vec_header.str();
     vec_fields[0] << "set palette defined (0 1 0 0, 0.5 0.0 0.9 0,  0.75 0.0 0.9 1, 0.9 0 0.1 0.9)" << endl;
@@ -1361,62 +932,6 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                         point_fields[5] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
                                         << a_alg << endl;
                     }
-
-                    if(plt_disr)
-                    {
-                        double a_disr = getDisruptRadius(tmp_cell_pos, 0);
-                        point_fields[9] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << a_disr << endl;
-                    }
-
-                    if(plt_max_disr)
-                    {
-                        double max_a_disr = getMaxDisruptRadius(tmp_cell_pos, 0);
-                        point_fields[10] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << max_a_disr << endl;
-                    }
-
-                    if(plt_param_modif)
-                    {
-                        double size_param_modify = getSizeParamModify(tmp_cell_pos, 0);
-                        point_fields[11] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << size_param_modify << endl;
-                    }
-                    
-                    if(plt_barnet_low_lower)
-                    {
-                        double a_bar_low_lower = getBarnetLowLowerRadius(tmp_cell_pos, 0);
-                        point_fields[12] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << a_bar_low_lower << endl;
-                    }
-               
-               		if(plt_barnet_low_upper)
-                    {
-                        double a_bar_low_upper = getBarnetLowUpperRadius(tmp_cell_pos, 0);
-                        point_fields[13] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << a_bar_low_upper << endl;
-                    }
-                    
-                    if(plt_barnet_high_lower)
-                    {
-                        double a_bar_high_lower = getBarnetHighLowerRadius(tmp_cell_pos, 0);
-                        point_fields[14] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << a_bar_high_lower << endl;
-                    }
-               
-               		if(plt_barnet_high_upper)
-                    {
-                        double a_bar_high_upper = getBarnetHighUpperRadius(tmp_cell_pos, 0);
-                        point_fields[15] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << a_bar_high_upper << endl;
-                    }
-                    
-                    if(plt_abs_ini)
-                    {
-                        double abs_ini = getQBOffset(tmp_cell_pos);
-                        point_fields[16] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
-                                        << abs_ini << endl;
-                    }
                 }
 
                 if(line_counter % nrOfPlotVectors == 0)
@@ -1474,38 +989,6 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                           << basic_grid_l1.str() << "\ne" << endl;
     }
 
-    point_fields[9] << "\ne\n" //GRIDadisr
-                      << basic_grid_l0.str() << "\ne\n"
-                      << basic_grid_l1.str() << "\ne" << endl;
-
-    point_fields[10] << "\ne\n" //GRIDadisr_max
-                      << basic_grid_l0.str() << "\ne\n"
-                      << basic_grid_l1.str() << "\ne" << endl;
-
-    point_fields[11] << "\ne\n" //GRIDparam_modif
-                      << basic_grid_l0.str() << "\ne\n"
-                     << basic_grid_l1.str() << "\ne" << endl;
-                    
-    point_fields[12] << "\ne\n" //GRIDabar_low_lower
-                      << basic_grid_l0.str() << "\ne\n"
-                     << basic_grid_l1.str() << "\ne" << endl;
-                     
-	point_fields[13] << "\ne\n" //GRIDabar_low_upper
-                      << basic_grid_l0.str() << "\ne\n"
-                     << basic_grid_l1.str() << "\ne" << endl;
-
-    point_fields[14] << "\ne\n" //GRIDabar_high_lower
-                      << basic_grid_l0.str() << "\ne\n"
-                     << basic_grid_l1.str() << "\ne" << endl;
-                     
-	point_fields[15] << "\ne\n" //GRIDabar_high_upper
-                      << basic_grid_l0.str() << "\ne\n"
-                     << basic_grid_l1.str() << "\ne" << endl;
-                     
-	point_fields[16] << "\ne\n" //GRIDabs_ini
-                      << basic_grid_l0.str() << "\ne\n"
-                     << basic_grid_l1.str() << "\ne" << endl;
-                     
     for(uint pos = 0; pos < 2; pos++)
     {
         vec_fields[pos] << "\ne\n" << basic_grid_l0.str() << "\ne\n" << basic_grid_l1.str() << "\ne" << endl;
@@ -1595,15 +1078,6 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
 
     for(uint pos = 0; pos < 8; pos++)
         point_fields[pos].close();
-
-    point_fields[9].close();
-    point_fields[10].close();
-    point_fields[11].close();
-    point_fields[12].close();
-    point_fields[13].close();
-    point_fields[14].close();
-    point_fields[15].close();
-    point_fields[16].close();
 
     for(uint pos = 0; pos < 2; pos++)
         vec_fields[pos].close();

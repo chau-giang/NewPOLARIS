@@ -17,7 +17,6 @@ using namespace std;
 // Flags to activate WINDOWS support, some DEBUG messages, BENCHMARK settings
 //#define DEBUG
 //#define WINDOWS
-//#define BENCHMARK
 #define NONE 0
 #define CAMPS 1
 #define TRUST 2
@@ -174,10 +173,6 @@ using namespace std;
 #define ALIG_GOLD 16
 #define ALIG_KRAT 32
 
-
-// Disruption mechanisms
-#define RATD 64
-
 #define SUPERTHERMAL_LIMIT 3
 #define MACH_LIMIT 1
 #define MRW_LIMIT 7
@@ -193,10 +188,6 @@ using namespace std;
 #define CMD_FORCE 7
 #define CMD_OPIATE 8
 #define CMD_SYNCHROTRON 9
-
-#define CMD_TEMP_DISR 10
-#define CMD_TEMP_RAT_DISR 11
-#define CMD_DISR 12
 
 // PDA IDs
 #define PDA_TEMP 0
@@ -243,15 +234,6 @@ using namespace std;
 
 #define GRIDavg_th 34
 #define GRIDavg_dir 35
-
-#define GRIDadisr 36
-#define GRIDparam_modif 37
-#define GRIDadisr_max 38
-#define GRIDabar_low_lower 39
-#define GRIDabar_low_upper 40
-#define GRIDabar_high_lower 41
-#define GRIDabar_high_upper 42
-#define GRIDabs_ini 43
 
 #define minGRID GRIDgas_dens
 #define maxGRID GRIDavg_dir
