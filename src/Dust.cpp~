@@ -587,7 +587,7 @@ bool CDustComponent::readDustParameterFile(parameters & param, uint dust_compone
                 }
 
                 // Set the splines of the dust grain optical properties
-                if(isAligned() || isDisrupted())
+                if(isAligned() && isDisrupted())
                 {
                     Qext1[a][w] = eff_wl[a * NR_OF_EFF + 0].getValue(wavelength_list[w]);
                     Qext2[a][w] = eff_wl[a * NR_OF_EFF + 1].getValue(wavelength_list[w]);
@@ -4120,9 +4120,9 @@ double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i
         if(wavelength_list[w] > 1.8 * a_eff[a])
             Qr = Q_ref / pow(wavelength_list[w] / (1.8 * a_eff[a]), alpha_Q);
 
-		//double cos_theta = abs(cos(theta));
+		double cos_theta = abs(cos(theta));
 		
-		//Qr *= cos_theta;
+		Qr *= cos_theta;
 		
 		
         // Qr=getQrat(a, w, 0.0);
@@ -6434,8 +6434,8 @@ bool CDustMixture::createDustMixtures(parameters & param, string path_data, stri
             single_component[i_comp].setFHighJ(param.getFHighJ());
             single_component[i_comp].setQref(param.getQref());
             single_component[i_comp].setAlphaQ(param.getAlphaQ());
-            single_component[i_comp].setWrongInternalRAT(param.getWrongInternalRATlowJ());
-            single_component[i_comp].setWrongInternalRAT(param.getWrongInternalRAThighJ());
+            single_component[i_comp].setWrongInternalRATlowJ(param.getWrongInternalRATlowJ());
+            single_component[i_comp].setWrongInternalRAThighJ(param.getWrongInternalRAThighJ());
 
             single_component[i_comp].setDelta0(param.getDelta0());
             
