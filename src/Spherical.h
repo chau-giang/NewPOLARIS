@@ -1,16 +1,11 @@
 #pragma once
-#include <math.h>
-#include <algorithm>
-#include <iostream>
-#include <string>
-
 #include "Grid.h"
-#include "Typedefs.h"
+#include "MathFunctions.h"
+#include "Matrix2D.h"
+#include "Source.h"
 #include "Vector.h"
-#include "Cell.h"
-#include "Photon.h"
-
-class parameters;
+#include "chelper.h"
+#include "typedefs.h"
 
 class CGridSpherical : public CGridBasic
 {
@@ -44,6 +39,9 @@ class CGridSpherical : public CGridBasic
 
         min_dust_temp = 0;
         max_dust_temp = 0;
+        
+        min_abs_ini = 0;
+        max_abs_ini = 0;
 
         min_gas_dens = 0;
         max_gas_dens = 0;
@@ -54,6 +52,31 @@ class CGridSpherical : public CGridBasic
         aalg_min = 1e300;
         aalg_max = 0;
 
+        adisr_min = 1e300;
+        adisr_max = 0;
+
+        max_adisr_min = 1e300;
+        max_adisr_max = 0;
+
+        size_param_modif_min = 1e300;
+        size_param_modif_max = -4;
+        
+
+        abar_low_lower_min = 1e300;
+        abar_low_lower_max = 0;
+        
+        
+        abar_low_upper_min = 1e300;
+        abar_low_upper_max = 0;
+
+
+        abar_high_lower_min = 1e300;
+        abar_high_lower_max = 0;
+        
+        
+        abar_high_upper_min = 1e300;
+        abar_high_upper_max = 0;
+        
         min_larm_limit = 0;
         max_larm_limit = 0;
 
@@ -69,12 +92,13 @@ class CGridSpherical : public CGridBasic
 
         conv_length_in_SI = 1;
         conv_dens_in_SI = 1;
+        conv_Smax_in_SI = 1;
         conv_Bfield_in_SI = 1;
         conv_Vfield_in_SI = 1;
 
-        nrOfPlotPoints = 1000;
-        nrOfPlotVectors = 1000;
-        maxPlotLines = 3;
+        nrOfGnuPoints = 1000;
+        nrOfGnuVectors = 1000;
+        maxGridLines = 3;
 
         cell_list = 0;
 
@@ -126,7 +150,6 @@ class CGridSpherical : public CGridBasic
         rot_angle2 = 0;
 
         plt_gas_dens = false;
-        plt_mol_dens = false;
         plt_dust_dens = false;
         plt_gas_temp = false;
         plt_dust_temp = false;
@@ -137,6 +160,14 @@ class CGridSpherical : public CGridBasic
         plt_larm = false;
         plt_mach = false;
         plt_dust_id = false;
+        plt_disr = false;
+        plt_max_disr = false;
+        plt_param_modif = false;
+        plt_barnet_low_lower = false;
+        plt_barnet_low_upper = false;
+        plt_barnet_high_lower = false;
+        plt_barnet_high_upper = false;
+        plt_abs_ini = false;
 
         total_volume = 0;
         cell_volume = 0;
@@ -163,7 +194,9 @@ class CGridSpherical : public CGridBasic
         char_counter = 0;
 
         rot_angle1 = 0;
-        rot_angle2 = 0;
+ 	rot_angle2 = 0;
+
+        turbulent_velocity = 0;
     }
 
     ~CGridSpherical()
@@ -227,15 +260,15 @@ class CGridSpherical : public CGridBasic
         cout << CLR_LINE << flush;
     }
 
-    bool writePlotFiles(string path, parameters & param);
+    bool writeGNUPlotFiles(string path, parameters & param);
 
     bool goToNextCellBorder(photon_package * pp);
     bool updateShortestDistance(photon_package * pp);
 
-    Vector3D getCenter(const cell_basic & cell)const
+    Vector3D getCenter(cell_basic * cell)
     {
         Vector3D center;
-        const cell_sp * tmp_cell = (const cell_sp *)&cell;
+        cell_sp * tmp_cell = (cell_sp *)cell;
 
         if(tmp_cell->getRID() == MAX_UINT)
             return center;
@@ -257,15 +290,15 @@ class CGridSpherical : public CGridBasic
         return center;
     }
 
-    void setRndPositionInCell(photon_package * pp, CRandomGenerator * rand_gen)
+    void setRndPositionInCell(photon_package * pp)
     {
         Vector3D pos;
         cell_sp * tmp_cell = (cell_sp *)pp->getPositionCell();
         double r1, r2, ph1, ph2, th1, th2;
 
-        double rnd_r = rand_gen->getRND();
-        double rnd_ph = rand_gen->getRND();
-        double rnd_th = rand_gen->getRND();
+        double rnd_r = pp->getRND();
+        double rnd_ph = pp->getRND();
+        double rnd_th = pp->getRND();
 
         if(tmp_cell->getRID() == MAX_UINT)
         {
@@ -374,9 +407,9 @@ class CGridSpherical : public CGridBasic
         return true;
     }
 
-    double getVolume(const cell_basic & cell) const
+    double getVolume(cell_basic * cell)
     {
-        const cell_sp * cell_pos = (const cell_sp *)&cell;
+        cell_sp * cell_pos = (cell_sp *)cell;
 
         if(cell_pos->getRID() == MAX_UINT)
         {
@@ -395,10 +428,17 @@ class CGridSpherical : public CGridBasic
         return volume;
     }
 
-    Vector3D rotateToCenter(const photon_package & pp, Vector3D dir, bool inv, bool phi_only) const
+    double getVolume(photon_package * pp)
     {
-        const cell_sp * cell_pos = (const cell_sp *)pp.getPositionCell();
-        Vector3D pos = pp.getPosition().getSphericalCoord();
+        cell_basic * cell_pos = pp->getPositionCell();
+
+        return getVolume(cell_pos);
+    }
+
+    Vector3D rotateToCenter(photon_package * pp, Vector3D dir, bool inv, bool phi_only)
+    {
+        cell_sp * cell_pos = (cell_sp *)pp->getPositionCell();
+        Vector3D pos = pp->getPosition().getSphericalCoord();
 
         double phi_center = cell_pos->getRID() == MAX_UINT
                                 ? 0
@@ -470,7 +510,7 @@ class CGridSpherical : public CGridBasic
             double r2 = listR[i_r];
             uint N_r_sub = min(subpixel_multiplier, uint(ceil((r2 - r1) * 5.0 / pixel_width)));
 
-            for(uint i_r_sub = 1; i_r_sub <= N_r_sub; i_r_sub++)
+            for(int i_r_sub = 1; i_r_sub <= N_r_sub; i_r_sub++)
                 _listR.push_back(r1 + (r2 - r1) * i_r_sub / double(N_r_sub));
 
             // break if sidelength is smaller than full grid
@@ -517,51 +557,56 @@ class CGridSpherical : public CGridBasic
     cell_sp **** grid_cells;
     cell_sp * center_cell;
 
-    // bool isInside(const Vector3D & pos, cell_basic * _cell)
-    // {
-    //     cell_sp * cell = (cell_sp *)_cell;
+    bool isInside(Vector3D & pos, cell_basic * _cell)
+    {
+        cell_sp * cell = (cell_sp *)_cell;
 
-    //     if(cell->getRID() == MAX_UINT)
-    //     {
-    //         if(pos.sq_length() > Rmin * Rmin)
-    //             return false;
-    //     }
+        if(cell->getRID() == MAX_UINT)
+        {
+            if(pos.sq_length() > Rmin * Rmin)
+                return false;
+        }
 
-    //     double r1 = listR[cell->getRID()];
-    //     double r2 = listR[cell->getRID() + 1];
-    //     double ph1 = listPh[cell->getPhID()];
-    //     double ph2 = listPh[cell->getPhID() + 1];
-    //     double th1 = listTh[cell->getThID()];
-    //     double th2 = listTh[cell->getThID() + 1];
+        double r1 = listR[cell->getRID()];
+        double r2 = listR[cell->getRID() + 1];
+        double ph1 = listPh[cell->getPhID()];
+        double ph2 = listPh[cell->getPhID() + 1];
+        double th1 = listTh[cell->getThID()];
+        double th2 = listTh[cell->getThID() + 1];
 
-    //     Vector3D tmp_pos = pos.getSphericalCoord();
+        Vector3D tmp_pos = pos.getSphericalCoord();
 
-    //     if(tmp_pos.R() < r1)
-    //         return false;
+        if(tmp_pos.R() < r1)
+            return false;
 
-    //     if(tmp_pos.R() > r2)
-    //         return false;
+        if(tmp_pos.R() > r2)
+            return false;
 
-    //     if(tmp_pos.Phi() < ph1)
-    //         return false;
+        if(tmp_pos.Phi() < ph1)
+            return false;
 
-    //     if(tmp_pos.Phi() > ph2)
-    //         return false;
+        if(tmp_pos.Phi() > ph2)
+            return false;
 
-    //     if(tmp_pos.Theta() < th1)
-    //         return false;
+        if(tmp_pos.Theta() < th1)
+            return false;
 
-    //     if(tmp_pos.Theta() > th2)
-    //         return false;
+        if(tmp_pos.Theta() > th2)
+            return false;
 
-    //     return true;
-    // }
+        return true;
+    }
 
-    bool isInside(const Vector3D & pos) const
+    bool isInside(Vector3D & pos)
     {
         if(pos.sq_length() > Rmax * Rmax)
             return false;
 
         return true;
+    }
+
+    bool isInside(photon_package * pp, Vector3D & pos)
+    {
+        return isInside(pos, pp->getPositionCell());
     }
 };

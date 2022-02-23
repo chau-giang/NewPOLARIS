@@ -1,15 +1,11 @@
 #pragma once
-#include <iostream>
-#include <string>
-
 #include "Grid.h"
+#include "MathFunctions.h"
 #include "Matrix2D.h"
-#include "Typedefs.h"
+#include "Source.h"
 #include "Vector.h"
-#include "Cell.h"
-#include "Photon.h"
-
-class parameters;
+#include "chelper.h"
+#include "typedefs.h"
 
 class CGridOcTree : public CGridBasic
 {
@@ -71,9 +67,9 @@ class CGridOcTree : public CGridBasic
         conv_Bfield_in_SI = 1;
         conv_Vfield_in_SI = 1;
 
-        nrOfPlotPoints = 1000;
-        nrOfPlotVectors = 1000;
-        maxPlotLines = 3;
+        nrOfGnuPoints = 1000;
+        nrOfGnuVectors = 1000;
+        maxGridLines = 3;
 
         cell_list = 0;
 
@@ -125,7 +121,6 @@ class CGridOcTree : public CGridBasic
         rot_angle2 = 0;
 
         plt_gas_dens = false;
-        plt_mol_dens = false;
         plt_dust_dens = false;
         plt_gas_temp = false;
         plt_dust_temp = false;
@@ -153,6 +148,8 @@ class CGridOcTree : public CGridBasic
 
         rot_angle1 = 0;
         rot_angle2 = 0;
+
+        turbulent_velocity = 0;
     }
 
     ~CGridOcTree()
@@ -172,7 +169,7 @@ class CGridOcTree : public CGridBasic
     }
 
     // begin IO functions
-    bool writePlotFiles(string path, parameters & param);
+    bool writeGNUPlotFiles(string path, parameters & param);
 
     void goToRoot()
     {
@@ -190,10 +187,10 @@ class CGridOcTree : public CGridBasic
     bool reduceBinrayFile(string in_filename, string out_filename, uint tr_level);
     bool reduceLevelOfBinrayFile(cell_oc * cell, uint tr_level);
 
-    Vector3D getCenter(const cell_basic & cell) const
+    Vector3D getCenter(cell_basic * cell)
     {
         Vector3D center;
-        const cell_oc * tmp_cell = (const cell_oc *)&cell;
+        cell_oc * tmp_cell = (cell_oc *)cell;
 
         center.setX(tmp_cell->getXmin() + 0.5 * tmp_cell->getLength());
         center.setY(tmp_cell->getYmin() + 0.5 * tmp_cell->getLength());
@@ -241,7 +238,6 @@ class CGridOcTree : public CGridBasic
                 return true;*/
 
             cell_list[pos_counter] = (cell_basic *)cell_oc_pos;
-            cell_oc_pos->setUniqueID(pos_counter);
 
             pos_counter++;
             if(pos_counter % 15000 == 0)
@@ -292,9 +288,27 @@ class CGridOcTree : public CGridBasic
         off_xy = step_xy / 2.0;
     }
 
-    double getVolume(const cell_basic & cell) const
+    /*double getVolume()
     {
-        const cell_oc * cell_pos = (const cell_oc *)&cell;
+        double volume = cell_oc_pos->getLength();
+        volume = volume * volume*volume;
+
+        return volume;
+    }*/
+
+    double getVolume(cell_basic * cell)
+    {
+        cell_oc * cell_pos = (cell_oc *)cell;
+
+        double volume = cell_pos->getLength();
+        volume = volume * volume * volume;
+
+        return volume;
+    }
+
+    double getVolume(photon_package * pp)
+    {
+        cell_oc * cell_pos = (cell_oc *)pp->getPositionCell();
 
         double volume = cell_pos->getLength();
         volume = volume * volume * volume;
@@ -343,6 +357,11 @@ class CGridOcTree : public CGridBasic
         return loadGridFromBinrayFile(param, 0);
     };
 
+    double getPathLength(cell_basic * cell)
+    {
+        return ((cell_oc *)cell)->getLength();
+    }
+
     void nextBinaryDataCell(ofstream & file_stream, cell_oc * cell, uint data_size);
 
     void clear()
@@ -362,7 +381,7 @@ class CGridOcTree : public CGridBasic
         if(tmp_cell->getChildren() != 0)
         {
             Vector3D pos = pp->getPosition();
-            Vector3D center = getCenter(*pp->getPositionCell());
+            Vector3D center = getCenter(pp->getPositionCell());
             double x_mid = center.X();
             double y_mid = center.Y();
             double z_mid = center.Z();
@@ -469,36 +488,36 @@ class CGridOcTree : public CGridBasic
 
         pp->setPositionCell(tmp_cell);
 
-        if(!isInside(pp->getPosition(), *tmp_cell))
+        if(!isInside(pp->getPosition(), tmp_cell))
             goNextLevelUp(pp);
     }
 
-    bool isInside(const Vector3D & pos, const cell_basic & _cell) const
+    bool isInside(Vector3D & pos, cell_basic * _cell)
     {
-        const cell_oc * tmp_cell = (const cell_oc *)&_cell;
+        cell_oc * cell = (cell_oc *)_cell;
 
-        if(tmp_cell->getXmin() > pos.X())
+        if(cell->getXmin() > pos.X())
             return false;
 
-        if(tmp_cell->getYmin() > pos.Y())
+        if(cell->getYmin() > pos.Y())
             return false;
 
-        if(tmp_cell->getZmin() > pos.Z())
+        if(cell->getZmin() > pos.Z())
             return false;
 
-        if(tmp_cell->getXmax() < pos.X())
+        if(cell->getXmax() < pos.X())
             return false;
 
-        if(tmp_cell->getYmax() < pos.Y())
+        if(cell->getYmax() < pos.Y())
             return false;
 
-        if(tmp_cell->getZmax() < pos.Z())
+        if(cell->getZmax() < pos.Z())
             return false;
 
         return true;
     }
 
-    bool isInside(const Vector3D & pos) const
+    bool isInside(const Vector3D & pos)
     {
         if(pos.X() < cell_oc_root->getXmin() || pos.Y() < cell_oc_root->getYmin() ||
            pos.Z() < cell_oc_root->getZmin())
@@ -511,19 +530,19 @@ class CGridOcTree : public CGridBasic
         return true;
     }
 
-    // bool isInside(photon_package * pp, Vector3D & pos)
-    // {
-    //     cell_oc * cell = (cell_oc *)pp->getPositionCell();
-    //     if(pos.X() < cell->getXmin() || pos.Y() < cell->getYmin() || pos.Z() < cell->getZmin())
-    //         return false;
+    bool isInside(photon_package * pp, Vector3D & pos)
+    {
+        cell_oc * cell = (cell_oc *)pp->getPositionCell();
+        if(pos.X() < cell->getXmin() || pos.Y() < cell->getYmin() || pos.Z() < cell->getZmin())
+            return false;
 
-    //     if(pos.X() > cell->getXmax() || pos.Y() > cell->getYmax() || pos.Z() > cell->getZmax())
-    //         return false;
+        if(pos.X() > cell->getXmax() || pos.Y() > cell->getYmax() || pos.Z() > cell->getZmax())
+            return false;
 
-    //     return true;
-    // }
+        return true;
+    }
 
-    void setRndPositionInCell(photon_package * pp, CRandomGenerator * rand_gen)
+    void setRndPositionInCell(photon_package * pp)
     {
         Vector3D pos;
         cell_oc * tmp_cell = (cell_oc *)pp->getPositionCell();
@@ -536,9 +555,9 @@ class CGridOcTree : public CGridBasic
         z = tmp_cell->getZmin();
         dz = tmp_cell->getZmax() - z;
 
-        double rnd_x = rand_gen->getRND();
-        double rnd_y = rand_gen->getRND();
-        double rnd_z = rand_gen->getRND();
+        double rnd_x = pp->getRND();
+        double rnd_y = pp->getRND();
+        double rnd_z = pp->getRND();
 
         pos = Vector3D(x + rnd_x * dx, y + rnd_y * dy, z + rnd_z * dz);
         pp->setPosition(pos);

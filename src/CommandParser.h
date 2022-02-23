@@ -1,10 +1,6 @@
 #pragma once
-#include <algorithm>
-#include <string>
-#include <vector>
-
-#include "Parameters.h"
-#include "Typedefs.h"
+#include "chelper.h"
+#include "typedefs.h"
 
 #ifndef COMMANDPARSER
 #define COMMANDPARSER

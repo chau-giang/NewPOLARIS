@@ -1,5 +1,5 @@
 #pragma once
-#include "Typedefs.h"
+#include "typedefs.h"
 // m x n
 // row    -> m (zeile)
 // column |  n (spalte)
@@ -307,7 +307,7 @@ class Matrix2D
         dlist res;
         res.resize(m_n);
         for(uint i = 0; i < m_n; i++)
-            res[i] = m_data[i * m_n + j];
+            m_data[i * m_n + j];
         return res;
     }
 
@@ -316,7 +316,7 @@ class Matrix2D
         dlist res;
         res.resize(m_n);
         for(uint j = 0; j < m_m; j++)
-            res[j] = m_data[i * m_n + j];
+            m_data[i * m_n + j];
         return res;
     }
 
@@ -333,7 +333,6 @@ class Matrix2D
 
     Matrix2D & operator=(Matrix2D * rhs)
     {
-        cout << "Matrix2D move" << endl;
         if(m_size != rhs->size())
             resize(rhs->row(), rhs->col());
 
@@ -425,12 +424,8 @@ inline Matrix2D operator*(const Matrix2D & lhs, const Matrix2D & rhs)
 
     for(uint i = 0; i < res.row(); i++)
         for(uint j = 0; j < res.col(); j++)
-        {
-            double tmp = 0;
             for(uint k = 0; k < lhs.col(); k++)
-                tmp += lhs(i, k) * rhs(k, j);
-            res.setValue(i,j,tmp);
-        }
+                res.addValue(i, j, lhs(i, k) * rhs(k, j));
 
     return res;
 }

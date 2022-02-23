@@ -1,8 +1,7 @@
 #include "OcTree.h"
 #include "CommandParser.h"
 #include "MathFunctions.h"
-#include "Parameters.h"
-#include "Typedefs.h"
+#include "typedefs.h"
 #include <limits>
 
 void CGridOcTree::plotNextDataVector(ofstream * file_streams, cell_oc * cell, uint level)
@@ -17,7 +16,7 @@ void CGridOcTree::plotNextDataVector(ofstream * file_streams, cell_oc * cell, ui
         if(line_counter % 15000 == 0)
         {
             char_counter++;
-            cout << "-> Creating plot vectors: " << ru[(unsigned int)char_counter % 4] << "           \r";
+            cout << "-> Writing Gnuplot vectors: " << ru[(unsigned int)char_counter % 4] << "           \r";
         }
 
         if(cell->getLevel() > level)
@@ -25,7 +24,7 @@ void CGridOcTree::plotNextDataVector(ofstream * file_streams, cell_oc * cell, ui
 
             rec_counter++;
 
-            if(rec_counter % nrOfPlotVectors == 0)
+            if(rec_counter % nrOfGnuVectors == 0)
             {
                 if(plt_mag)
                 {
@@ -107,7 +106,7 @@ void CGridOcTree::plotNextDataPoint(ofstream * file_streams, cell_oc * cell, uin
 {
     if(cell->getChildren() == 0)
     {
-        Vector3D c = getCenter(*cell);
+        Vector3D c = getCenter(cell);
         float x = float(c.X());
         float y = float(c.Y());
         float z = float(c.Z());
@@ -116,7 +115,7 @@ void CGridOcTree::plotNextDataPoint(ofstream * file_streams, cell_oc * cell, uin
         if(line_counter % 15000 == 0)
         {
             char_counter++;
-            cout << "-> Creating plot points: " << ru[(unsigned int)char_counter % 4]
+            cout << "-> Writing Gnuplot point files: " << ru[(unsigned int)char_counter % 4]
                  << "           \r";
         }
 
@@ -124,32 +123,32 @@ void CGridOcTree::plotNextDataPoint(ofstream * file_streams, cell_oc * cell, uin
         {
             rec_counter++;
 
-            if(rec_counter % nrOfPlotPoints == 0)
+            if(rec_counter % nrOfGnuPoints == 0)
             {
                 if(plt_gas_dens)
                     file_streams[1] << x << " " << y << " " << z << " "
                                     << float(max_level + 1.5 - cell->getLevel()) / 0.9 << " "
-                                    << float(log10(getGasDensity(*cell))) << endl;
+                                    << float(log10(getGasDensity(cell))) << endl;
 
                 if(plt_dust_dens)
                     file_streams[2] << x << " " << y << " " << z << " "
                                     << float(max_level + 1.5 - cell->getLevel()) / 0.9 << " "
-                                    << float(log10(getDustDensity(*cell))) << endl;
+                                    << float(log10(getDustDensity(cell))) << endl;
 
                 if(plt_gas_temp)
                     file_streams[3] << x << " " << y << " " << z << " "
                                     << float(max_level + 1.5 - cell->getLevel()) / 0.9 << " "
-                                    << float(log10(getGasTemperature(*cell))) << endl;
+                                    << float(log10(getGasTemperature(cell))) << endl;
 
                 if(plt_dust_temp)
                     file_streams[4] << x << " " << y << " " << z << " "
                                     << float(max_level + 1.5 - cell->getLevel()) / 0.9 << " "
-                                    << float(log10(getDustTemperature(*cell))) << endl;
+                                    << float(log10(getDustTemperature(cell))) << endl;
 
                 if(plt_rat)
                     file_streams[5] << x << " " << y << " " << z << " "
                                     << float(max_level + 1.5 - cell->getLevel()) / 0.9 << " "
-                                    << getAlignedRadius(*cell, 0) << endl;
+                                    << getAlignedRadius(cell, 0) << endl;
 
                 /*if(plt_delta)
                 {
@@ -203,7 +202,7 @@ void CGridOcTree::plotNextDataPoint(ofstream * file_streams, cell_oc * cell, uin
 
 void CGridOcTree::plotNextGridCell(ofstream * grid_streams, cell_oc * cell, uint level)
 {
-    if(cell->getLevel() <= maxPlotLines)
+    if(cell->getLevel() <= maxGridLines)
     {
         float len_max = float(cell->getLength());
         float len_min = float(0.5 * cell->getLength());
@@ -216,7 +215,7 @@ void CGridOcTree::plotNextGridCell(ofstream * grid_streams, cell_oc * cell, uint
         if(line_counter % 15000 == 0)
         {
             char_counter++;
-            cout << " -> Plotting octree grid file: " << ru[(unsigned int)char_counter % 4]
+            cout << " -> Writing Gnuplot grid file: " << ru[(unsigned int)char_counter % 4]
                  << "           \r";
         }
 
@@ -291,101 +290,7 @@ bool CGridOcTree::reduceBinrayFile(string in_filename, string out_filename, uint
     if(!loadGridFromBinrayFile(param))
         return false;
 
-    createCellList();
-
-    printParameters();
-
-    cell_oc_root=&cell_oc_root->getChildren()[6];
-
-
-    ulong max_cells = getMaxDataCells();
-
-    cout << CLR_LINE;
-
-
-#pragma omp parallel for schedule(dynamic)
-    for(long c_i = 0; c_i < long(max_cells); c_i++)
-    {
-        cell_basic * cell = getCellFromIndex(c_i);
-        double dens0 = getGasDensity(*cell, 0);
-        double dens1 = getGasDensity(*cell, 1);
-
-
-        if(c_i%5000==0)
-            cout << "-> " << float(100*c_i)/float(max_cells) << "                       \r" << flush;
-
-        double dens = dens0+dens1;
-
-
-        double length = ((cell_oc *)cell)->getLength();
-
-        double cx = ((cell_oc *)cell)->getXmin()+0.5*length;
-        double cy = ((cell_oc *)cell)->getYmin()+0.5*length;
-        double cz = ((cell_oc *)cell)->getZmin()+0.5*length;
-
-        vector<Vector3D> vlist;
-
-        length=0.51*length;
-
-        Vector3D center=Vector3D(cx,cy,cz);
-
-        vlist.push_back(Vector3D(cx+length,cy,cz));
-        vlist.push_back(Vector3D(cx-length,cy,cz));
-
-        vlist.push_back(Vector3D(cx,cy+length,cz));
-        vlist.push_back(Vector3D(cx,cy-length,cz));
-
-        vlist.push_back(Vector3D(cx,cy,cz+length));
-        vlist.push_back(Vector3D(cx,cy,cz-length));
-
-        length=1.732*length;
-
-        vlist.push_back(Vector3D(cx+length,cy+length,cz+length));
-        vlist.push_back(Vector3D(cx+length,cy-length,cz+length));
-        vlist.push_back(Vector3D(cx-length,cy-length,cz+length));
-        vlist.push_back(Vector3D(cx-length,cy+length,cz+length));
-
-        vlist.push_back(Vector3D(cx+length,cy+length,cz-length));
-        vlist.push_back(Vector3D(cx+length,cy-length,cz-length));
-        vlist.push_back(Vector3D(cx-length,cy-length,cz-length));
-        vlist.push_back(Vector3D(cx-length,cy+length,cz-length));
-
-        photon_package pp;
-
-        pp.setPosition(center);
-
-        if(positionPhotonInGrid(&pp))
-        {
-            //cell_basic * cell = pp.getPositionCell()
-            double tg= 0.8*getGasTemperature(pp);
-
-            for(uint g=0;g<vlist.size();g++)
-            {
-                pp.setPosition(vlist[g]);
-
-                if(positionPhotonInGrid(&pp))
-                {
-                    tg+=0.8/14.0*getGasTemperature(pp);
-                }
-            }
-
-            setGasTemperature(cell, tg);
-        }
-
-
-        if(dens*254098.7886>1e13)
-        {
-            setGasDensity(cell, 0, 0.0*dens);
-            setGasDensity(cell, 1, 1.0*dens);
-        }
-        else
-        {
-            setGasDensity(cell, 0, 1.0*dens);
-            setGasDensity(cell, 1, 0.0*dens);
-        }
-    }
-
-    //reduceLevelOfBinrayFile(cell_oc_root, tr_level);
+    reduceLevelOfBinrayFile(cell_oc_root, tr_level);
 
     if(!saveBinaryGridFile(out_filename))
         return false;
@@ -417,29 +322,47 @@ bool CGridOcTree::reduceLevelOfBinrayFile(cell_oc * cell, uint tr_level)
 
         if(comb)
         {
-            double * tmp_data=new double[data_len];
-
-            for(uint j=0;j<data_len;j++)
-            {
-                tmp_data[j]=0;
-            }
+            double dens = 0, Tg = 0, Td = 0;
+            double mx = 0, my = 0, mz = 0;
+            double vx = 0, vy = 0, vz = 0;
 
             for(int i = 0; i < 8; i++)
             {
-                for(uint j =0;j<data_len;j++)
-                {
-                    tmp_data[j]+=cell->getChildren()[i].getData(j)/8.0;
-                }
+                dens += cell->getChildren()[i].getData(data_pos_gd_list[0]);
+                Tg += cell->getChildren()[i].getData(data_pos_tg);
+                Td += cell->getChildren()[i].getData(data_pos_dt_list[0]);
+                mx += cell->getChildren()[i].getData(data_pos_mx);
+                my += cell->getChildren()[i].getData(data_pos_my);
+                mz += cell->getChildren()[i].getData(data_pos_mz);
+
+                vx += cell->getChildren()[i].getData(data_pos_vx);
+                vy += cell->getChildren()[i].getData(data_pos_vy);
+                vz += cell->getChildren()[i].getData(data_pos_vz);
             }
+
+            dens /= 8;
+            Tg /= 8;
+            Td /= 8;
+            mx /= 8;
+            my /= 8;
+            mz /= 8;
+            vx /= 8;
+            vy /= 8;
+            vz /= 8;
 
             delete[] cell->getChildren();
             cell->setChildren(0);
-            cell->resize(data_len);
-
-            for(uint j=0;j<data_len;j++)
-            {
-                cell->setData(j, tmp_data[j]); ;
-            }
+            max_data = 9;
+            cell->resize(max_data);
+            cell->setData(data_pos_gd_list[0], dens);
+            cell->setData(data_pos_tg, Tg);
+            cell->setData(data_pos_dt_list[0], Td);
+            cell->setData(data_pos_mx, mx);
+            cell->setData(data_pos_my, my);
+            cell->setData(data_pos_mz, mz);
+            cell->setData(data_pos_vx, vx);
+            cell->setData(data_pos_vy, vy);
+            cell->setData(data_pos_vz, vz);
 
             if(cell->getLevel() > tr_level)
                 return true;
@@ -465,6 +388,8 @@ bool CGridOcTree::loadGridFromBinrayFile(parameters & param, uint _data_len)
     line_counter = 0;
     char_counter = 0;
 
+    turbulent_velocity = param.getTurbulentVelocity();
+
     ifstream bin_reader(filename.c_str(), ios::in | ios::binary);
 
     if(bin_reader.fail())
@@ -478,8 +403,6 @@ bool CGridOcTree::loadGridFromBinrayFile(parameters & param, uint _data_len)
     cell_oc_pos = cell_oc_root;
 
     resetGridValues();
-
-    turbulent_velocity = param.getTurbulentVelocity();
 
     line_counter = 1;
     char_counter = 0;
@@ -590,7 +513,7 @@ bool CGridOcTree::loadGridFromBinrayFile(parameters & param, uint _data_len)
             }
 
             // assignOpiateID(&cell_oc_pos->getChildren()[cube_pos]);
-            updateDataRange(&cell_oc_pos->getChildren()[cube_pos]);
+            updateDataRange(&cell_oc_pos->getChildren()[cube_pos], param);
 
             if(cube_pos > 7)
             {
@@ -610,8 +533,8 @@ bool CGridOcTree::loadGridFromBinrayFile(parameters & param, uint _data_len)
                 return false;
             }
 
-            double tmp_vol = getVolume(*cell_oc_pos->getChild(cube_pos));
-            total_gas_mass += getGasMassDensity(*cell_oc_pos->getChild(cube_pos)) * tmp_vol;
+            double tmp_vol = getVolume(cell_oc_pos->getChild(cube_pos));
+            total_gas_mass += getGasMassDensity(cell_oc_pos->getChild(cube_pos)) * tmp_vol;
             cell_volume += tmp_vol;
 
             if(level > max_level)
@@ -698,13 +621,13 @@ bool CGridOcTree::loadGridFromBinrayFile(parameters & param, uint _data_len)
     return true;
 }
 
-bool CGridOcTree::writePlotFiles(string path, parameters & param)
+bool CGridOcTree::writeGNUPlotFiles(string path, parameters & param)
 {
-    nrOfPlotPoints = param.getNrOfPlotPoints();
-    nrOfPlotVectors = param.getNrOfPlotVectors();
-    maxPlotLines = param.getMaxPlotLines();
+    nrOfGnuPoints = param.getNrOfGnuPoints();
+    nrOfGnuVectors = param.getNrOfGnuVectors();
+    maxGridLines = param.getmaxGridLines();
 
-    if(nrOfPlotPoints + nrOfPlotVectors == 0)
+    if(nrOfGnuPoints + nrOfGnuVectors == 0)
         return true;
 
     if(cell_oc_root == 0)
@@ -715,10 +638,10 @@ bool CGridOcTree::writePlotFiles(string path, parameters & param)
         return false;
     }
 
-    if(max_level < maxPlotLines)
+    if(max_level < maxGridLines)
     {
         cout << "\nWARNING: Number of max. grid level is higher than max. tree level!" << endl;
-        maxPlotLines = uint(max_level);
+        maxGridLines = uint(max_level);
         return false;
     }
 
@@ -738,8 +661,7 @@ bool CGridOcTree::writePlotFiles(string path, parameters & param)
         return false;
     }
 
-    plt_gas_dens = (size_gd_list > 0);  // 1
-    plt_mol_dens = (nrOfDensRatios>0);
+    plt_gas_dens = (!data_pos_gd_list.empty());  // 1
     plt_dust_dens = false;                       // param.getPlot(plIDnd) && (!data_pos_dd_list.empty()); // 2
     plt_gas_temp = (data_pos_tg != MAX_UINT);    // 3
     plt_dust_temp = (!data_pos_dt_list.empty()); // 4
@@ -751,9 +673,9 @@ bool CGridOcTree::writePlotFiles(string path, parameters & param)
     plt_mag = (data_pos_mx != MAX_UINT); // 0
     plt_vel = (data_pos_vx != MAX_UINT); // 1
 
-    if(nrOfPlotPoints <= 1)
+    if(nrOfGnuPoints <= 1)
     {
-        nrOfPlotPoints = max_cells / 10;
+        nrOfGnuPoints = max_cells / 10;
 
         plt_gas_dens = false;
         plt_dust_dens = false;
@@ -765,36 +687,36 @@ bool CGridOcTree::writePlotFiles(string path, parameters & param)
         plt_mach = false;
     }
     else
-        nrOfPlotPoints = max_cells / nrOfPlotPoints;
+        nrOfGnuPoints = max_cells / nrOfGnuPoints;
 
-    if(nrOfPlotVectors <= 1)
+    if(nrOfGnuVectors <= 1)
     {
-        nrOfPlotVectors = max_cells / 10;
+        nrOfGnuVectors = max_cells / 10;
         plt_mag = false;
         plt_vel = false;
     }
     else
-        nrOfPlotVectors = max_cells / nrOfPlotVectors;
+        nrOfGnuVectors = max_cells / nrOfGnuVectors;
 
-    if(nrOfPlotPoints == 0)
-        nrOfPlotPoints = 1;
+    if(nrOfGnuPoints == 0)
+        nrOfGnuPoints = 1;
 
-    if(nrOfPlotVectors == 0)
-        nrOfPlotVectors = 1;
+    if(nrOfGnuVectors == 0)
+        nrOfGnuVectors = 1;
 
     stringstream point_header, vec_header, basic_grid_l0, basic_grid_l1;
 
-    string grid_filename = path + "grid_geometry.py";
-    string dens_gas_filename = path + "grid_gas_density.py";
-    string dens_dust_filename = path + "grid_dust_density.py";
-    string temp_gas_filename = path + "grid_gas_temp.py";
-    string temp_dust_filename = path + "grid_dust_temp.py";
-    string rat_filename = path + "grid_RAT.py";
+    string grid_filename = path + "grid_geometry.plt";
+    string dens_gas_filename = path + "grid_gas_density.plt";
+    string dens_dust_filename = path + "grid_dust_density.plt";
+    string temp_gas_filename = path + "grid_gas_temp.plt";
+    string temp_dust_filename = path + "grid_dust_temp.plt";
+    string rat_filename = path + "grid_RAT.plt";
     string delta_filename = path + "grid_data.dat";
-    string larm_filename = path + "grid_mag.py";
-    string mach_filename = path + "grid_vel.py";
-    string mag_filename = path + "grid_mag.py";
-    string vel_filename = path + "grid_vel.py";
+    string larm_filename = path + "grid_mag.plt";
+    string mach_filename = path + "grid_vel.plt";
+    string mag_filename = path + "grid_mag.plt";
+    string vel_filename = path + "grid_vel.plt";
 
     ofstream point_fields[9];
     ofstream vec_fields[2];
@@ -1247,7 +1169,7 @@ bool CGridOcTree::writePlotFiles(string path, parameters & param)
         vec_fields[pos].close();
 
     cout << CLR_LINE;
-    cout << "- Writing of plot files                : done" << endl;
+    cout << "- Writing of Gnuplot files             : done" << endl;
     return true;
 }
 
@@ -1277,6 +1199,7 @@ bool CGridOcTree::saveBinaryGridFile(string filename, ushort id, ushort data_siz
         return false;
     }
 
+    double x_min, y_min, z_min, cube_length;
     line_counter = 0;
     char_counter = 0;
 
@@ -1289,9 +1212,8 @@ bool CGridOcTree::saveBinaryGridFile(string filename, ushort id, ushort data_siz
         return false;
     }
 
-    // double x_min, y_min, z_min;
-    // x_min = y_min = z_min = cell_oc_root->getXmin();
-    double cube_length = cell_oc_root->getLength();
+    x_min = y_min = z_min = cell_oc_root->getXmin();
+    cube_length = cell_oc_root->getLength();
 
     bin_writer.write((char *)&id, 2);
     bin_writer.write((char *)&data_size, 2);
@@ -1339,7 +1261,7 @@ void CGridOcTree::nextBinaryDataCell(ofstream & file_stream, cell_oc * cell, uin
         }
 
         isleaf = (ushort)1;
-        level = (ushort)cell->getLevel();//-1;
+        level = (ushort)cell->getLevel();
 
         file_stream.write((char *)&isleaf, 2);
         file_stream.write((char *)&level, 2);
@@ -1353,7 +1275,7 @@ void CGridOcTree::nextBinaryDataCell(ofstream & file_stream, cell_oc * cell, uin
     else
     {
         isleaf = (ushort)0;
-        level = (ushort)cell->getLevel();//-1;
+        level = (ushort)cell->getLevel();
 
         file_stream.write((char *)&isleaf, 2);
         file_stream.write((char *)&level, 2);
@@ -1437,7 +1359,7 @@ bool CGridOcTree::createArtificialGrid(string path)
 
 void CGridOcTree::createNextLevel(cell_oc * cell)
 {
-    Vector3D p = getCenter(*cell);
+    Vector3D p = getCenter(cell);
     double r = p.length();
     uint tmp_level = uint(max_level);
 
@@ -1474,6 +1396,7 @@ void CGridOcTree::createNextLevel(cell_oc * cell)
     else
     {
         cell->setChildren(new cell_oc[8]);
+        bool found = false;
         cell_oc_pos = cell;
         createBoundingCell();
 
@@ -1622,10 +1545,10 @@ bool CGridOcTree::goToNextCellBorder(photon_package * pp)
     cell_oc * tmp_cell = (cell_oc *)pp->getPositionCell();
 
     bool hit = false;
-    double path_length = 1e300;
+    double min_length = 1e300;
 
-    Vector3D pos = pp->getPosition();
-    Vector3D dir = pp->getDirection();
+    Vector3D p = pp->getPosition();
+    Vector3D d = pp->getDirection();
 
     double loc_x_min = tmp_cell->getXmin();
     double loc_y_min = tmp_cell->getYmin();
@@ -1635,71 +1558,68 @@ bool CGridOcTree::goToNextCellBorder(photon_package * pp)
     double loc_y_max = tmp_cell->getYmax();
     double loc_z_max = tmp_cell->getZmax();
 
-    Vector3D v_n, v_a;
-    double num, den, length;
-    // length_eps is the minimum step width to ensure that
-    // the photon 1) moves and 2) enters the cell !numerically!
-    double length_eps_1, length_eps_2;
+    double loc_dx = loc_x_max - loc_x_min;
+    double loc_dy = loc_y_max - loc_y_min;
+    double loc_dz = loc_z_max - loc_z_min;
 
     for(uint i_side = 0; i_side < 6; i_side++)
     {
-        // v_n is normal vector on the cell border pointing
-        // towards next cell
-        v_n = 0;
-        // v_a is a point on the cell border
-        v_a = 0;
+        Vector3D v_n;
         switch(i_side)
         {
             case 0:
-                v_n.setZ(-1);
-                v_a.setZ(loc_z_min);
+                v_n.setZ(-loc_dx * loc_dy);
                 break;
             case 1:
-                v_n.setZ(1);
-                v_a.setZ(loc_z_max);
+                v_n.setZ(loc_dx * loc_dy);
                 break;
             case 2:
-                v_n.setY(-1);
-                v_a.setY(loc_y_min);
+                v_n.setY(-loc_dx * loc_dz);
                 break;
             case 3:
-                v_n.setY(1);
-                v_a.setY(loc_y_max);
+                v_n.setY(loc_dx * loc_dz);
                 break;
             case 4:
-                v_n.setX(-1);
-                v_a.setX(loc_x_min);
+                v_n.setX(-loc_dy * loc_dz);
                 break;
             case 5:
-                v_n.setX(1);
-                v_a.setX(loc_x_max);
+                v_n.setX(loc_dy * loc_dz);
                 break;
         }
-        // den = cos of angle between cell border normal and photon direction
-        den = v_n * dir;
 
-        // den must be positive as long as v_n points outwards
-        if(den > 0)
+        double den = v_n * d;
+        if(den != 0)
         {
-            // geometrically, abs(num) is the shortest distance from current
-            // position to the cell border (perp to border, ie. parallel to v_n)
-            // if num is 0 -> photon is on the border
-            // if num > 0 -> border is behind the photon
-            num = v_n * (pos - v_a);
-
-            // distance num to border is enlarged to ensure that at least one
-            // component of the photon position changes parallel to v_n after step
-            // sign(num) is necessary to ensure that abs(num) gets larger
-            length_eps_1 = abs(pos * v_n) * MIN_LEN_STEP * EPS_DOUBLE;
-            num += sign(num) * length_eps_1;
-
-            length = -num / den;
-
-            if(length > 0 && length < path_length)
+            Vector3D v_a;
+            switch(i_side)
             {
+                case 0:
+                    v_a.setZ(loc_z_min);
+                    break;
+                case 1:
+                    v_a.setZ(loc_z_max);
+                    break;
+                case 2:
+                    v_a.setY(loc_y_min);
+                    break;
+                case 3:
+                    v_a.setY(loc_y_max);
+                    break;
+                case 4:
+                    v_a.setX(loc_x_min);
+                    break;
+                case 5:
+                    v_a.setX(loc_x_max);
+                    break;
+            }
+
+            double num = v_n * (p - v_a);
+            double length = -num / den;
+
+            if(length >= 0 && length < min_length)
+            {
+                min_length = length;
                 hit = true;
-                length_eps_2 = abs( (pos + dir * length) * v_n ) / den * MIN_LEN_STEP*EPS_DOUBLE;
-                path_length = length + length_eps_2;
             }
         }
     }
@@ -1710,9 +1630,9 @@ bool CGridOcTree::goToNextCellBorder(photon_package * pp)
         return false;
     }
 
-    pp->setPosition(pos + dir * path_length);
+    double path_length = min_length + MIN_LEN_STEP * min_len;
+    pp->setPosition(p + d * path_length);
     pp->setTmpPathLength(path_length);
-
     return true;
 }
 
@@ -1756,7 +1676,7 @@ bool CGridOcTree::updateShortestDistance(photon_package * pp)
         }
     }
 
-    // pp->setShortestDistance(min_dist);
+    pp->setShortestDistance(min_dist);
     return found;
 }
 
@@ -1952,15 +1872,14 @@ bool CGridOcTree::nextLowLevelCell(cell_basic * cell)
 
 bool CGridOcTree::findStartingPoint(photon_package * pp)
 {
-    Vector3D pos = pp->getPosition();
+    Vector3D p = pp->getPosition();
 
-    if(isInside(pos))
+    if(isInside(p))
         return positionPhotonInGrid(pp);
 
     bool hit = false;
-    double path_length = 1e300;
-
-    Vector3D dir = pp->getDirection();
+    double min_length = 1e300;
+    Vector3D d = pp->getDirection();
 
     double loc_x_min = cell_oc_root->getXmin();
     double loc_y_min = cell_oc_root->getYmin();
@@ -1970,86 +1889,80 @@ bool CGridOcTree::findStartingPoint(photon_package * pp)
     double loc_y_max = cell_oc_root->getYmax();
     double loc_z_max = cell_oc_root->getZmax();
 
-    Vector3D v_n, v_a;
-    double num, den, length;
-    // length_eps is the minimum step width to ensure that
-    // the photon 1) moves and 2) enters the cell !numerically!
-    double length_eps_1, length_eps_2;
+    double loc_dx = loc_x_max - loc_x_min;
+    double loc_dy = loc_y_max - loc_y_min;
+    double loc_dz = loc_z_max - loc_z_min;
 
     for(uint i_side = 0; i_side < 6; i_side++)
     {
-        // v_n is normal vector on the cell border pointing inside that cell
-        // signs are switched compared to goToNextCellBorder
-        // because we are outside the cell
-        v_n = 0;
-        // v_a is a point on the cell border
-        v_a = 0;
+        Vector3D v_n;
         switch(i_side)
         {
             case 0:
-                v_n.setZ(1);
-                v_a.setZ(loc_z_min);
+                v_n.setZ(-loc_dx * loc_dy);
                 break;
             case 1:
-                v_n.setZ(-1);
-                v_a.setZ(loc_z_max);
+                v_n.setZ(loc_dx * loc_dy);
                 break;
             case 2:
-                v_n.setY(1);
-                v_a.setY(loc_y_min);
+                v_n.setY(-loc_dx * loc_dz);
                 break;
             case 3:
-                v_n.setY(-1);
-                v_a.setY(loc_y_max);
+                v_n.setY(loc_dx * loc_dz);
                 break;
             case 4:
-                v_n.setX(1);
-                v_a.setX(loc_x_min);
+                v_n.setX(-loc_dy * loc_dz);
                 break;
             case 5:
-                v_n.setX(-1);
-                v_a.setX(loc_x_max);
+                v_n.setX(loc_dy * loc_dz);
                 break;
         }
-        // den = cos of angle between cell border normal and photon direction
-        den = v_n * dir;
 
-        // den is positive (negative) if v_n points away from (towards) photon
+        double den = v_n * d;
         if(den != 0)
         {
-            // geometrically, abs(num) is the shortest distance from current
-            // position to the cell border (perp to border, ie. parallel to v_n)
-            // if num is 0 -> photon is on the border
-            num = v_n * (pos - v_a);
-
-            // distance num to border is enlarged to ensure that at least one
-            // component of the photon position changes parallel to v_n after step
-            // sign(num) is necessary to ensure that abs(num) gets larger
-            length_eps_1 = abs(pos * v_n) * MIN_LEN_STEP * EPS_DOUBLE;
-            num += sign(num) * length_eps_1;
-
-            length = -num / den;
-
-            if(length > 0 && length < path_length)
+            Vector3D v_a;
+            switch(i_side)
             {
-                if(isInside(pos + dir * length))
+                case 0:
+                    v_a.setZ(loc_z_min);
+                    break;
+                case 1:
+                    v_a.setZ(loc_z_max);
+                    break;
+                case 2:
+                    v_a.setY(loc_y_min);
+                    break;
+                case 3:
+                    v_a.setY(loc_y_max);
+                    break;
+                case 4:
+                    v_a.setX(loc_x_min);
+                    break;
+                case 5:
+                    v_a.setX(loc_x_max);
+                    break;
+            }
+
+            double num = v_n * (p - v_a);
+            double length = -num / den;
+
+            if(length >= 0 && length < min_length)
+            {
+                if(isInside(p + d * (length + MIN_LEN_STEP * min_len)))
                 {
+                    min_length = length;
                     hit = true;
-                    length_eps_2 = abs( (pos + dir * length) * v_n ) / den * MIN_LEN_STEP*EPS_DOUBLE;
-                    path_length = length + length_eps_2;
                 }
             }
         }
     }
 
     if(!hit)
-    {
-        cout << "\nERROR: Wrong cell border!                                   " << endl;
         return false;
-    }
 
-    pp->setPosition(pos + dir * path_length);
-
+    double path_length = min_length + MIN_LEN_STEP * min_len;
+    pp->setPosition(p + d * path_length);
     return positionPhotonInGrid(pp);
 }
 
@@ -2211,6 +2124,8 @@ bool CGridOcTree::initiateTreeFromFile(uint _nx,
         }
     }
 
+    double xyz_min = -0.5 * max_len;
+
     f_min = 1e30;
     f_max = -1e30;
 
@@ -2270,7 +2185,7 @@ bool CGridOcTree::createTree(cell_oc * parent,
     if(parent->getLevel() == max_level)
     {
         treelevel_counter++;
-        Vector3D center = getCenter((const cell_basic &)parent);
+        Vector3D center = getCenter((cell_basic *)parent);
 
         px = center.X();
         py = center.Y();
@@ -2425,12 +2340,7 @@ bool CGridOcTree::createTree(cell_oc * parent,
     createTree(parent->getChild(4), _x_min, _y_min, _z_min + length, length, level);
     createTree(parent->getChild(5), _x_min + length, _y_min, _z_min + length, length, level);
     createTree(parent->getChild(6), _x_min, _y_min + length, _z_min + length, length, level);
-    createTree(parent->getChild(7),
-               _x_min + length,
-               _y_min + length,
-               _z_min + length,
-               length,
-               level);
+    createTree(parent->getChild(7), _x_min + length, _y_min + length, _z_min + length, length, level);
 
     for(int i = 0; i < 8; i++)
         parent->getChild(i)->setParent(parent);

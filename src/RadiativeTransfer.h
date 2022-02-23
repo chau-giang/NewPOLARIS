@@ -5,15 +5,12 @@
 #include "Grid.h"
 #include "MathFunctions.h"
 #include "OcTree.h"
-#include "Photon.h"
 #include "Source.h"
-#include "Typedefs.h"
+#include "chelper.h"
+#include "typedefs.h"
+//#include "OPIATE.h"
 #include "Raytracing.h"
 #include "Synchrotron.h"
-#include "Matrix2D.h"
-#include "Parameters.h"
-#include "Stokes.h"
-#include "Vector.h"
 
 class CRadiativeTransfer
 {
@@ -23,7 +20,7 @@ class CRadiativeTransfer
         grid = 0;
         dust = 0;
         gas = 0;
-        op = 0;
+        // op = 0;
         tracer = 0;
         b_forced = true;
         peel_off = false;
@@ -79,7 +76,7 @@ class CRadiativeTransfer
     bool initiateDustRaytrace(parameters & param);
     bool initiateSyncRaytrace(parameters & param);
     bool initiateLineRaytrace(parameters & param);
-    bool initiateOPIATERaytrace(parameters & param);
+    bool initiateOPIATE(parameters & param);
     bool initiateProbing(parameters & param);
     void initiateRadFieldMC(parameters & param);
     void initiateDustMC(parameters & param);
@@ -156,14 +153,8 @@ class CRadiativeTransfer
 
     // Temperature calculation and RATs
     bool calcMonteCarloRadiationField(uint command, bool use_energy_density, bool disable_reemission = false);
-    bool calcMonteCarloLvlPopulation(uint i_species, uint global_seed);
-    void rayThroughCellForLvlPop(photon_package * pp,
-                                 uint i_species,
-                                 uint i_trans,
-                                 const VelFieldInterp & vel_field_interp);
-
     // Set temperature (old!)
-    // bool setTemperatureDistribution();
+    bool setTemperatureDistribution();
 
     // Dust scattered light
     bool calcPolMapsViaMC();
@@ -182,8 +173,7 @@ class CRadiativeTransfer
                           double cy,
                           uint i_det,
                           uint subpixel_lvl);
-    void rayThroughCellDust(photon_package * pp, uint i_det, uint nr_used_wavelengths);
-    void calcStellarEmission(uint i_det, CRandomGenerator * rand_gen);
+    void calcStellarEmission(uint i_det);
 
     // Synchrontron emission
     bool calcSyncMapsViaRaytracing(parameters & param);
@@ -194,112 +184,67 @@ class CRadiativeTransfer
                                uint subpixel_lvl,
                                int pos_id);
     void getSyncIntensity(photon_package * pp1,
+                          photon_package * pp2,
                           CSourceBasic * tmp_source,
                           double cx,
                           double cy,
                           uint i_det,
                           uint subpixel_lvl);
-    void rayThroughCellSync(photon_package * pp1, uint i_det, uint nr_used_wavelengths);
 
-
-    //OPIATE database RT
-
-    bool calcOPIATEMapsViaRaytracing(parameters & param);
-    void getOPIATEPixelIntensity(CSourceBasic * tmp_source,
-                               double cx,
-                               double cy,
-                               uint i_species,
-                               uint i_trans,
-                               uint i_det,
-                               uint subpixel_lvl,
-                               int pos_id);
-
-    void getOPIATEIntensity(photon_package * pp,
-                          CSourceBasic * tmp_source,
-                          double cx,
-                          double cy,
-                          uint i_species,
-                          uint i_trans,
-                          uint i_det,
-                          uint subpixel_lvl);
-
-    void rayThroughCellOPIATE(photon_package * pp,
-                            uint i_species,
-                            uint i_trans,
-                            uint i_det,
-                            uint nr_velocity_channels,
-                            const VelFieldInterp & vel_field_interp);
-
-
-    // Line emission
+    // Line meission
     bool calcChMapsViaRaytracing(parameters & param);
-
     void getLinePixelIntensity(CSourceBasic * tmp_source,
                                double cx,
                                double cy,
-                               uint i_species,
-                               uint i_trans,
                                uint i_det,
+                               uint i_species,
+                               uint i_line,
                                uint subpixel_lvl,
                                int pos_id);
-
     void getLineIntensity(photon_package * pp,
                           CSourceBasic * tmp_source,
                           double cx,
                           double cy,
-                          uint i_species,
-                          uint i_trans,
                           uint i_det,
-                          uint subpixel_lvl);
-    void rayThroughCellLine(photon_package * pp,
-                            uint i_species,
-                            uint i_trans,
-                            uint i_det,
-                            uint nr_velocity_channels,
-                            const VelFieldInterp & vel_field_interp);
-
-    void preCalcVelocityInterp(CGridBasic * grid,
-                               const photon_package & pp,
-                               VelFieldInterp * vel_field_interp);
+                          uint subpixel_lvl,
+                          uint i_species,
+                          uint i_line);
 
     // Calc radiation pressure
     // bool calcRadiativePressure(parameter & param);
 
     void updateRadiationField(photon_package * pp)
     {
-        double energy = pp->getTmpPathLength() * pp->getStokesVector()->I();
+        double energy = pp->getTmpPathLength() * pp->getStokesVector().I();
 
         if(stokes_dust_rad_field)
         {
             // Rotate vector of radiation field to cell center
-            Vector3D rad_field_dir = grid->rotateToCenter(*pp);
+            Vector3D rad_field_dir = grid->rotateToCenter(pp, pp->getDirection());
 
-            // Backup original direction of photon
-            Vector3D old_dir = pp->getDirection();
+            // Create a copy with the same values as in the photon package
+            photon_package dir_pp = *pp;
 
             // For each detector check if wavelength fits
             for(uint i_det = 0; i_det < nr_ray_detectors; i_det++)
             {
                 // Set coordinate system of temporary photon package for the map direction
-                tracer[i_det]->setCoordinateSystem(pp);
+                tracer[i_det]->setDirection(&dir_pp);
 
                 // Go through each wavelength
                 for(uint i_wave = 0; i_wave < tracer[i_det]->getNrSpectralBins(); i_wave++)
                 {
                     // If the wavelengths fit, save Stokes
-                    if(pp->getWavelength() == tracer[i_det]->getWavelength(i_wave))
+                    if(dust->getWavelengthID(tracer[i_det]->getWavelength(i_wave)) == pp->getWavelengthID())
                     {
                         // Save the scattering Stokes vector in the grid
                         grid->updateSpecLength(
-                            pp->getPositionCell(),
+                            pp,
                             detector_wl_index[i_det] + i_wave,
-                            dust->getRadFieldScatteredFraction(grid, *pp, rad_field_dir, energy));
+                            dust->getRadFieldScatteredFraction(grid, &dir_pp, rad_field_dir, energy));
                     }
                 }
             }
-
-            // Recopy original direction of photon
-            pp->setDirection(old_dir);
         }
         else
         {
@@ -322,11 +267,6 @@ class CRadiativeTransfer
         gas = _gas;
     }
 
-    void setOpiateDataBase(COpiateDataBase * _op)
-    {
-        op=_op;
-    }
-
     void setSourcesLists(slist & _sources_mc, slist & _sources_ray)
     {
         sources_mc = _sources_mc;
@@ -338,9 +278,7 @@ class CRadiativeTransfer
         detector = d;
     }
 
-    double getOpticalDepthAlongPath(photon_package * pp);
-
-    double getTauForced(photon_package * pp, CRandomGenerator * rand_gen);
+    double getEscapeTauForced(photon_package * pp);
 
     bool doMRWStepBW(photon_package * pp);
     bool doMRWStepBWWithoutHeating(photon_package * pp);
@@ -348,6 +286,11 @@ class CRadiativeTransfer
     void calcFinalTemperature(bool use_energy_density);
     void calcStochasticHeating();
     void calcAlignedRadii();
+    void calcDisruptRadii();
+    void calcMaxDisruptRadii();
+    void calcSizeParamModify();
+    void calcBarnetLowJRadii();
+    void calcBarnetHighJRadii();
 
     bool isInvalid(double val)
     {
@@ -363,23 +306,32 @@ class CRadiativeTransfer
     void calcStepWidth(StokesVector & stokes_new,
                        StokesVector & stokes_new2,
                        double cell_d_l,
-                       double * epsi,
-                       double * dz_new)
+                       double & epsi,
+                       double & dz_new)
     {
-        double epsi_I = abs(stokes_new2.I() - stokes_new.I()) /
-                        (REL_ERROR * abs(stokes_new.I()) + ABS_ERROR);
+        epsi = 2.0;
+        dz_new = 0.9 * cell_d_l;
+        if(stokes_new2.I() >= 0 && stokes_new.I() >= 0)
+        {
+            double epsi_I = abs(stokes_new2.I() - stokes_new.I()) / (rel_err * abs(stokes_new.I()) + abs_err);
 
-        double epsi_Q = abs(abs(stokes_new2.Q()) - abs(stokes_new.Q())) /
-                        (REL_ERROR * abs(stokes_new.Q()) + ABS_ERROR);
+            double epsi_Q =
+                abs(abs(stokes_new2.Q()) - abs(stokes_new.Q())) / (rel_err * abs(stokes_new.Q()) + abs_err);
 
-        double epsi_U = abs(abs(stokes_new2.U()) - abs(stokes_new.U())) /
-                        (REL_ERROR * abs(stokes_new.U()) + ABS_ERROR);
+            double epsi_U =
+                abs(abs(stokes_new2.U()) - abs(stokes_new.U())) / (rel_err * abs(stokes_new.U()) + abs_err);
 
-        double epsi_V = abs(abs(stokes_new2.V()) - abs(stokes_new.V())) /
-                        (REL_ERROR * abs(stokes_new.V()) + ABS_ERROR);
+            double epsi_V =
+                abs(abs(stokes_new2.V()) - abs(stokes_new.V())) / (rel_err * abs(stokes_new.V()) + abs_err);
 
-        *epsi = max(epsi_I, max(epsi_Q, max(epsi_U, epsi_V)));
-        *dz_new = 0.9 * cell_d_l * pow(*epsi, -0.2);
+            double dz_new_I = 0.9 * cell_d_l * pow(epsi_I, -0.2);
+            double dz_new_Q = 0.9 * cell_d_l * pow(epsi_Q, -0.2);
+            double dz_new_U = 0.9 * cell_d_l * pow(epsi_U, -0.2);
+            double dz_new_V = 0.9 * cell_d_l * pow(epsi_V, -0.2);
+
+            epsi = max(epsi_I, max(epsi_Q, max(epsi_U, epsi_V)));
+            dz_new = min(dz_new_I, min(dz_new_Q, min(dz_new_U, dz_new_V)));
+        }
     }
 
     void convertTempInQB(double min_gas_density, bool use_gas_temp);
@@ -394,7 +346,7 @@ class CRadiativeTransfer
 
     CRaytracingBasic ** tracer;
     CGridBasic * grid;
-    COpiateDataBase * op;
+    // COpiate * op;
     CDustMixture * dust;
     CGasMixture * gas;
     slist sources_mc, sources_ray;

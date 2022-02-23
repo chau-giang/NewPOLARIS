@@ -1,7 +1,5 @@
-#include <omp.h>
-
 #include "CommandParser.h"
-#include "MathFunctions.h"
+#include <omp.h>
 
 dlist CCommandParser::parseDataString(string data)
 {
@@ -567,48 +565,6 @@ bool CCommandParser::parse()
                 }
                 break;
 
-
-            case CMD_OPIATE:
-                if(i == 0)
-                    break;
-
-                map_max = param->getNrOfOPIATESpecies();
-
-                if(start == MAX_UINT)
-                    start = 0;
-                else
-                    start--;
-
-                if(stop == MAX_UINT)
-                    stop = map_max - 1;
-                else
-                    stop--;
-
-                if(stop > map_max - 1)
-                {
-                    stop = map_max - 1;
-                    cout << "\nWARNING: <stop> value larger than number of raytracing "
-                            "detectors!"
-                         << endl;
-                    cout << " Value set to " << stop + 1 << "." << endl;
-                }
-
-                if(start > map_max - 1)
-                {
-                    start = 0;
-                    cout << "\nWARNING: <start> value larger than number of raytracing "
-                            "detectors!"
-                         << endl;
-                    cout << " Value set to 1." << endl;
-                }
-
-                if(map_max == 0)
-                {
-                    start = 0;
-                    stop = 0;
-                }
-                break;
-
             case CMD_SYNCHROTRON:
                 if(i == 0)
                     break;
@@ -760,12 +716,22 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             return true;
         }
 
+	if(data.compare("CMD_TEMP_DISR") == 0)
+	{
+	    param->setCommand(CMD_TEMP_DISR);
+	    return true;
+	}
         if(data.compare("CMD_TEMP_RAT") == 0)
         {
             param->setCommand(CMD_TEMP_RAT);
             return true;
         }
 
+	if(data.compare("CMD_TEMP_RAT_DISR") == 0)
+	{
+	    param->setCommand(CMD_TEMP_RAT_DISR);
+	    return true;
+	}
         /*if(data.compare("CMD_PLOT") == 0)
         {
             param->setCommand(CMD_PLOT);
@@ -777,7 +743,12 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             param->setCommand(CMD_RAT);
             return true;
         }
-
+        
+	if(data.compare("CMD_DISR") == 0)
+        {
+            param->setCommand(CMD_DISR);
+            return true;
+	}
         if(data.compare("CMD_DUST_SCATTERING") == 0)
         {
             param->setCommand(CMD_DUST_SCATTERING);
@@ -805,8 +776,26 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
     {
         double val = atof(data.c_str());
         param->setLarmF(val);
-        return true;
     }
+
+    if(cmd.compare("<number_cluster>") == 0)
+    {
+		double val = atof(data.c_str());
+		param->setNumberIronCluster(val);
+    }
+ 
+    if(cmd.compare("<volume_filling_cluster>") == 0)
+    {
+		double val = atof(data.c_str());
+        param->setVolumeFillingFactor(val);
+    }
+
+    if(cmd.compare("<iron_fraction>") == 0)
+    {
+		double val = atof(data.c_str());
+        param->setIronFraction(val);
+    }    
+    
 
     if(cmd.compare("<plot_list>") == 0)
     {
@@ -866,22 +855,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
-    if(cmd.compare("<phase_function>") == 0 || cmd.compare("<phase_function id = >") == 0)
+    if(cmd.compare("<phase_function>") == 0)
     {
-        uint dust_component_choice;
-        if(cmd.compare("<phase_function id = >") == 0)
-        {
-            string str = seperateString(data);
-            dust_component_choice = uint(atof(str.c_str()));
-            if(dust_component_choice < 0)
-            {
-                cout << "Error ID " << dust_component_choice << " from <phase_function id = > is not valid!"
-                     << endl;
-                return false;
-            }
-        }
-
-        formatLine(data);
         if(data.compare("PH_HG") == 0)
         {
             param->setPhaseFunctionID(PH_HG);
@@ -914,242 +889,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         }
         return true;
     }
-
-    //start OPIATE detectors
-    if(cmd.compare("<detector_opiate nr_pixel = vel_channels = >") == 0)
-    {
-        string str1 = seperateString(data);
-        string str2 = seperateString(data);
-        string str3 = seperateString(data);
-
-        formatLine(str1);
-        string str_id = str1;
-
-        formatLine(str2);
-        dlist nr_of_pixel = parseValues(str2);
-
-        formatLine(str3);
-        dlist nr_of_channels = parseValues(str3);
-
-        formatLine(data);
-        dlist values = parseValues(data);
-
-        while(values[2] < 0)
-            values[2] += 360;
-        while(values[3] < 0)
-            values[3] += 360;
-
-        if(values.size() == NR_OF_OPIATE_DET - 13) //no distance
-        {
-            //Set distance to 1
-            values.push_back(1.0);
-            // Set sidelength in x-direction to cube sidelength
-            values.push_back(-1);
-            // Set sidelength in y-direction to cube sidelength
-            values.push_back(-1);
-
-            // Set dx to center
-            values.push_back(0.0);
-
-            // Set dy to center
-            values.push_back(0.0);
-
-            // 4x empty
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_OPIATE_DET - 12) // no side lengths
-        {
-            // Set sidelength in x-direction to cube sidelength
-            values.push_back(-1);
-            // Set sidelength in y-direction to cube sidelength
-            values.push_back(-1);
-
-            // Set dx to center
-            values.push_back(0.0);
-
-            // Set dy to center
-            values.push_back(0.0);
-
-            // 4x empty
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_OPIATE_DET - 11)
-        {
-            // Set sidelength in y-direction to cube sidelength
-            values.push_back(values[values.size()-1]);
-
-            // Set dx to center
-            values.push_back(0.0);
-
-            // Set dy to center
-            values.push_back(0.0);
-
-            // 4x empty
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_OPIATE_DET - 10)
-        {
-            // Set dx to center
-            values.push_back(0.0);
-
-            // Set dy to center
-            values.push_back(0.0);
-
-            // 4x empty
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_OPIATE_DET - 8)
-        {
-            // As above, but with x- and y-shift of the detector map
-            // Do not use the other values
-            // 4x empty
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-
-            values.push_back(0.0);
-        }
-
-        values.push_back(DET_PLANE);
-        if(!checkPixel(values, nr_of_pixel))
-            return false;
-        if(!checkVelChannels(values, nr_of_channels))
-            return false;
-
-        if(values.size() != NR_OF_OPIATE_DET)
-        {
-            cout << "\nERROR: Number of parameters in plane opiate detector could not be "
-                    "recognized!"
-                 << endl;
-            return false;
-        }
-
-        param->addOpiateRayDetector(values);
-        param->addOpiateSpec(str_id);
-
-        param->updateDetectorAngles(values[2], values[3]);
-        param->updateObserverDistance(values[4]);
-        param->updateMapSidelength(values[5], values[6]);
-        param->updateRayGridShift(values[7], values[8]);
-        param->updateDetectorPixel(uint(values[NR_OF_OPIATE_DET - 3]), uint(values[NR_OF_OPIATE_DET - 2]));
-
-        return true;
-    }
-
-    if(cmd.compare("<detector_opiate_healpix nr_sides = vel_channels = >") == 0)
-    {
-        string str1 = seperateString(data);
-        string str2 = seperateString(data);
-        string str3 = seperateString(data);
-
-        formatLine(str1);
-        string str_id = str1;
-
-        formatLine(str2);
-        dlist nr_of_sides = parseValues(str2);
-
-        formatLine(str3);
-        dlist nr_of_channels = parseValues(str3);
-
-        formatLine(data);
-        dlist values = parseValues(data);
-
-        //cout << values.size() << "   " <<  NR_OF_OPIATE_DET << endl;
-        if(values.size() == NR_OF_OPIATE_DET - 12) //no ang. range
-        {
-            // l_min
-            values.push_back(-180);
-            // l_max
-            values.push_back(180);
-
-            // b_min
-            values.push_back(-90);
-            // b_max
-            values.push_back(90);
-
-            // Set velocity to zero
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-
-            // set bubble radius to zero
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_OPIATE_DET - 8) // no velocity
-        {
-            // Set velocity to zero
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-
-            // set bubble radius to zero
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_OPIATE_DET - 5) // no bubble
-        {
-            // set bubble radius to zero
-            values.push_back(0.0);
-        }
-
-        values.push_back(DET_SPHER);
-        if(!checkPixel(values, nr_of_sides, true))
-            return false;
-        if(!checkVelChannels(values, nr_of_channels))
-            return false;
-
-        if(values.size() != NR_OF_OPIATE_DET)
-        {
-            cout << "\nERROR: Number of parameters in spherical opiate detector could not be "
-                    "recognized!"
-                 << endl;
-            return false;
-        }
-
-        param->addOpiateRayDetector(values);
-        param->addOpiateSpec(str_id);
-
-        param->updateDetectorPixel(uint(nr_of_sides[0]), 0);
-
-        double distance = sqrt(values[2] * values[2] + values[3] * values[3] + values[4] * values[4]);
-        param->updateObserverDistance(distance);
-
-        // Showing full sphere coverage
-        param->updateDetectorAngles(-90, -180);
-        param->updateDetectorAngles(90, 180);
-
-        return true;
-    }
-
-    if(cmd.compare("<opiata_path_emi>") == 0)
-    {
-        string str = seperateString(data);
-        param->setOpiatePathEmission(str);
-        return true;
-    }
-
-    if(cmd.compare("<opiata_path_abs>") == 0)
-    {
-        string str = seperateString(data);
-        param->setOpiatePathAbsorption(str);
-        return true;
-    }
-    //end OPIATE detectors
 
     if(cmd.compare("<detector_line nr_pixel = vel_channels = >") == 0)
     {
@@ -1516,7 +1255,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         while(values[5] < 0)
             values[5] += 360;
 
-        if(values.size() == NR_OF_RAY_DET - 9)
+        if(values.size() == NR_OF_RAY_DET - 8)
         {
             // Only wl_min, wl_max, wl_skip, source_id, rot_angle_1 and rot_angle_2
             // Set distance to 1
@@ -1528,9 +1267,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 8)
+        else if(values.size() == NR_OF_RAY_DET - 7)
         {
             // As above, but with distance to observer
             // Set sidelength in x-direction of cube sidelength
@@ -1540,29 +1278,21 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 7)
+        else if(values.size() == NR_OF_RAY_DET - 6)
         {
             // As above, but with one sidelength for both directions of cube sidelength
             // Set given sidelength also for y-direction of cube sidelength
-            values.push_back(values[NR_OF_RAY_DET - 8]);
+            values.push_back(values[NR_OF_RAY_DET - 7]);
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 6)
+        else if(values.size() == NR_OF_RAY_DET - 5)
         {
             // As above, but with two sidelengths for x- and y-directions of cube
             // sidelength Do not use the other values
             values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_RAY_DET - 4)
-        {
-            //only the bubble param
             values.push_back(0.0);
         }
 
@@ -1631,7 +1361,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         formatLine(data);
         dlist values = parseValues(data);
 
-        if(values.size() == NR_OF_RAY_DET - 8)
+        if(values.size() == NR_OF_RAY_DET - 7)
         {
             // Only wl_min, wl_max, wl_skip, source_id, position X, Y, and Z
             // Set galactic coordinate l (Longitude) to [-180°, 180°]
@@ -1640,14 +1370,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Set galactic coordinate b (Latitude) to [-90°, 90°]
             values.push_back(-90);
             values.push_back(90);
-            //bubble radius
-            values.push_back(0);
-        }
-
-        if(values.size() == NR_OF_RAY_DET - 4)
-        {
-            //bubble radius
-            values.push_back(0);
         }
 
         values.push_back(DET_SPHER);
@@ -1701,7 +1423,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         while(values[5] < 0)
             values[5] += 360;
 
-        if(values.size() == NR_OF_RAY_DET - 9)
+        if(values.size() == NR_OF_RAY_DET - 8)
         {
             // Only wl_min, wl_max, wl_skip, source_id, rot_angle_1 and rot_angle_2
             // Set distance to 1
@@ -1713,9 +1435,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 8)
+        else if(values.size() == NR_OF_RAY_DET - 7)
         {
             // As above, but with distance to observer
             // Set sidelength in x-direction of cube sidelength
@@ -1725,29 +1446,21 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 7)
+        else if(values.size() == NR_OF_RAY_DET - 6)
         {
             // As above, but with one sidelength for both directions of cube sidelength
             // Set given sidelength also for y-direction of cube sidelength
-            values.push_back(values[NR_OF_RAY_DET - 8]);
+            values.push_back(values[NR_OF_RAY_DET - 7]);
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 6)
+        else if(values.size() == NR_OF_RAY_DET - 5)
         {
             // As above, but with two sidelengths for x- and y-directions of cube
             // sidelength Do not use the other values
             values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_RAY_DET - 4)
-        {
-            //only the bubble param
             values.push_back(0.0);
         }
 
@@ -1798,7 +1511,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         while(values[5] < 0)
             values[5] += 360;
 
-        if(values.size() == NR_OF_RAY_DET - 9)
+        if(values.size() == NR_OF_RAY_DET - 8)
         {
             // Only wl_min, wl_max, wl_skip, source_id, rot_angle_1 and rot_angle_2
             // Set distance to 1
@@ -1810,9 +1523,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 8)
+        else if(values.size() == NR_OF_RAY_DET - 7)
         {
             // As above, but with distance to observer
             // Set sidelength in x-direction of cube sidelength
@@ -1822,29 +1534,21 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 7)
+        else if(values.size() == NR_OF_RAY_DET - 6)
         {
             // As above, but with one sidelength for both directions of cube sidelength
             // Set given sidelength also for y-direction of cube sidelength
-            values.push_back(values[NR_OF_RAY_DET - 8]);
+            values.push_back(values[NR_OF_RAY_DET - 7]);
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 6)
+        else if(values.size() == NR_OF_RAY_DET - 5)
         {
             // As above, but with two sidelengths for x- and y-directions of cube
             // sidelength Do not use the other values
             values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_RAY_DET - 4)
-        {
-            //only the bubble param
             values.push_back(0.0);
         }
 
@@ -1896,29 +1600,19 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         while(values[4] < 0)
             values[4] += 360;
 
-        if(values.size() == NR_OF_MC_DET - 6)
+        if(values.size() == NR_OF_MC_DET - 4)
         {
             // Only wl_min, wl_max, wl_skip, source_id, rot_angle_1 and rot_angle_2
-
             // Set sidelength in x-direction of cube sidelength
             values.push_back(-1);
             // Set sidelength in y-direction of cube sidelength
             values.push_back(-1);
-
-            // Set shift in x-direction of cube sidelength
-            values.push_back(0);
-            // Set shift in y-direction of cube sidelength
-            values.push_back(0);
-
         }
-        else if(values.size() == NR_OF_MC_DET - 4)
+        else if(values.size() == NR_OF_MC_DET - 3)
         {
-            //only sidelength but no shift
-
-            // Set shift in x-direction of cube sidelength
-            values.push_back(0);
-            // Set shift in y-direction of cube sidelength
-            values.push_back(0);
+            // As above, but with one sidelength for both directions of cube sidelength
+            // Set given sidelength also for y-direction of cube sidelength
+            values.push_back(values[NR_OF_MC_DET - 4]);
         }
 
         if(!checkPixel(values, nr_of_pixel))
@@ -1967,7 +1661,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         while(values[5] < 0)
             values[5] += 360;
 
-        if(values.size() == NR_OF_RAY_DET - 9)
+        if(values.size() == NR_OF_RAY_DET - 8)
         {
             // Only wl_min, wl_max, wl_skip, source_id, rot_angle_1 and rot_angle_2
             // Set distance to 1
@@ -1979,9 +1673,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 8)
+        else if(values.size() == NR_OF_RAY_DET - 7)
         {
             // As above, but with distance to observer
             // Set sidelength in x-direction of cube sidelength
@@ -1991,29 +1684,21 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 7)
+        else if(values.size() == NR_OF_RAY_DET - 6)
         {
             // As above, but with one sidelength for both directions of cube sidelength
             // Set given sidelength also for y-direction of cube sidelength
-            values.push_back(values[NR_OF_RAY_DET - 8]);
+            values.push_back(values[NR_OF_RAY_DET - 7]);
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 6)
+        else if(values.size() == NR_OF_RAY_DET - 5)
         {
             // As above, but with two sidelengths for x- and y-directions of cube
             // sidelength Do not use the other values
             values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_RAY_DET - 4)
-        {
-            //only the bubble param
             values.push_back(0.0);
         }
 
@@ -2065,7 +1750,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         while(values[5] < 0)
             values[5] += 360;
 
-        if(values.size() == NR_OF_RAY_DET - 9)
+        if(values.size() == NR_OF_RAY_DET - 8)
         {
             // Only wl_min, wl_max, wl_skip, source_id, rot_angle_1 and rot_angle_2
             // Set distance to 1
@@ -2077,9 +1762,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 8)
+        else if(values.size() == NR_OF_RAY_DET - 7)
         {
             // As above, but with distance to observer
             // Set sidelength in x-direction of cube sidelength
@@ -2089,29 +1773,21 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 7)
+        else if(values.size() == NR_OF_RAY_DET - 6)
         {
             // As above, but with one sidelength for both directions of cube sidelength
             // Set given sidelength also for y-direction of cube sidelength
-            values.push_back(values[NR_OF_RAY_DET - 8]);
+            values.push_back(values[NR_OF_RAY_DET - 7]);
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 6)
+        else if(values.size() == NR_OF_RAY_DET - 5)
         {
             // As above, but with two sidelengths for x- and y-directions of cube
             // sidelength Do not use the other values
             values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_RAY_DET - 4)
-        {
-            //only the bubble param
             values.push_back(0.0);
         }
 
@@ -2180,7 +1856,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         formatLine(data);
         dlist values = parseValues(data);
 
-        if(values.size() == NR_OF_RAY_DET - 8)
+        if(values.size() == NR_OF_RAY_DET - 7)
         {
             // Only wl_min, wl_max, wl_skip, source_id, position X, Y, and Z
             // Set galactic coordinate l (Longitude) to [-180°, 180°]
@@ -2189,15 +1865,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Set galactic coordinate b (Latitude) to [-90°, 90°]
             values.push_back(-90);
             values.push_back(90);
-            //bubble radius
-            values.push_back(0.0);
-        }
-
-
-        if(values.size() == NR_OF_RAY_DET - 4)
-        {
-            //bubble radius
-            values.push_back(0.0);
         }
 
         values.push_back(DET_SPHER);
@@ -2251,7 +1918,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         while(values[5] < 0)
             values[5] += 360;
 
-        if(values.size() == NR_OF_RAY_DET - 9)
+        if(values.size() == NR_OF_RAY_DET - 8)
         {
             // Only wl_min, wl_max, wl_skip, source_id, rot_angle_1 and rot_angle_2
             // Set distance to 1
@@ -2263,9 +1930,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 8)
+        else if(values.size() == NR_OF_RAY_DET - 7)
         {
             // As above, but with distance to observer
             // Set sidelength in x-direction of cube sidelength
@@ -2275,23 +1941,20 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_RAY_DET - 7)
-        {
-            // As above, but with one sidelength for both directions of cube sidelength
-            // Set given sidelength also for y-direction of cube sidelength
-            values.push_back(values[NR_OF_RAY_DET - 8]);
-            // Do not use the other values
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
         }
         else if(values.size() == NR_OF_RAY_DET - 6)
         {
+            // As above, but with one sidelength for both directions of cube sidelength
+            // Set given sidelength also for y-direction of cube sidelength
+            values.push_back(values[NR_OF_RAY_DET - 7]);
+            // Do not use the other values
+            values.push_back(0.0);
+            values.push_back(0.0);
+        }
+        else if(values.size() == NR_OF_RAY_DET - 5)
+        {
             // As above, but with two sidelengths for x- and y-directions of cube
             // sidelength Do not use the other values
-            values.push_back(0.0);
             values.push_back(0.0);
             values.push_back(0.0);
         }
@@ -2355,9 +2018,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
         }
-        else if(values.size() == NR_OF_RAY_DET - 8)
+        else if(values.size() == NR_OF_RAY_DET - 7)
         {
             // As above, but with distance to observer
             // Set sidelength in x-direction of cube sidelength
@@ -2367,23 +2029,20 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             // Do not use the other values
             values.push_back(0.0);
             values.push_back(0.0);
-            values.push_back(0.0);
-        }
-        else if(values.size() == NR_OF_RAY_DET - 7)
-        {
-            // As above, but with one sidelength for both directions of cube sidelength
-            // Set given sidelength also for y-direction of cube sidelength
-            values.push_back(values[NR_OF_RAY_DET - 8]);
-            // Do not use the other values
-            values.push_back(0.0);
-            values.push_back(0.0);
-            values.push_back(0.0);
         }
         else if(values.size() == NR_OF_RAY_DET - 6)
         {
+            // As above, but with one sidelength for both directions of cube sidelength
+            // Set given sidelength also for y-direction of cube sidelength
+            values.push_back(values[NR_OF_RAY_DET - 7]);
+            // Do not use the other values
+            values.push_back(0.0);
+            values.push_back(0.0);
+        }
+        else if(values.size() == NR_OF_RAY_DET - 5)
+        {
             // As above, but with two sidelengths for x- and y-directions of cube
             // sidelength Do not use the other values
-            values.push_back(0.0);
             values.push_back(0.0);
             values.push_back(0.0);
         }
@@ -2607,12 +2266,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
-    if(cmd.compare("<source_background>") == 0)
-    {
-        data="\"0.0\""+data;
-        cmd = "<source_background nr_photons = >";
-    }
-
     if(cmd.compare("<source_background nr_photons = >") == 0)
     {
         string str = seperateString(data);
@@ -2649,37 +2302,10 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
                     }
                     else
                     {
-                        //the case of a constant background
-                        if(values.size() == NR_OF_BG_SOURCES - 3)
-                        {
-                            dlist::iterator it=values.begin();
-
-                            values.insert(it+1,-1.0);
-
-                            values.push_back(0);
-                            values.push_back(0);
-
-                            param->addBackgroundSource(values);
-                        }
-                        else
-                        {
-                            //the case of a constant background
-                            if(values.size() == NR_OF_BG_SOURCES - 1)
-                            {
-                                dlist::iterator it=values.begin();
-
-                                values.insert(it+1,-1.0);
-
-                                param->addBackgroundSource(values);
-                            }
-                            else
-                            {
-                                cout << "\nERROR: Cannot detect path for background parameters "
-                                        "file in line: ";
-                                cout << line_counter << endl;
-                                return false;
-                            }
-                        }
+                        cout << "\nERROR: Cannot detect path for background parameters "
+                                "file in line: ";
+                        cout << line_counter << endl;
+                        return false;
                     }
                 }
             }
@@ -2786,13 +2412,23 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         }
     }
 
+    if(cmd.compare("<disrupt>") == 0)
+    {
+        if(data.compare("RATD") == 0)
+        {
+            param->addDisruptionMechanism(RATD);
+	    return true;
+	}
+    }
     if(cmd.compare("<mu>") == 0)
     {
-        param->setMu(atof(data.c_str()));
-        return true;
+        double val = atof(data.c_str());
+        param->setMu(val);
     }
+        
 
     if(cmd.compare("<xy_min>") == 0)
+    
     {
         param->setXYMin(atof(data.c_str()));
         param->setAutoScale(false);
@@ -2998,7 +2634,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
-    /*if(cmd.compare("<opiata_param_path>") == 0)
+    if(cmd.compare("<opiata_param_path>") == 0)
     {
         string path = seperateString(data);
         param->setOpiateParamPath(path);
@@ -3010,38 +2646,48 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         string path = seperateString(data);
         param->setOpiateDataPath(path);
         return true;
-    }*/
+    }
 
-    if(cmd.compare("<nr_plot_points>") == 0)
+    if(cmd.compare("<nr_gnu_points>") == 0)
     {
-        param->setNrOfPlotPoints(uint(atof(data.c_str())));
+        param->setNrOfGnuPoints(uint(atof(data.c_str())));
         return true;
     }
 
-    if(cmd.compare("<nr_plot_vectors>") == 0)
+    if(cmd.compare("<nr_gnu_vectors>") == 0)
     {
-        param->setnrOfPlotVectors(uint(atof(data.c_str())));
+        param->setNrOfGnuVectors(uint(atof(data.c_str())));
         return true;
     }
 
+    if(cmd.compare("<tensile_strength>") == 0)
+    {
+        param->setTensileStrength(atof(data.c_str()));
+        return true;
+    }
+
+    if(cmd.compare("<size_choice>") == 0)
+    {
+        param->setSizeChoice(atof(data.c_str()));
+        return true;
+    }
     if(cmd.compare("<f_highJ>") == 0)
     {
         param->setFhighJ(atof(data.c_str()));
         return true;
     }
 
-    if(cmd.compare("<Q_ref>") == 0)
+    if(cmd.compare("<wrong_g_zeta_low_J>") == 0)
     {
-        param->setQref(atof(data.c_str()));
+        param->setWrongInternalRATlowJ(atof(data.c_str()));
         return true;
     }
-
-    if(cmd.compare("<alpha_Q>") == 0)
+    
+    if(cmd.compare("<wrong_g_zeta_high_J>") == 0)
     {
-        param->setAlphaQ(atof(data.c_str()));
+        param->setWrongInternalRAThighJ(atof(data.c_str()));
         return true;
     }
-
     if(cmd.compare("<f_c>") == 0)
     {
         param->setFcorr(atof(data.c_str()));
@@ -3054,9 +2700,9 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
-    if(cmd.compare("<max_plot_lines>") == 0)
+    if(cmd.compare("<max_lines>") == 0)
     {
-        param->setMaxPlotLines(uint(atof(data.c_str())));
+        param->setmaxGridLines(uint(atof(data.c_str())));
         return true;
     }
 
@@ -3090,6 +2736,12 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
     if(cmd.compare("<conv_len>") == 0)
     {
         param->updateSIConvLength(atof(data.c_str()));
+        return true;
+    }
+
+    if(cmd.compare("<conv_tensile>") == 0)
+    {
+        param->updateSIConvSmax(atof(data.c_str()));
         return true;
     }
 
@@ -3203,16 +2855,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             param->setScatteringToRay(true);
         else
             param->setScatteringToRay(false);
-
-        return true;
-    }
-
-    if(cmd.compare("<split_dust_emission>") == 0)
-    {
-        if(atob(atoi(data.c_str())))
-            param->setSplitDustEmission(true);
-        else
-            param->setSplitDustEmission(false);
 
         return true;
     }
@@ -3513,18 +3155,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
-    if(cmd.compare("<mc_lvl_pop_photons>") == 0)
-    {
-        param->setMCLvlPopNrOfPhotons(uint(atof(data.c_str())));
-        return true;
-    }
-
-    if(cmd.compare("<mc_lvl_pop_seed>") == 0)
-    {
-        param->setMCLvlPopSeed(uint(atof(data.c_str())));
-        return true;
-    }
-
     return false;
 }
 
@@ -3569,16 +3199,16 @@ bool CCommandParser::checkPixel(dlist & values, dlist nr_of_pixel, bool nsides_a
         }
         else
         {
-            cout << "\nERROR: Number of pixel for ray tracing detector could not be "
+            cout << "\nERROR: Number of pixel in Raytracing detector could not be "
                     "recognized!"
                  << endl;
             return false;
         }
-        for(uint i = 0; i < nr_of_pixel.size(); i++)
+        for(int i = 0; i < nr_of_pixel.size(); i++)
         {
             if(nr_of_pixel[i] <= 0)
             {
-                cout << "\nERROR: Number of pixel for ray tracing detector could not be "
+                cout << "\nERROR: Number of pixel in Raytracing detector could not be "
                         "recognized!"
                      << endl;
                 return false;
@@ -3594,7 +3224,7 @@ bool CCommandParser::checkVelChannels(dlist & values, dlist nr_of_channels)
     {
         if(nr_of_channels[0] <= 0)
         {
-            cout << "\nERROR: Number of velocity channels for ray tracing detector could "
+            cout << "\nERROR: Number of velocity channels in Raytracing detector could "
                     "not be recognized!"
                  << endl;
             return false;
@@ -3603,7 +3233,7 @@ bool CCommandParser::checkVelChannels(dlist & values, dlist nr_of_channels)
     }
     else
     {
-        cout << "\nERROR: Number of velocity channels for ray tracing detector could not "
+        cout << "\nERROR: Number of velocity channels in Raytracing detector could not "
                 "be recognized!"
              << endl;
         return false;

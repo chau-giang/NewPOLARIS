@@ -1,8 +1,8 @@
 #include "Spherical.h"
 #include "CommandParser.h"
 #include "MathFunctions.h"
-#include "Typedefs.h"
-#include "Parameters.h"
+#include "typedefs.h"
+#include <limits>
 
 bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
 {
@@ -16,6 +16,8 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
     line_counter = 0;
     char_counter = 0;
 
+    turbulent_velocity = param.getTurbulentVelocity();
+
     ifstream bin_reader(filename.c_str(), ios::in | ios::binary);
 
     if(bin_reader.fail())
@@ -26,8 +28,6 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
     }
 
     resetGridValues();
-
-    turbulent_velocity = param.getTurbulentVelocity();
 
     max_cells = 0;
 
@@ -335,7 +335,7 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
             center_cell->setThID(MAX_UINT);
             center_cell->resize(data_len + tmp_data_offset);
             tmp_cell = center_cell;
-            tmp_cell->setID(line_counter);
+            tmp_cell->setID(0);
             r_counter++;
         }
         else
@@ -368,10 +368,10 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
             return false;
         }
 
-        updateDataRange(tmp_cell);
+        updateDataRange(tmp_cell, param);
 
-        double tmp_vol = getVolume(*tmp_cell);
-        total_gas_mass += getGasMassDensity(*tmp_cell) * tmp_vol;
+        double tmp_vol = getVolume(tmp_cell);
+        total_gas_mass += getGasMassDensity(tmp_cell) * tmp_vol;
         cell_volume += tmp_vol;
         th_counter++;
     }
@@ -398,25 +398,24 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
     return true;
 }
 
-bool CGridSpherical::writePlotFiles(string path, parameters & param)
+bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
 {
-    nrOfPlotPoints = param.getNrOfPlotPoints();
-    nrOfPlotVectors = param.getNrOfPlotVectors();
-    maxPlotLines = param.getMaxPlotLines();
+    nrOfGnuPoints = param.getNrOfGnuPoints();
+    nrOfGnuVectors = param.getNrOfGnuVectors();
+    maxGridLines = param.getmaxGridLines();
 
-    if(nrOfPlotPoints + nrOfPlotVectors == 0)
+    if(nrOfGnuPoints + nrOfGnuVectors == 0)
         return true;
 
     if(max_cells == 0)
     {
-        cout << "\nERROR: Cannot plot spherical plot file to:" << endl;
+        cout << "\nERROR: Cannot plot spherical grid to Gnuplot file to:" << endl;
         cout << path;
         cout << "Not enough tree cells available! " << endl;
         return false;
     }
 
-    plt_gas_dens = (size_gd_list > 0);  // 1
-    plt_mol_dens = (nrOfDensRatios>0);
+    plt_gas_dens = (!data_pos_gd_list.empty());  // 1
     plt_dust_dens = false;                       // param.getPlot(plIDnd) && (!data_pos_dd_list.empty()); // 2
     plt_gas_temp = (data_pos_tg != MAX_UINT);    // 3
     plt_dust_temp = (!data_pos_dt_list.empty()); // 4
@@ -427,13 +426,21 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                       // (data_pos_mx != MAX_UINT) && (data_pos_td != MAX_UINT); // 7
     plt_mach = false; // param.getPlot(plIDmach) && (data_pos_vx != MAX_UINT) &&
                       // (data_pos_tg != MAX_UINT); // 8
+    plt_disr = (!data_pos_adisr_list.empty());     // 9
+    plt_max_disr = (!data_pos_max_adisr_list.empty());     // 10
+    plt_param_modif = (!data_pos_param_modif_list.empty());     // 11
+    plt_barnet_low_lower = (!data_pos_barnet_low_J_lower_list.empty());     // 12
+    plt_barnet_low_upper = (!data_pos_barnet_low_J_upper_list.empty());     // 13
+    plt_barnet_high_lower = (!data_pos_barnet_high_J_lower_list.empty());     // 14
+    plt_barnet_high_upper = (!data_pos_barnet_high_J_upper_list.empty());     // 15
+    plt_abs_ini = (!data_pos_abs_ini_list.empty()); // 16
 
     plt_mag = (data_pos_mx != MAX_UINT); // 0
     plt_vel = (data_pos_vx != MAX_UINT); // 1
 
-    if(nrOfPlotPoints <= 1)
+    if(nrOfGnuPoints <= 1)
     {
-        nrOfPlotPoints = max_cells / 10;
+        nrOfGnuPoints = max_cells / 10;
 
         plt_gas_dens = false;
         plt_dust_dens = false;
@@ -443,40 +450,60 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         plt_delta = false;
         plt_larm = false;
         plt_mach = false;
+        plt_disr = false;
+        plt_max_disr = false;
+        plt_param_modif = false;
+        plt_barnet_low_lower = false;
+        plt_barnet_low_upper = false;
+        plt_barnet_high_lower = false;
+        plt_barnet_high_upper = false;
+        plt_abs_ini = false;
+  
+    
     }
     else
-        nrOfPlotPoints = max_cells / nrOfPlotPoints;
+        nrOfGnuPoints = max_cells / nrOfGnuPoints;
 
-    if(nrOfPlotVectors <= 1)
+    if(nrOfGnuVectors <= 1)
     {
-        nrOfPlotVectors = max_cells / 10;
+        nrOfGnuVectors = max_cells / 10;
         plt_mag = false;
         plt_vel = false;
     }
     else
-        nrOfPlotVectors = max_cells / nrOfPlotVectors;
+        nrOfGnuVectors = max_cells / nrOfGnuVectors;
 
-    if(nrOfPlotPoints == 0)
-        nrOfPlotPoints = 1;
+    if(nrOfGnuPoints == 0)
+        nrOfGnuPoints = 1;
 
-    if(nrOfPlotVectors == 0)
-        nrOfPlotVectors = 1;
+    if(nrOfGnuVectors == 0)
+        nrOfGnuVectors = 1;
 
     stringstream point_header, vec_header, basic_grid_l0, basic_grid_l1;
 
-    string grid_filename = path + "grid_geometry.py";
-    string dens_gas_filename = path + "grid_gas_density.py";
-    string dens_dust_filename = path + "grid_dust_density.py";
-    string temp_gas_filename = path + "grid_gas_temp.py";
-    string temp_dust_filename = path + "grid_dust_temp.py";
-    string rat_filename = path + "grid_RAT.py";
+    string grid_filename = path + "grid_geometry.plt";
+    string dens_gas_filename = path + "grid_gas_density.plt";
+    string dens_dust_filename = path + "grid_dust_density.plt";
+    string temp_gas_filename = path + "grid_gas_temp.plt";
+    string temp_dust_filename = path + "grid_dust_temp.plt";
+    string abs_ini_filename = path + "grid_abs_ini.py";
+    string rat_filename = path + "grid_RAT.plt";
     string delta_filename = path + "grid_data.dat";
-    string larm_filename = path + "grid_mag.py";
-    string mach_filename = path + "grid_vel.py";
+    string larm_filename = path + "grid_mag.plt";
+    string mach_filename = path + "grid_vel.plt";
+    string ratd_filename = path + "grid_RATD.py";
+    string max_ratd_filename = path + "grid_max_RATD.py";
+    string param_modif_filename = path + "grid_param_modif.py";
+    string barnet_low_lower_filename = path + "grid_barnet_low_lower.py";
+    string barnet_low_upper_filename = path + "grid_barnet_low_upper.py";
+    string barnet_high_lower_filename = path + "grid_barnet_high_lower.py";
+    string barnet_high_upper_filename = path + "grid_barnet_high_upper.py";
     string mag_filename = path + "grid_mag.py";
     string vel_filename = path + "grid_vel.py";
 
-    ofstream point_fields[9];
+
+    ofstream point_fields[17];
+
     ofstream vec_fields[2];
 
     point_fields[0].open(grid_filename.c_str());
@@ -575,6 +602,95 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         }
     }
 
+    if(plt_disr)
+    {
+        point_fields[9].open(ratd_filename.c_str());
+
+        if(point_fields[9].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << ratd_filename << endl;
+            return false;
+        }
+    }
+
+    if(plt_max_disr)
+    {
+        point_fields[10].open(max_ratd_filename.c_str());
+
+        if(point_fields[10].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << max_ratd_filename << endl;
+            return false;
+        }
+    }
+
+    if(plt_param_modif)
+    {
+        point_fields[11].open(param_modif_filename.c_str());
+
+        if(point_fields[11].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << param_modif_filename << endl;
+            return false;
+        }
+    }
+    
+    if(plt_barnet_low_lower)
+    {
+        point_fields[12].open(barnet_low_lower_filename.c_str());
+
+        if(point_fields[12].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << barnet_low_lower_filename << endl;
+            return false;
+        }
+    }
+    
+    if(plt_barnet_low_upper)
+    {
+        point_fields[13].open(barnet_low_upper_filename.c_str());
+
+        if(point_fields[13].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << barnet_low_upper_filename << endl;
+            return false;
+        }
+    }
+
+    
+    if(plt_barnet_high_lower)
+    {
+        point_fields[14].open(barnet_high_lower_filename.c_str());
+
+        if(point_fields[14].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << barnet_high_lower_filename << endl;
+            return false;
+        }
+    }
+    
+    if(plt_barnet_high_upper)
+    {
+        point_fields[15].open(barnet_high_upper_filename.c_str());
+
+        if(point_fields[15].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << barnet_high_upper_filename << endl;
+            return false;
+        }
+    }
+
+    if(plt_abs_ini)
+    {
+        point_fields[16].open(abs_ini_filename.c_str());
+
+        if(point_fields[16].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << abs_ini_filename << endl;
+            return false;
+        }
+    }
+    
     if(plt_mag)
     {
         vec_fields[0].open(mag_filename.c_str());
@@ -838,6 +954,319 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
 
+// 9 ratd
+    point_fields[9] << point_header.str();
+    point_fields[9] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[9] << "set title \'3D disrupted radii distribution (min ID: " << adisr_min
+                    << "; max ID: " << adisr_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[9] << "set cblabel \'disrupted radius ID\'" << endl;
+
+    if(adisr_min == adisr_max)
+        adisr_max = 1.01 * adisr_min;
+
+    point_fields[9] << "set cbrange[" << adisr_min << ":" << adisr_max << "]" << endl;
+
+    point_fields[9] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[9] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+
+
+// 10 ratd_max
+    point_fields[10] << point_header.str();
+    point_fields[10] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[10] << "set title \'3D maximum disrupted radii distribution (min ID: " << max_adisr_min
+                    << "; max ID: " << max_adisr_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[10] << "set cblabel \'disrupted radius ID\'" << endl;
+
+    if(max_adisr_min == max_adisr_max)
+        max_adisr_max = 1.01 * max_adisr_min;
+
+    point_fields[10] << "set cbrange[" << max_adisr_min << ":" << max_adisr_max << "]" << endl;
+
+    point_fields[10] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[10] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+
+// 10 size_param_modify
+    point_fields[11] << point_header.str();
+    point_fields[11] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[11] << "set title \'3D size distribution slope (min ID: " << size_param_modif_min
+                    << "; max ID: " << size_param_modif_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[11] << "set cblabel \'power-law size distribution ID\'" << endl;
+
+    if(size_param_modif_min == size_param_modif_max)
+        size_param_modif_max = 1.01 * size_param_modif_min;
+
+    point_fields[11] << "set cbrange[" << size_param_modif_min << ":" << size_param_modif_max << "]" << endl;
+
+    point_fields[11] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[11] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+ 
+ 
+// 11 abarnet_low_J_lower
+    point_fields[12] << point_header.str();
+    point_fields[12] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[12] << "set title \'3D barnet radii at low J distribution [lower limit] (min ID: " << abar_low_lower_min
+                    << "; max ID: " << abar_low_lower_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[12] << "set cblabel \'lower barnett radius at low J ID\'" << endl;
+
+    if(abar_low_lower_min == abar_low_lower_max)
+        abar_low_lower_max = 1.01 * abar_low_lower_min;
+
+    point_fields[12] << "set cbrange[" << abar_low_lower_min << ":" << abar_low_lower_max << "]" << endl;
+
+    point_fields[12] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[12] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+
+// 12 abarnet_high_J_upper
+    point_fields[13] << point_header.str();
+    point_fields[13] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[13] << "set title \'3D barnet radii at low J distribution [upper limit] (min ID: " << abar_low_upper_min
+                    << "; max ID: " << abar_low_upper_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[13] << "set cblabel \'upper barnett radius at low J ID\'" << endl;
+
+    if(abar_low_upper_min == abar_low_upper_max)
+        abar_low_upper_max = 1.01 * abar_low_upper_min;
+
+    point_fields[13] << "set cbrange[" << abar_low_upper_min << ":" << abar_low_upper_max << "]" << endl;
+
+    point_fields[13] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[13] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+ 
+ 
+// 13 abarnet_high_J_lower
+    point_fields[14] << point_header.str();
+    point_fields[14] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[14] << "set title \'3D barnet radii at high J distribution [lower limit] (min ID: " << abar_high_lower_min
+                    << "; max ID: " << abar_high_lower_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[14] << "set cblabel \'lower barnett radius at low J ID\'" << endl;
+
+    if(abar_high_lower_min == abar_high_lower_max)
+        abar_high_lower_max = 1.01 * abar_high_lower_min;
+
+    point_fields[14] << "set cbrange[" << abar_high_lower_min << ":" << abar_high_lower_max << "]" << endl;
+
+    point_fields[14] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[14] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+
+// 14 abarnet_high_J_upper
+    point_fields[15] << point_header.str();
+    point_fields[15] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[15] << "set title \'3D barnet radii at high J distribution [upper limit] (min ID: " << abar_high_upper_min
+                    << "; max ID: " << abar_high_upper_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[15] << "set cblabel \'upper barnett radius at low J ID\'" << endl;
+
+    if(abar_high_upper_min == abar_high_upper_max)
+        abar_high_upper_max = 1.01 * abar_high_upper_min;
+
+    point_fields[15] << "set cbrange[" << abar_high_upper_min << ":" << abar_high_upper_max << "]" << endl;
+
+    point_fields[15] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[15] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+    
+    // 15 abs_ini: initial absorption rate of dust grains inside the grid
+    point_fields[16] << point_header.str();
+    point_fields[16] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[16] << "set title \'3D initial dust absorption rate (min: " << min_abs_ini
+                    << "; max: " << max_abs_ini << ")\' font \'Arial,12\'" << endl;
+    point_fields[16] << "set cblabel \'absorption rate\'" << endl;
+
+    if(min_abs_ini == 0 && max_abs_ini == 0)
+    {
+        min_abs_ini = 0.1;
+        max_abs_ini = 1;
+    }
+
+    if(min_abs_ini / max_abs_ini > 0.9)
+        min_abs_ini = 0.9 * max_abs_ini;
+
+    point_fields[16] << "set cbrange[" << float(min_abs_ini) << ":" << float(max_abs_ini) << "]" << endl;
+    point_fields[16] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[16] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+    
+    
     // 0 mag
     vec_fields[0] << vec_header.str();
     vec_fields[0] << "set palette defined (0 1 0 0, 0.5 0.0 0.9 0,  0.75 0.0 0.9 1, 0.9 0 0.1 0.9)" << endl;
@@ -883,7 +1312,7 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                   << endl;
 
     if(plt_gas_dens)
-        point_fields[0] << "0 0 0 " << 0.5 << " " << getGasDensity(*center_cell) << endl;
+        point_fields[0] << "0 0 0 " << 0.5 << " " << getGasDensity(center_cell) << endl;
 
     line_counter = 0;
 
@@ -895,13 +1324,19 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
         {
             for(uint i_th = 0; i_th < N_th; i_th++)
             {
-                const cell_sp & tmp_cell_pos = *grid_cells[i_r][i_ph][i_th];
+                cell_sp * tmp_cell_pos = grid_cells[i_r][i_ph][i_th];
 
                 Vector3D c = getCenter(tmp_cell_pos);
 
                 line_counter++;
 
-                if(line_counter % nrOfPlotPoints == 0)
+                double scale = 0;
+
+                double dr = listR[i_r + 1] - listR[i_r];
+                double dph = listPh[i_ph + 1] - listPh[i_ph];
+                double dth = listTh[i_th + 1] - listTh[i_th];
+
+                if(line_counter % nrOfGnuPoints == 0)
                 {
                     if(plt_gas_dens)
                     {
@@ -932,9 +1367,65 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                         point_fields[5] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
                                         << a_alg << endl;
                     }
+
+                    if(plt_disr)
+                    {
+                        double a_disr = getDisruptRadius(tmp_cell_pos, 0);
+                        point_fields[9] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_disr << endl;
+                    }
+
+                    if(plt_max_disr)
+                    {
+                        double max_a_disr = getMaxDisruptRadius(tmp_cell_pos, 0);
+                        point_fields[10] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << max_a_disr << endl;
+                    }
+
+                    if(plt_param_modif)
+                    {
+                        double size_param_modify = getSizeParamModify(tmp_cell_pos, 0);
+                        point_fields[11] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << size_param_modify << endl;
+                    }
+                    
+                    if(plt_barnet_low_lower)
+                    {
+                        double a_bar_low_lower = getBarnetLowLowerRadius(tmp_cell_pos, 0);
+                        point_fields[12] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_bar_low_lower << endl;
+                    }
+               
+               		if(plt_barnet_low_upper)
+                    {
+                        double a_bar_low_upper = getBarnetLowUpperRadius(tmp_cell_pos, 0);
+                        point_fields[13] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_bar_low_upper << endl;
+                    }
+                    
+                    if(plt_barnet_high_lower)
+                    {
+                        double a_bar_high_lower = getBarnetHighLowerRadius(tmp_cell_pos, 0);
+                        point_fields[14] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_bar_high_lower << endl;
+                    }
+               
+               		if(plt_barnet_high_upper)
+                    {
+                        double a_bar_high_upper = getBarnetHighUpperRadius(tmp_cell_pos, 0);
+                        point_fields[15] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_bar_high_upper << endl;
+                    }
+                    
+                    if(plt_abs_ini)
+                    {
+                        double abs_ini = getQBOffset(tmp_cell_pos);
+                        point_fields[16] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << abs_ini << endl;
+                    }
                 }
 
-                if(line_counter % nrOfPlotVectors == 0)
+                if(line_counter % nrOfGnuVectors == 0)
                 {
                     if(plt_mag)
                     {
@@ -989,6 +1480,38 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
                           << basic_grid_l1.str() << "\ne" << endl;
     }
 
+    point_fields[9] << "\ne\n" //GRIDadisr
+                      << basic_grid_l0.str() << "\ne\n"
+                      << basic_grid_l1.str() << "\ne" << endl;
+
+    point_fields[10] << "\ne\n" //GRIDadisr_max
+                      << basic_grid_l0.str() << "\ne\n"
+                      << basic_grid_l1.str() << "\ne" << endl;
+
+    point_fields[11] << "\ne\n" //GRIDparam_modif
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                    
+    point_fields[12] << "\ne\n" //GRIDabar_low_lower
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+	point_fields[13] << "\ne\n" //GRIDabar_low_upper
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+
+    point_fields[14] << "\ne\n" //GRIDabar_high_lower
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+	point_fields[15] << "\ne\n" //GRIDabar_high_upper
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+	point_fields[16] << "\ne\n" //GRIDabs_ini
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
     for(uint pos = 0; pos < 2; pos++)
     {
         vec_fields[pos] << "\ne\n" << basic_grid_l0.str() << "\ne\n" << basic_grid_l1.str() << "\ne" << endl;
@@ -1079,10 +1602,19 @@ bool CGridSpherical::writePlotFiles(string path, parameters & param)
     for(uint pos = 0; pos < 8; pos++)
         point_fields[pos].close();
 
+    point_fields[9].close();
+    point_fields[10].close();
+    point_fields[11].close();
+    point_fields[12].close();
+    point_fields[13].close();
+    point_fields[14].close();
+    point_fields[15].close();
+    point_fields[16].close();
+
     for(uint pos = 0; pos < 2; pos++)
         vec_fields[pos].close();
 
-    cout << "- Writing of plot files             : done" << endl;
+    cout << "- Writing of Gnuplot files             : done" << endl;
     return true;
 }
 
@@ -1337,6 +1869,7 @@ bool CGridSpherical::positionPhotonInGrid(photon_package * pp)
     if(dirID < 6 && pp->getPositionCell() != 0)
     {
         cell_sp * tmp_cell = (cell_sp *)pp->getPositionCell();
+        bool skip = false;
 
         rID = tmp_cell->getRID();
         thID = tmp_cell->getThID();
@@ -1379,10 +1912,9 @@ bool CGridSpherical::positionPhotonInGrid(photon_package * pp)
         }
     }
 
-    Vector3D pos = pp->getPosition();
-    double sp_r = pos.length();
+    Vector3D sp_pos = pp->getPosition().getSphericalCoord();
 
-    if(sp_r < Rmin)
+    if(Rmin > sp_pos.R())
     {
         pp->setPositionCell(center_cell);
         return true;
@@ -1390,21 +1922,18 @@ bool CGridSpherical::positionPhotonInGrid(photon_package * pp)
 
     uint i_r = 0, i_ph = 0, i_th = 0;
 
-    i_r = CMathFunctions::biListIndexSearch(sp_r, listR, N_r + 1);
+    i_r = CMathFunctions::biListIndexSearch(sp_pos.R(), listR, N_r + 1);
     if(i_r == MAX_UINT)
         return false;
 
     if(N_ph > 1)
     {
-        double tmp_phi = pos.getPhiCoord();
-        i_ph = CMathFunctions::biListIndexSearch(tmp_phi, listPh, N_ph + 1);
+        i_ph = CMathFunctions::biListIndexSearch(sp_pos.Phi(), listPh, N_ph + 1);
         if(i_ph == MAX_UINT)
             return false;
     }
 
-    double tmp_theta = acos( pos.Z() / sp_r );
-
-    i_th = CMathFunctions::biListIndexSearch(tmp_theta, listTh, N_th + 1);
+    i_th = CMathFunctions::biListIndexSearch(sp_pos.Z(), listTh, N_th + 1);
     if(i_th == MAX_UINT)
         return false;
 
@@ -1420,149 +1949,176 @@ bool CGridSpherical::goToNextCellBorder(photon_package * pp)
     Vector3D d = pp->getDirection();
 
     bool hit = false;
-    double path_length = 1e300;
+    double min_length = 1e300;
+    double tmp_length[4];
     uint dirID = MAX_UINT;
 
     uint rID = tmp_cell->getRID();
 
     if(rID == MAX_UINT)
     {
-        double r2 = Rmin * (1 + MIN_LEN_STEP*EPS_DOUBLE);
+        double B = 2 * p * d;
+        double C = p.sq_length() - Rmin * Rmin;
+        double dscr = B * B - 4 * C;
 
-        double B = p * d;
-        double C = p.sq_length() - r2 * r2;
-        // dscr is always >=0, we are inside the inner cell
-        double dscr = B * B - C;
-
-        dscr = sqrt(dscr);
-        // "-"-solution is not needed for outer cells; only the "+"-solution can be correct
-        double length = -B + dscr;
-
-        if(length > 0 && length < path_length)
+        if(dscr >= 0)
         {
-            path_length = length;
-            hit = true;
-            dirID = 1;
+            dscr = sqrt(dscr);
+            tmp_length[0] = (-B + dscr) / 2;
+            tmp_length[1] = (-B - dscr) / 2;
+        }
+        else
+        {
+            tmp_length[0] = 1e200;
+            tmp_length[1] = 1e200;
+        }
+
+        for(uint i = 0; i < 2; i++)
+        {
+            if(tmp_length[i] >= 0 && tmp_length[i] < min_length)
+            {
+                min_length = tmp_length[i];
+                hit = true;
+                dirID = 1;
+            }
         }
     }
     else
     {
         // --- Radial cell borders ---
 
-        double r1 = listR[rID] * (1 - MIN_LEN_STEP*EPS_DOUBLE);
-        double r2 = listR[rID + 1] * (1 + MIN_LEN_STEP*EPS_DOUBLE);
+        double r1 = listR[rID];
+        double r2 = listR[rID + 1];
 
         double p_sq = p.sq_length();
-        double B = p * d;
+        double B = 2 * p * d;
         double B_sq = pow(B, 2);
 
         double C1 = p_sq - r1 * r1;
         double C2 = p_sq - r2 * r2;
 
-        double dscr1 = B_sq - C1;
-        // dscr2 is always >= 0
-        double dscr2 = B_sq - C2;
+        double dscr1 = B_sq - 4 * C1;
+        double dscr2 = B_sq - 4 * C2;
 
-        if(dscr1 > 0)
+        if(dscr1 >= 0)
         {
             dscr1 = sqrt(dscr1);
-            // "+"-solution is not needed for inner cells; only the "-"-solution can be correct
-            double length = -B - dscr1;
-
-            if(length > 0 && length < path_length)
-            {
-                path_length = length;
-                hit = true;
-                dirID = 0;
-            }
+            tmp_length[0] = (-B + dscr1) / 2;
+            tmp_length[1] = (-B - dscr1) / 2;
+        }
+        else
+        {
+            tmp_length[0] = 1e200;
+            tmp_length[1] = 1e200;
         }
 
-        dscr2 = sqrt(dscr2);
-        // "-"-solution is not needed for outer cells; only the "+"-solution can be correct
-        double length = -B + dscr2;
-
-        if(length != 0 && length < path_length)
+        if(dscr2 >= 0)
         {
-            path_length = length;
-            hit = true;
-            dirID = 1;
+            dscr2 = sqrt(dscr2);
+            tmp_length[2] = (-B + dscr2) / 2;
+            tmp_length[3] = (-B - dscr2) / 2;
+        }
+        else
+        {
+            tmp_length[2] = 1e200;
+            tmp_length[3] = 1e200;
+        }
+
+        for(uint i = 0; i < 4; i++)
+        {
+            if(tmp_length[i] >= 0 && tmp_length[i] < min_length)
+            {
+                min_length = tmp_length[i];
+                hit = true;
+                dirID = uint(i / 2.0);
+            }
         }
 
         // --- Theta cell borders ---
-        if(N_th > 1)
+        uint thID = tmp_cell->getThID();
+
+        double th1 = listTh[thID];
+        double cos_th1 = cos(th1);
+        double cos_th1_sq = cos_th1 * cos_th1;
+
+        double A1 = d.Z() * d.Z() - cos_th1_sq;
+        double B1 = d.Z() * p.Z() * (1 - cos_th1_sq) - cos_th1_sq * (d.X() * p.X() + d.Y() * p.Y());
+        double C3 = p.Z() * p.Z() * (1 - cos_th1_sq) - cos_th1_sq * (p.X() * p.X() + p.Y() * p.Y());
+
+        double dscr3 = B1 * B1 - A1 * C3;
+
+        if(dscr3 >= 0)
         {
-            uint thID = tmp_cell->getThID();
+            dscr3 = sqrt(dscr3);
+            tmp_length[0] = (-B1 + dscr3) / A1;
+            tmp_length[1] = (-B1 - dscr3) / A1;
+        }
+        else
+        {
+            tmp_length[0] = 1e200;
+            tmp_length[1] = 1e200;
+        }
 
-            double th1 = listTh[thID] * (1 - MIN_LEN_STEP*EPS_DOUBLE);
-            double cos_th1 = cos(th1);
-
-            double cos_th1_sq = cos_th1 * cos_th1;
-            double A1 = cos_th1_sq - d.Z() * d.Z();
-            double B1 = cos_th1_sq * (d.X() * p.X() + d.Y() * p.Y()) - d.Z() * p.Z() * (1 - cos_th1_sq);
-            double C3 = cos_th1_sq * (p.X() * p.X() + p.Y() * p.Y()) - p.Z() * p.Z() * (1 - cos_th1_sq);
-
-            double dscr3 = B1 * B1 - A1 * C3;
-
-            // dscr < 0 should not happen, but might if d.Z = 1, p = p.Z, and th1 = 0 or PI
-            if(dscr3 >= 0)
+        for(uint i = 0; i < 2; i++)
+        {
+            if(tmp_length[i] >= 0 && tmp_length[i] < min_length)
             {
-                dscr3 = sqrt(dscr3);
-
-                double length[2];
-                length[0] = (-B1 + dscr3) / A1;
-                length[1] = (-B1 - dscr3) / A1;
-
-                for(uint i=0; i<2; i++)
-                    if(length[i] > 0 && length[i] < path_length)
-                    {
-                        path_length = length[i];
-                        hit = true;
-                        dirID = 2;
-                    }
+                if((p.Z() + d.Z() * tmp_length[i]) * cos_th1 > 0)
+                {
+                    min_length = tmp_length[i];
+                    hit = true;
+                    dirID = 2;
+                }
             }
+        }
 
-            double th2 = listTh[thID + 1] * (1 + MIN_LEN_STEP*EPS_DOUBLE);
-            double cos_th2 = cos(th2);
+        double th2 = listTh[thID + 1];
+        double cos_th2 = cos(th2);
+        double cos_th2_sq = cos_th2 * cos_th2;
 
-            double cos_th2_sq = cos_th2 * cos_th2;
-            double A2 = cos_th2_sq - d.Z() * d.Z();
-            double B2 = cos_th2_sq * (d.X() * p.X() + d.Y() * p.Y()) - d.Z() * p.Z() * (1 - cos_th2_sq);
-            double C4 = cos_th2_sq * (p.X() * p.X() + p.Y() * p.Y()) - p.Z() * p.Z() * (1 - cos_th2_sq);
+        double A2 = d.Z() * d.Z() - cos_th2_sq;
+        double B2 = d.Z() * p.Z() * (1 - cos_th2_sq) - cos_th2_sq * (d.X() * p.X() + d.Y() * p.Y());
+        double C4 = p.Z() * p.Z() * (1 - cos_th2_sq) - cos_th2_sq * (p.X() * p.X() + p.Y() * p.Y());
 
-            double dscr4 = B2 * B2 - A2 * C4;
+        double dscr4 = B2 * B2 - A2 * C4;
 
-            // dscr < 0 should not happen, but might if d.Z = -1, p = p.Z, and th1 = 0 or PI
-            if(dscr4 >= 0)
+        if(dscr4 >= 0)
+        {
+            dscr4 = sqrt(dscr4);
+            tmp_length[0] = (-B2 + dscr4) / A2;
+            tmp_length[1] = (-B2 - dscr4) / A2;
+        }
+        else
+        {
+            tmp_length[0] = 1e200;
+            tmp_length[1] = 1e200;
+        }
+
+        for(uint i = 0; i < 2; i++)
+        {
+            if(tmp_length[i] >= 0 && tmp_length[i] < min_length)
             {
-                dscr4 = sqrt(dscr4);
-
-                double length[2];
-                length[0] = (-B2 + dscr4) / A2;
-                length[1] = (-B2 - dscr4) / A2;
-
-                for(uint i=0; i<2; i++)
-                    if(length[i] > 0 && length[i] < path_length)
-                    {
-                        path_length = length[i];
-                        hit = true;
-                        dirID = 3;
-                    }
+                if((p.Z() + d.Z() * tmp_length[i]) * cos_th2 > 0)
+                {
+                    min_length = tmp_length[i];
+                    hit = true;
+                    dirID = 3;
+                }
             }
         }
 
         // --- Phi cell borders ---
         if(N_ph > 1)
         {
-            uint phID = tmp_cell->getPhID();
-
             double r = sqrt(p.sq_length());
             double rho = sqrt(p.X() * p.X() + p.Y() * p.Y());
 
             double sin_th = rho / r;
             double cos_th = p.Z() / r;
 
-            double ph1 = listPh[phID] * (1 - MIN_LEN_STEP*EPS_DOUBLE) - MIN_LEN_STEP*EPS_DOUBLE;
-            double ph2 = listPh[phID + 1] * (1 + MIN_LEN_STEP*EPS_DOUBLE) + MIN_LEN_STEP*EPS_DOUBLE;
+            uint phID = tmp_cell->getPhID();
+            double ph1 = listPh[phID];
+            double ph2 = listPh[phID + 1];
 
             double sin_ph1 = sin(ph1);
             double sin_ph2 = sin(ph2);
@@ -1579,9 +2135,9 @@ bool CGridSpherical::goToNextCellBorder(photon_package * pp)
                 double num = v_n1 * (p - v_a1);
                 double length = -num / den1;
 
-                if(length > 0 && length < path_length)
+                if(length >= 0 && length < min_length)
                 {
-                    path_length = length;
+                    min_length = length;
                     hit = true;
                     dirID = 4;
                 }
@@ -1596,9 +2152,9 @@ bool CGridSpherical::goToNextCellBorder(photon_package * pp)
                 double num = v_n2 * (p - v_a2);
                 double length = -num / den2;
 
-                if(length > 0 && length < path_length)
+                if(length >= 0 && length < min_length)
                 {
-                    path_length = length;
+                    min_length = length;
                     hit = true;
                     dirID = 5;
                 }
@@ -1612,6 +2168,7 @@ bool CGridSpherical::goToNextCellBorder(photon_package * pp)
         return false;
     }
 
+    double path_length = min_length + 1e-3 * min_len;
     pp->setPosition(p + d * path_length);
     pp->setTmpPathLength(path_length);
     pp->setDirectionID(dirID);
@@ -1658,7 +2215,7 @@ bool CGridSpherical::updateShortestDistance(photon_package * pp)
         }
     }
 
-    // pp->setShortestDistance(min_dist);
+    pp->setShortestDistance(min_dist);
     return found;
 }
 
@@ -1670,25 +2227,31 @@ bool CGridSpherical::findStartingPoint(photon_package * pp)
     if(isInside(p))
         return positionPhotonInGrid(pp);
 
-    double path_length = 1e300;
+    double tmp_length[2];
+    double min_length = 1e200;
     bool hit = false;
 
-    double r2 = Rmax * (1 - MIN_LEN_STEP*EPS_DOUBLE);
+    double B = 2 * p * d;
+    double C = p.sq_length() - Rmax * Rmax;
+    double dscr = B * B - 4 * C;
 
-    double B = p * d;
-    // C is positive, we are outside of the cell
-    double C = p.sq_length() - r2 * r2;
-    double dscr = B * B - C;
-
-    if(dscr > 0)
+    if(dscr >= 0)
     {
         dscr = sqrt(dscr);
-        // "+"-solution is not needed for inner cells; only the "-"-solution can be correct
-        double length = -B - dscr;
+        tmp_length[0] = (-B + dscr) / 2;
+        tmp_length[1] = (-B - dscr) / 2;
+    }
+    else
+    {
+        tmp_length[0] = 1e200;
+        tmp_length[1] = 1e200;
+    }
 
-        if(length > 0 && length < path_length)
+    for(uint i = 0; i < 2; i++)
+    {
+        if(tmp_length[i] >= 0 && tmp_length[i] < min_length)
         {
-            path_length = length;
+            min_length = tmp_length[i];
             hit = true;
         }
     }
@@ -1696,6 +2259,7 @@ bool CGridSpherical::findStartingPoint(photon_package * pp)
     if(!hit)
         return false;
 
+    double path_length = min_length + 1e-3 * min_len;
     pp->setPosition(p + d * path_length);
     pp->setDirectionID(MAX_UINT);
     return positionPhotonInGrid(pp);

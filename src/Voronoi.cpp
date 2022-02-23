@@ -1,10 +1,10 @@
-#include <algorithm>
-#include <vector>
-
 #include "Voronoi.h"
-#include "Typedefs.h"
-#include "Parameters.h"
-#include "Photon.h"
+#include "CommandParser.h"
+#include "GasSpecies.h"
+#include "MathFunctions.h"
+#include "typedefs.h"
+#include <limits.h>
+#include <limits>
 
 bool CGridVoronoi::loadGridFromBinrayFile(parameters & param, uint _data_len)
 {
@@ -17,6 +17,8 @@ bool CGridVoronoi::loadGridFromBinrayFile(parameters & param, uint _data_len)
     min_nrOfNeigbors = uint(1e6);
     max_nrOfNeigbors = 0;
 
+    turbulent_velocity = param.getTurbulentVelocity();
+
     ifstream bin_reader(filename.c_str(), ios::in | ios::binary);
 
     if(bin_reader.fail())
@@ -27,8 +29,6 @@ bool CGridVoronoi::loadGridFromBinrayFile(parameters & param, uint _data_len)
     }
 
     resetGridValues();
-
-    turbulent_velocity = param.getTurbulentVelocity();
 
     max_cells = 0;
 
@@ -95,7 +95,7 @@ bool CGridVoronoi::loadGridFromBinrayFile(parameters & param, uint _data_len)
 
     while(!bin_reader.eof())
     {
-        if(line_counter == int(max_cells))
+        if(line_counter == max_cells)
             break;
 
         // Calculate percentage of total progress per source
@@ -199,10 +199,10 @@ bool CGridVoronoi::loadGridFromBinrayFile(parameters & param, uint _data_len)
             return false;
         }
 
-        updateDataRange(tmp_cell);
+        updateDataRange(tmp_cell, param);
 
         cell_volume += tmp_vol;
-        total_gas_mass += getGasMassDensity(*tmp_cell) * tmp_vol;
+        total_gas_mass += getGasMassDensity(tmp_cell) * tmp_vol;
 
         line_counter++;
     }
@@ -235,26 +235,25 @@ bool CGridVoronoi::loadGridFromBinrayFile(parameters & param, uint _data_len)
     return true;
 }
 
-// plot Voronoi as plot file
-bool CGridVoronoi::writePlotFiles(string path, parameters & param)
+// plot Voronoi as Gnuplot file
+bool CGridVoronoi::writeGNUPlotFiles(string path, parameters & param)
 {
-    nrOfPlotPoints = param.getNrOfPlotPoints();
-    nrOfPlotVectors = param.getNrOfPlotVectors();
-    maxPlotLines = param.getMaxPlotLines();
+    nrOfGnuPoints = param.getNrOfGnuPoints();
+    nrOfGnuVectors = param.getNrOfGnuVectors();
+    maxGridLines = param.getmaxGridLines();
 
-    if(nrOfPlotPoints + nrOfPlotVectors == 0)
+    if(nrOfGnuPoints + nrOfGnuVectors == 0)
         return true;
 
     if(max_cells == 0)
     {
-        cout << "\nERROR: Cannot plot Voronoi grid to:\n";
+        cout << "\nERROR: Cannot plot Voronoi grid to Gnuplot file in:\n";
         cout << path;
         cout << "Not enough Voronoi cells available! \n";
         return false;
     }
 
-    plt_gas_dens = (size_gd_list > 0);  // 1
-    plt_mol_dens = (nrOfDensRatios>0);
+    plt_gas_dens = (!data_pos_gd_list.empty());  // 1
     plt_dust_dens = false;                       // param.getPlot(plIDnd) && (!data_pos_dd_list.empty()); // 2
     plt_gas_temp = (data_pos_tg != MAX_UINT);    // 3
     plt_dust_temp = (!data_pos_dt_list.empty()); // 4
@@ -269,9 +268,9 @@ bool CGridVoronoi::writePlotFiles(string path, parameters & param)
     plt_mag = (data_pos_mx != uint(-1)); // 0
     plt_vel = (data_pos_vx != uint(-1)); // 1
 
-    if(nrOfPlotPoints <= 1)
+    if(nrOfGnuPoints <= 1)
     {
-        nrOfPlotPoints = max_cells / 10;
+        nrOfGnuPoints = max_cells / 10;
 
         plt_gas_dens = false;
         plt_dust_dens = false;
@@ -283,43 +282,43 @@ bool CGridVoronoi::writePlotFiles(string path, parameters & param)
         plt_mach = false;
     }
     else
-        nrOfPlotPoints = max_cells / nrOfPlotPoints;
+        nrOfGnuPoints = max_cells / nrOfGnuPoints;
 
-    if(nrOfPlotVectors <= 1)
+    if(nrOfGnuVectors <= 1)
     {
-        nrOfPlotVectors = max_cells / 10;
+        nrOfGnuVectors = max_cells / 10;
         plt_mag = false;
         plt_vel = false;
     }
     else
-        nrOfPlotVectors = max_cells / nrOfPlotVectors;
+        nrOfGnuVectors = max_cells / nrOfGnuVectors;
 
-    if(maxPlotLines <= 1)
+    if(maxGridLines <= 1)
     {
-        maxPlotLines = max_cells / 10;
+        maxGridLines = max_cells / 10;
     }
     else
-        maxPlotLines = max_cells / maxPlotLines;
+        maxGridLines = max_cells / maxGridLines;
 
-    if(nrOfPlotPoints == 0)
-        nrOfPlotPoints = 1;
+    if(nrOfGnuPoints == 0)
+        nrOfGnuPoints = 1;
 
-    if(nrOfPlotVectors == 0)
-        nrOfPlotVectors = 1;
+    if(nrOfGnuVectors == 0)
+        nrOfGnuVectors = 1;
 
     stringstream point_header, vec_header, basic_grid, tetra_lines;
 
-    string grid_filename = path + "grid_geometry.py";
-    string dens_gas_filename = path + "grid_gas_density.py";
-    string dens_dust_filename = path + "grid_dust_density.py";
-    string temp_gas_filename = path + "grid_gas_temp.py";
-    string temp_dust_filename = path + "grid_dust_temp.py";
-    string rat_filename = path + "grid_RAT.py";
+    string grid_filename = path + "grid_geometry.plt";
+    string dens_gas_filename = path + "grid_gas_density.plt";
+    string dens_dust_filename = path + "grid_dust_density.plt";
+    string temp_gas_filename = path + "grid_gas_temp.plt";
+    string temp_dust_filename = path + "grid_dust_temp.plt";
+    string rat_filename = path + "grid_RAT.plt";
     string delta_filename = path + "grid_data.dat";
-    string larm_filename = path + "grid_mag.py";
-    string mach_filename = path + "grid_vel.py";
-    string mag_filename = path + "grid_mag.py";
-    string vel_filename = path + "grid_vel.py";
+    string larm_filename = path + "grid_mag.plt";
+    string mach_filename = path + "grid_vel.plt";
+    string mag_filename = path + "grid_mag.plt";
+    string vel_filename = path + "grid_vel.plt";
 
     ofstream point_fields[9];
     ofstream vec_fields[2];
@@ -442,7 +441,7 @@ bool CGridVoronoi::writePlotFiles(string path, parameters & param)
         }
     }
 
-    cout << "-> Creating plot files  .....      \r" << flush;
+    cout << "-> Writing Gnuplot files  .....      \r" << flush;
 
     line_counter = 0;
     char_counter = 0;
@@ -711,29 +710,29 @@ bool CGridVoronoi::writePlotFiles(string path, parameters & param)
         if(line_counter % 200 == 0)
         {
             char_counter++;
-            cout << "-> Creating plot files : " << float(100.0 * double(line_counter) / double(max_cells))
+            cout << "-> Writing Gnuplot files : " << float(100.0 * double(line_counter) / double(max_cells))
                  << "      \r" << flush;
         }
 
         // Delaunay lines
-        if(line_counter % maxPlotLines == 0)
-            addPlotLines(i, tetra_lines);
+        if(line_counter % maxGridLines == 0)
+            addGNULines(i, tetra_lines);
 
-        const cell_vo * tmp_cell_pos = (const cell_vo *)cell_list[i];
-        Vector3D c = getCenter(*tmp_cell_pos);
+        cell_vo * tmp_cell_pos = (cell_vo *)cell_list[i];
+        Vector3D c = getCenter(tmp_cell_pos);
 
         line_counter++;
 
         double p_size = 1.0;
-        double v_size = 1e-2;
+        double v_size = 1.0e-2;
 
-        if(line_counter % nrOfPlotPoints == 0)
+        if(line_counter % nrOfGnuPoints == 0)
         {
             point_fields[0] << c.X() << " " << c.Y() << " " << c.Z() << "\n";
 
             if(plt_gas_dens)
             {
-                double dens = getGasDensity(*tmp_cell_pos);
+                double dens = getGasDensity(tmp_cell_pos);
 
                 if(dens > 0)
                     point_fields[1] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(p_size) << " "
@@ -742,33 +741,33 @@ bool CGridVoronoi::writePlotFiles(string path, parameters & param)
 
             if(plt_gas_temp)
             {
-                double Tg = getGasTemperature(*tmp_cell_pos);
+                double Tg = getGasTemperature(tmp_cell_pos);
                 point_fields[3] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(p_size) << " " << Tg
                                 << "  \n";
             }
 
             if(plt_gas_temp)
             {
-                double Td = getDustTemperature(*tmp_cell_pos);
+                double Td = getDustTemperature(tmp_cell_pos);
                 point_fields[4] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(p_size) << " " << Td
                                 << "  \n";
             }
 
             if(plt_rat)
             {
-                double a_alg = getAlignedRadius(*tmp_cell_pos, 0);
+                double a_alg = getAlignedRadius(tmp_cell_pos, 0);
                 point_fields[5] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(p_size) << " "
                                 << a_alg << "  \n";
             }
         }
 
-        if(line_counter % nrOfPlotVectors == 0)
+        if(line_counter % nrOfGnuVectors == 0)
         {
             if(plt_mag)
             {
-                double mx = getMagField(*tmp_cell_pos).X();
-                double my = getMagField(*tmp_cell_pos).Y();
-                double mz = getMagField(*tmp_cell_pos).Z();
+                double mx = getMagField(tmp_cell_pos).X();
+                double my = getMagField(tmp_cell_pos).Y();
+                double mz = getMagField(tmp_cell_pos).Z();
 
                 double b_len = sqrt(mx * mx + my * my + mz * mz);
 
@@ -786,9 +785,9 @@ bool CGridVoronoi::writePlotFiles(string path, parameters & param)
 
             if(plt_vel)
             {
-                double vx = getVelocityField(*tmp_cell_pos).X();
-                double vy = getVelocityField(*tmp_cell_pos).Y();
-                double vz = getVelocityField(*tmp_cell_pos).Z();
+                double vx = getVelocityField(tmp_cell_pos).X();
+                double vy = getVelocityField(tmp_cell_pos).Y();
+                double vz = getVelocityField(tmp_cell_pos).Z();
 
                 double v_len = sqrt(vx * vx + vy * vy + vz * vz);
 
@@ -822,7 +821,7 @@ bool CGridVoronoi::writePlotFiles(string path, parameters & param)
     for(uint pos = 0; pos < 2; pos++)
         vec_fields[pos].close();
 
-    cout << "- Writing of plot files                : done       \n";
+    cout << "- Writing of Gnuplot files             : done       \n";
     return true;
 }
 
@@ -901,7 +900,7 @@ bool CGridVoronoi::saveBinaryGridFile(string filename, ushort id, ushort data_si
         }
 
         int nr_neighbors = (int)tmp_cell->getNrOfNeighbors();
-        uint id = tmp_cell->getUniqueID();
+        uint id = tmp_cell->getID();
         int tmp_n = 0;
 
         if(isHullPoint(id))
@@ -1225,7 +1224,7 @@ bool CGridVoronoi::goToNextCellBorder(photon_package * pp)
 {
     bool hit = false;
 
-    double path_length = 2e300;
+    double path_length = 0;
 
     double min_l = -0.5 * max_len;
     double max_l = 0.5 * max_len;
@@ -1233,9 +1232,11 @@ bool CGridVoronoi::goToNextCellBorder(photon_package * pp)
     Vector3D pos = pp->getPosition();
     Vector3D dir = pp->getDirection();
 
-    // length_eps is the minimum step width to ensure that
-    // the photon 1) moves and 2) enters the cell !numerically!
-    double length_eps_1, length_eps_2;
+    double min_dl = 2e300;
+    double d_ls = -1;
+
+    Vector3D v_n, v_a, v_S, v_ds;
+    double lamb, num, den;
 
     cell_vo * center_cell = (cell_vo *)pp->getPositionCell();
 
@@ -1252,9 +1253,6 @@ bool CGridVoronoi::goToNextCellBorder(photon_package * pp)
         hit = true;
     }
 
-    Vector3D v_n, v_a;
-    double length, num, den, cell_distance;
-
     for(uint i = 0; i < n_size; i++)
     {
         if(isNeigboringVoroCell(center_cell, i))
@@ -1264,106 +1262,85 @@ bool CGridVoronoi::goToNextCellBorder(photon_package * pp)
             cell_vo * n_cell = ((cell_vo *)cell_list[id]);
             Vector3D n_pos = n_cell->getCenter();
 
-            // v_n is normal vector on the cell border pointing
-            // towards next cell
             v_n = n_pos - c_pos;
-            cell_distance = v_n.length();
-            // v_n should be unit vector
-            v_n.normalize();
+            v_a = c_pos + 0.5 * v_n;
 
-            // den = cos of angle between cell border normal and photon direction
-            den = v_n * dir;
+            num = v_n * (pos - v_a);
+            den = v_n * (dir);
 
-            // den must be positive as long as v_n points outwards
-            if(den > 0)
+            if(den != 0)
             {
-                // v_a is a point on the cell border and
-                // on the line between the two center points
-                v_a = c_pos + 0.5 * cell_distance * v_n;
+                lamb = -num / den;
+                v_S = pos + dir * lamb;
+                v_ds = v_S - pos;
+                d_ls = v_ds.length();
 
-                // geometrically, abs(num) is the shortest distance from current
-                // position to the cell border (perp to border, ie. parallel to v_n)
-                // if num is 0 -> photon is on the border
-                num = v_n * (pos - v_a);
-
-                // distance num to border is enlarged to ensure that at least one
-                // component of the photon position changes parallel to v_n after step
-                // sign(num) is necessary to ensure that abs(num) gets larger
-                length_eps_1 = abs(pos * v_n) * MIN_LEN_STEP * EPS_DOUBLE;
-                num += sign(num) * length_eps_1;
-
-                length = -num / den;
-
-                if(length > 0 && length < path_length)
+                if(lamb > 0 && d_ls < min_dl)
                 {
+                    min_dl = d_ls;
+                    path_length = min_dl;
                     hit = true;
-                    length_eps_2 = abs( (pos + dir * length) * v_n ) / den * MIN_LEN_STEP*EPS_DOUBLE;
-                    path_length = length + length_eps_2;
                 }
             }
         }
     }
 
-    for(int i_side = 0; i_side < 6; i_side++)
+    for(int i_side = 1; i_side <= 6; i_side++)
     {
-        // v_n points outside of current cell
         v_n = 0;
-        // v_a is a point on the cell border
         v_a = 0;
+
         switch(i_side)
         {
-            case 0:
+            case 1:
                 v_n.setZ(-1);
                 v_a.setZ(min_l);
                 break;
-            case 1:
+            case 2:
                 v_n.setZ(1);
                 v_a.setZ(max_l);
                 break;
-            case 2:
+            case 3:
                 v_n.setY(-1);
                 v_a.setY(min_l);
                 break;
-            case 3:
+            case 4:
                 v_n.setY(1);
                 v_a.setY(max_l);
                 break;
-            case 4:
+            case 5:
                 v_n.setX(-1);
                 v_a.setX(min_l);
                 break;
-            case 5:
+            case 6:
                 v_n.setX(1);
                 v_a.setX(max_l);
                 break;
         }
-        // den = cos of angle between cell border normal and photon direction
-        den = v_n * dir;
 
-        // den must be positive as long as v_n points outwards
-        if(den > 0)
+        num = v_n * (pos - v_a);
+        den = v_n * (dir);
+
+        if(den != 0)
         {
-            // geometrically, abs(num) is the shortest distance from current
-            // position to the cell border (perp to border, ie. parallel to v_n)
-            // if num is 0 -> photon is on the border
-            num = v_n * (pos - v_a);
+            lamb = -num / den;
+            v_S = pos + dir * lamb;
+            v_ds = v_S - pos;
+            d_ls = v_ds.length();
 
-            // distance num to border is enlarged to ensure that at least one
-            // component of the photon position changes parallel to v_n after step
-            // sign(num) is necessary to ensure that abs(num) gets larger
-            length_eps_1 = abs(pos * v_n) * MIN_LEN_STEP * EPS_DOUBLE;
-            num += sign(num) * length_eps_1;
-
-            length = -num / den;
-
-            if(length > 0 && length < path_length)
+            if(lamb > 0 && d_ls < min_dl)
             {
+                min_dl = d_ls;
+                path_length = min_dl;
                 hit = true;
-                length_eps_2 = abs( (pos + dir * length) * v_n ) / den * MIN_LEN_STEP*EPS_DOUBLE;
-                path_length = length + length_eps_2;
             }
         }
     }
+
+    path_length *= 1.0001;
+
+    if(path_length < 1e-4)
+        path_length = 1e-4;
 
     pp->setPosition(pos + dir * path_length);
     pp->setTmpPathLength(path_length);
@@ -1411,7 +1388,7 @@ bool CGridVoronoi::updateShortestDistance(photon_package * pp)
         }
     }
 
-    // pp->setShortestDistance(min_dist);
+    pp->setShortestDistance(min_dist);
     return found;
 }
 
@@ -1430,78 +1407,67 @@ bool CGridVoronoi::findStartingPoint(photon_package * pp)
     if(isInside(pos))
         return true;
 
-    Vector3D v_n, v_a;
-    double length, num, den;
+    Vector3D v_n, v_a, v_S, v_ds, new_pos;
+    double lamb, num, den;
 
-    // length_eps is the minimum step width to ensure that
-    // the photon 1) moves and 2) enters the cell !numerically!
-    double length_eps_1, length_eps_2;
+    double min_dl = 2e300;
+    double d_ls = -1;
 
-    for(int i_side = 0; i_side < 6; i_side++)
+    for(int i_side = 1; i_side <= 6; i_side++)
     {
-        // v_n points inside the neighboring cells
-        // photon is outside of the grid
-        // -> v_n has different sign compared to goToNextCellBorder
         v_n = 0;
-        // v_a is a point on the cell border
         v_a = 0;
+
         switch(i_side)
         {
-            case 0:
-                v_n.setZ(1);
-                v_a.setZ(min_l);
-                break;
             case 1:
                 v_n.setZ(-1);
-                v_a.setZ(max_l);
+                v_a.setZ(min_l);
                 break;
             case 2:
-                v_n.setY(1);
-                v_a.setY(min_l);
+                v_n.setZ(1);
+                v_a.setZ(max_l);
                 break;
             case 3:
                 v_n.setY(-1);
-                v_a.setY(max_l);
+                v_a.setY(min_l);
                 break;
             case 4:
-                v_n.setX(1);
-                v_a.setX(min_l);
+                v_n.setY(1);
+                v_a.setY(max_l);
                 break;
             case 5:
                 v_n.setX(-1);
+                v_a.setX(min_l);
+                break;
+            case 6:
+                v_n.setX(1);
                 v_a.setX(max_l);
                 break;
         }
-        // den = cos of angle between cell border normal and photon direction
-        den = v_n * dir;
 
-        // den is positive (negative) if v_n points away from (towards) photon
+        num = v_n * (pos - v_a);
+        den = v_n * (dir);
+
         if(den != 0)
         {
-            // geometrically, abs(num) is the shortest distance from current
-            // position to the cell border (perp to border, ie. parallel to v_n)
-            // if num is 0 -> photon is on the border
-            num = v_n * (pos - v_a);
+            lamb = -num / den;
 
-            // distance num to border is enlarged to ensure that at least one
-            // component of the photon position changes parallel to v_n after step
-            // sign(num) is necessary to ensure that abs(num) gets larger
-            length_eps_1 = abs(pos * v_n) * MIN_LEN_STEP * EPS_DOUBLE;
-            num += sign(num) * length_eps_1;
-
-            length = -num / den;
-
-            if(length > 0 && isInside(pos + dir * length))
+            if(lamb > 0)
             {
-                hit = true;
-                length_eps_2 = abs( (pos + dir * length) * v_n ) / den * MIN_LEN_STEP*EPS_DOUBLE;
-                path_length = length + length_eps_2;
-                break;
+                new_pos = pos + dir * 1.0001 * lamb;
+
+                if(isInside(new_pos))
+                {
+                    hit = true;
+                    path_length = lamb;
+                    break;
+                }
             }
         }
     }
 
-    pp->setPosition(pos + dir * path_length);
+    pp->setPosition(new_pos);
     pp->setTmpPathLength(0);
 
     return positionPhotonInGrid(pp);

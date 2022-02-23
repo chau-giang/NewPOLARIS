@@ -1,16 +1,6 @@
 #pragma once
-#include <math.h>
-#include <stdlib.h>
-#include <iostream>
-#include <string>
-
 #include "Grid.h"
 #include "Vector.h"
-#include "Cell.h"
-#include "Typedefs.h"
-
-class parameters;
-class photon_package;
 
 // search tree parameters
 #define MAX_CELLS 31 // max. cells per tree node
@@ -75,9 +65,9 @@ class CGridVoronoi : public CGridBasic
         conv_Bfield_in_SI = 1;
         conv_Vfield_in_SI = 1;
 
-        nrOfPlotPoints = 1000;
-        nrOfPlotVectors = 1000;
-        maxPlotLines = 3;
+        nrOfGnuPoints = 1000;
+        nrOfGnuVectors = 1000;
+        maxGridLines = 3;
 
         cell_list = 0;
 
@@ -125,7 +115,6 @@ class CGridVoronoi : public CGridBasic
         pos_OpiateIDS = 0;
 
         plt_gas_dens = false;
-        plt_mol_dens = false;
         plt_dust_dens = false;
         plt_gas_temp = false;
         plt_dust_temp = false;
@@ -157,6 +146,8 @@ class CGridVoronoi : public CGridBasic
         min_nrOfNeigbors = uint(1e6);
         max_nrOfNeigbors = 0;
         pos_counter = 0;
+
+        turbulent_velocity = 0;
     }
 
     ~CGridVoronoi()
@@ -182,7 +173,7 @@ class CGridVoronoi : public CGridBasic
         cout << CLR_LINE << flush;
     }
 
-    bool isInside(const Vector3D & pos)const
+    bool isInside(Vector3D & pos)
     {
         double l_min = -0.5 * max_len;
         double l_max = 0.5 * max_len;
@@ -204,19 +195,19 @@ class CGridVoronoi : public CGridBasic
         return true;
     }
 
-    bool writePlotFiles(string path, parameters & param);
+    bool writeGNUPlotFiles(string path, parameters & param);
 
     bool goToNextCellBorder(photon_package * pp);
     bool updateShortestDistance(photon_package * pp);
 
-    Vector3D getCenter(const cell_basic & cell) const
+    Vector3D getCenter(cell_basic * cell)
     {
-        return ((const cell_vo *)&cell)->getCenter();
+        return ((cell_vo *)cell)->getCenter();
     }
 
-    Vector3D getCenter(uint id) const
+    Vector3D getCenter(uint id)
     {
-        const cell_vo * cell = ((const cell_vo *)cell_list[id]);
+        cell_vo * cell = ((cell_vo *)cell_list[id]);
         return cell->getCenter();
     }
 
@@ -251,10 +242,16 @@ class CGridVoronoi : public CGridBasic
         return true;
     }
 
-    double getVolume(const cell_basic & cell) const
+    double getVolume(cell_basic * cell)
     {
-        const cell_vo * cell_pos = (const cell_vo *)&cell;
-        return cell_pos->getVolume();
+        return ((cell_vo *)cell)->getVolume();
+    }
+
+    double getVolume(photon_package * pp)
+    {
+        cell_basic * cell_pos = pp->getPositionCell();
+
+        return getVolume(cell_pos);
     }
 
     bool positionPhotonInGrid(photon_package * pp);
@@ -674,7 +671,7 @@ class CGridVoronoi : public CGridBasic
                 z_min = y;
             }
 
-            double getLength() const
+            double getLength()
             {
                 return length;
             }
@@ -871,7 +868,7 @@ class CGridVoronoi : public CGridBasic
                 {
                     if(node->getLeaf(i)->nodeIntersection(point, distance))
                     {
-                        double tmp_distance = 1e200;
+                        double tmp_distance = 1.0e200;
                         cell_vo * tmp_cell = checkNeighboringNodes(
                             node->getLeaf(i), f_node, p_node, point, distance, tmp_distance);
 
@@ -1061,7 +1058,7 @@ class CGridVoronoi : public CGridBasic
             double oy = node->getYMin();
             double oz = node->getZMin();
 
-            double tmp_length = 0.5 * node->getLength();
+            double length = 0.5 * node->getLength();
             tree_node * leafs = new tree_node[8];
 
             leafs[0].setBranch(node);
@@ -1069,63 +1066,63 @@ class CGridVoronoi : public CGridBasic
             leafs[0].setYMin(oy);
             leafs[0].setZMin(oz);
 
-            leafs[0].setLength(tmp_length);
+            leafs[0].setLength(length);
             leafs[0].setLevel(next_level);
 
             leafs[1].setBranch(node);
-            leafs[1].setXMin(ox + tmp_length);
+            leafs[1].setXMin(ox + length);
             leafs[1].setYMin(oy);
             leafs[1].setZMin(oz);
 
-            leafs[1].setLength(tmp_length);
+            leafs[1].setLength(length);
             leafs[1].setLevel(next_level);
 
             leafs[2].setBranch(node);
             leafs[2].setXMin(ox);
-            leafs[2].setYMin(oy + tmp_length);
+            leafs[2].setYMin(oy + length);
             leafs[2].setZMin(oz);
 
-            leafs[2].setLength(tmp_length);
+            leafs[2].setLength(length);
             leafs[2].setLevel(next_level);
 
             leafs[3].setBranch(node);
-            leafs[3].setXMin(ox + tmp_length);
-            leafs[3].setYMin(oy + tmp_length);
+            leafs[3].setXMin(ox + length);
+            leafs[3].setYMin(oy + length);
             leafs[3].setZMin(oz);
 
-            leafs[3].setLength(tmp_length);
+            leafs[3].setLength(length);
             leafs[3].setLevel(next_level);
 
             leafs[4].setBranch(node);
             leafs[4].setXMin(ox);
             leafs[4].setYMin(oy);
-            leafs[4].setZMin(oz + tmp_length);
+            leafs[4].setZMin(oz + length);
 
-            leafs[4].setLength(tmp_length);
+            leafs[4].setLength(length);
             leafs[4].setLevel(next_level);
 
             leafs[5].setBranch(node);
-            leafs[5].setXMin(ox + tmp_length);
+            leafs[5].setXMin(ox + length);
             leafs[5].setYMin(oy);
-            leafs[5].setZMin(oz + tmp_length);
+            leafs[5].setZMin(oz + length);
 
-            leafs[5].setLength(tmp_length);
+            leafs[5].setLength(length);
             leafs[5].setLevel(next_level);
 
             leafs[6].setBranch(node);
             leafs[6].setXMin(ox);
-            leafs[6].setYMin(oy + tmp_length);
-            leafs[6].setZMin(oz + tmp_length);
+            leafs[6].setYMin(oy + length);
+            leafs[6].setZMin(oz + length);
 
-            leafs[6].setLength(tmp_length);
+            leafs[6].setLength(length);
             leafs[6].setLevel(next_level);
 
             leafs[7].setBranch(node);
-            leafs[7].setXMin(ox + tmp_length);
-            leafs[7].setYMin(oy + tmp_length);
-            leafs[7].setZMin(oz + tmp_length);
+            leafs[7].setXMin(ox + length);
+            leafs[7].setYMin(oy + length);
+            leafs[7].setZMin(oz + length);
 
-            leafs[7].setLength(tmp_length);
+            leafs[7].setLength(length);
             leafs[7].setLevel(next_level);
 
             node->setLeafs(leafs);
@@ -1215,7 +1212,7 @@ class CGridVoronoi : public CGridBasic
         return false;
     }
 
-    void addPlotLines(uint cID, stringstream & str)
+    void addGNULines(uint cID, stringstream & str)
     {
         cell_vo * tmp_cell = (cell_vo *)cell_list[cID];
         uint nr_neighbors = tmp_cell->getNrOfNeighbors();
@@ -1238,7 +1235,7 @@ class CGridVoronoi : public CGridBasic
     {
         int id = cell->getNeighborID(nID);
 
-        if(id > int(max_cells))
+        if(id > max_cells)
             return false;
 
         return id > -1;

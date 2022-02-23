@@ -2,7 +2,7 @@
 #include "Faddeeva.hh"
 #include "Matrix2D.h"
 #include "Stokes.h"
-#include "Typedefs.h"
+#include "typedefs.h"
 #include <complex>
 #include <limits>
 
@@ -60,7 +60,7 @@ class spline
             delete[] y;
     }
 
-    uint size() const
+    uint size()
     {
         return N + 1;
     }
@@ -181,7 +181,7 @@ class spline
                 y[i] += spline2.getValue(x[i]);
     }
 
-    double f(double x) const
+    double f(double x)
     {
         return x * x * x - x;
     }
@@ -322,74 +322,20 @@ class spline
         return y[N];
     }
 
-    double getLinear(uint i, double v) const
+    double getLinear(uint i, double v)
     {
         double t = v - x[i];
         return y[i] + t * (y[i + 1] - y[i]) / (x[i + 1] - x[i]);
     }
 
-    double getLogLinear(uint i, double v) const
-    {
-        double x1 = log10(x[i]);
-        double x2 = log10(x[i+1]);
-
-        double y1 = log10(y[i]);
-        double y2 = log10(y[i+1]);
-
-        v = log10(v);
-
-        double res = y1 + ((y2-y1)/(x2-x1)) * (v-x1);
-        res = pow(10.0, res);
-
-        return res;
-    }
-
-    double getLinearValue(double v)
+    double getValue(double v, uint extrapolation = SPLINE)
     {
         uint min = 0, max = N;
 
-//        for(int i=0;i<=max;i++)
-//            cout << x[i] << "\t" << y[i]<< endl;
-
         if(x == 0)
             return 0;
 
-        if(v <= x[0])
-           return getLinear(0, v);
-
-        if(v >= x[N])
-            return getLinear(N - 1, v);
-
-        while(max - min > 1)
-        {
-            uint i = min + (max - min) / 2;
-            if(x[i] >= v)
-                max = i;
-            else
-                min = i;
-        }
-
-        double x1 = log10(x[min]);
-        double x2 = log10(x[min+1]);
-
-        double y1 = log10(y[min]);
-        double y2 = log10(y[min+1]);
-
-        v = log10(v);
-
-        double res = y1 + ((y2-y1)/(x2-x1)) * (v-x1);
-        res = pow(10.0, res);
-        return res;
-    }
-
-    double getValue(double v, uint extrapolation = SPLINE) const
-    {
-        uint min = 0;
-
-        if(x == 0)
-            return 0;
-
-        if(N == 0)
+        if(min == max)
             return y[0];
 
         // Extrapolation
@@ -398,10 +344,6 @@ class spline
             {
                 case CONST:
                     return y[0];
-                    break;
-
-                case LOGLINEAR:
-                    return getLogLinear(0, v);
                     break;
 
                 case LINEAR:
@@ -419,10 +361,6 @@ class spline
                     return y[N];
                     break;
 
-                case LOGLINEAR:
-                    return getLogLinear(N - 1, v);
-                    break;
-
                 case LINEAR:
                     return getLinear(N - 1, v);
                     break;
@@ -431,10 +369,17 @@ class spline
                     min = N - 1;
                     break;
             }
-        else if(v == x[0])
-            min = 0;
         else
-            min = lower_bound(x, x+N+1, v) - x - 1;
+        {
+            while(max - min > 1)
+            {
+                uint i = min + (max - min) / 2;
+                if(x[i] >= v)
+                    max = i;
+                else
+                    min = i;
+            }
+        }
 
         double t = (v - x[min]) / (u[min]);
 
@@ -520,25 +465,43 @@ class spline
 
     uint getXIndex(double v)
     {
-        if(v < x[0] || v > x[N] || N==1)
+        uint min = 0, max = N;
+
+        if(v < x[0] || v > x[N])
             return 0;
 
-        uint min = upper_bound(x, x+N+1, v) - x - 1;
+        while(max - min > 1)
+        {
+            uint i = min + (max - min) / 2; // /2 only for positive!!
+            if(x[i] > v)
+                max = i;
+            else
+                min = i;
+        }
 
         return min;
     }
 
-    uint getYIndex(double v) const
+    uint getYIndex(double v)
     {
-        if(v < y[0] || v > y[N] || N==1)
+        uint min = 0, max = N;
+
+        if(v < y[0] || v > y[N])
             return 0;
 
-        uint min = upper_bound(y, y+N+1, v) - y - 1;
+        while(max - min > 1)
+        {
+            uint i = min + (max - min) / 2; // /2 only for positive!!
+            if(y[i] > v)
+                max = i;
+            else
+                min = i;
+        }
 
         return min;
     }
 
-    double getValue(uint i) const
+    double getValue(uint i)
     {
         if(i < 0 || i > N)
             return 0;
@@ -564,25 +527,52 @@ class interp
     interp()
     {
         N = 0;
+        x = 0;
+        y = 0;
     }
 
     interp(uint size)
     {
         N = size - 1;
-        x.resize(size);
-        y.resize(size);
+        x = new double[size];
+        y = new double[size];
+
+        for(uint i = 0; i < size; i++)
+        {
+            x[i] = 0;
+            y[i] = 0;
+        }
     }
 
-    uint size() const
+    ~interp()
+    {
+        if(x != 0)
+            delete[] x;
+        if(y != 0)
+            delete[] y;
+    }
+
+    uint size()
     {
         return N + 1;
     }
 
     void resize(uint size)
     {
+        if(x != 0)
+            delete[] x;
+        if(y != 0)
+            delete[] y;
+
         N = size - 1;
-        x.resize(size);
-        y.resize(size);
+        x = new double[size];
+        y = new double[size];
+
+        for(uint i = 0; i < size; i++)
+        {
+            x[i] = 0;
+            y[i] = 0;
+        }
     }
 
     void setValue(uint pos, double _x, double _y)
@@ -598,61 +588,66 @@ class interp
         y[pos] = _y;
     }
 
-    void addValue(double _x, double _y)
-    {
-        x.push_back(_x);
-        y.push_back(_y);
-    }
-
-    double getLinear(uint i, double v) const
+    double getLinear(uint i, double v)
     {
         double t = v - x[i];
         return y[i] + t * (y[i + 1] - y[i]) / (x[i + 1] - x[i]);
     }
 
-    double getValue(double v, uint interpolation = LINEAR) const
+    double getValue(double v, uint interpolation = LINEAR)
     {
-        if(N == 0)
+        uint min = 0, max = N;
+
+        if(x == 0)
+            return 0;
+
+        if(min == max)
             return y[0];
 
-        if(v < x[0])
-            switch(interpolation)
-            {
-                case CONST:
-                    return y[0];
-                    break;
-
-                case LINEAR:
-                    return getLinear(0, v);
-                    break;
-            }
-        else if(v > x[N])
-            switch(interpolation)
-            {
-                case CONST:
-                    return y[N];
-                    break;
-
-                case LINEAR:
-                    return getLinear(N - 1, v);
-                    break;
-            }
-        else
+        if(x != 0)
         {
-            uint min = 0;
+            if(v < x[0])
+                switch(interpolation)
+                {
+                    case CONST:
+                        return y[0];
+                        break;
 
-            if(v != x[0])
-                min = lower_bound(x.begin(), x.end(), v) - x.begin() - 1;
+                    case LINEAR:
+                        return getLinear(0, v);
+                        break;
+                }
+            else if(v > x[N])
+                switch(interpolation)
+                {
+                    case CONST:
+                        return y[N];
+                        break;
 
-            switch(interpolation)
+                    case LINEAR:
+                        return getLinear(N - 1, v);
+                        break;
+                }
+            else
             {
-                case CONST:
-                    return y[min+1];
-                    break;
+                while(max - min > 1)
+                {
+                    uint i = min + (max - min) / 2;
+                    if(x[i] >= v)
+                        max = i;
+                    else
+                        min = i;
+                }
+                switch(interpolation)
+                {
+                    case CONST:
+                        return y[max];
+                        break;
 
-                case LINEAR:
-                    return getLinear(min, v);
-                    break;
+                    case LINEAR:
+                        return getLinear(min, v);
+                        break;
+                }
             }
         }
 
@@ -661,8 +656,8 @@ class interp
 
   private:
     uint N;
-    dlist x;
-    dlist y;
+    double * x;
+    double * y;
 };
 
 class prob_list
@@ -725,12 +720,19 @@ class prob_list
 
     uint getIndex(double v)
     {
-        uint min = 0;
+        uint min = 0, max = N;
 
-        if(v < x[0] || v > x[N] || N == 1)
+        if(v < x[0] || v > x[N])
             return 0;
 
-        min = upper_bound(x, x+N+1, v) - x - 1;
+        while(max - min > 1)
+        {
+            uint i = min + (max - min) / 2; // /2 only for positive!!
+            if(x[i] > v)
+                max = i;
+            else
+                min = i;
+        }
 
         return min;
     }
@@ -778,89 +780,46 @@ class CRandomGenerator
   public:
     CRandomGenerator()
     {
-        // The standard seed values as proposed by George Marsaglia
-        // These will be used is init is not called
-        // x
-        KISS_state[0] = 1234567890987654321ULL;
-        // y
-        KISS_state[1] = 362436362436362436ULL;
-        // z
-        KISS_state[2] = 1066149217761810ULL;
-        // c
-        KISS_state[3] = 123456123456123456ULL;
+        kiss_x = 0;
+        kiss_y = 0;
+        kiss_z = 0;
+        kiss_c = 0;
     }
 
-    void init(ullong seed)
+    void setSeed(ullong seed)
     {
-        // KISS will work just fine even w/o the init process
-        KISS_state[0] = seed;
-        // The seed for CONG is given by the OMP thread number
-        // call CONG several times to get a nice random seed for KISS
-        for(int i = 0; i < 2000; i++)
-            KISS_state[0] = CONG(KISS_state[0]);
-
-        // fill the state array for KISS
-        KISS_state[1] = CONG(KISS_state[0]);
-        KISS_state[2] = CONG(KISS_state[1]);
-        KISS_state[3] = CONG(KISS_state[2]);
+        kiss_x = (seed * 1234567890987654321ULL) % 18446744073709551615ULL;
+        kiss_y = (seed * 362436362436362436ULL) % 18446744073709551615ULL;
+        kiss_z = (seed * 1066149217761810ULL) % 18446744073709551615ULL;
+        kiss_c = (seed * 123456123456123456ULL) % 18446744073709551615ULL;
     }
 
-    ullong CONG(ullong current_state)
-    {
-        // CONG - very simple linear congruential generator
-        return 6906969069ULL * current_state + 1234567;
-    }
-
-    double getRND()
+    double getValue()
     {
         // KISS (Keep it Simple Stupid) is a family of pseudorandom number generators
         // introduced by George Marsaglia.
         // Source: https://de.wikipedia.org/wiki/KISS_(Zufallszahlengenerator)
+        ullong t;
 
-        // linear congruential generator
-        KISS_state[2] = CONG(KISS_state[2]);
+        kiss_z = 6906969069LL * kiss_z + 1234567;
 
         // Xorshift
-        KISS_state[1] ^= KISS_state[1] << 13;
-        KISS_state[1] ^= KISS_state[1] >> 17;
-        KISS_state[1] ^= KISS_state[1] << 43;
+        kiss_y ^= kiss_y << 13;
+        kiss_y ^= kiss_y >> 17;
+        kiss_y ^= kiss_y << 43;
 
         // Multiply-with-carry
-        ullong tmp = (KISS_state[0] << 58) + KISS_state[3];
-        KISS_state[3] = (KISS_state[0] >> 6);
-        KISS_state[0] += tmp;
-        KISS_state[3] += (KISS_state[0] < tmp);
+        t = (kiss_x << 58) + kiss_c;
+        kiss_c = (kiss_x >> 6);
+        kiss_x += t;
+        kiss_c += (kiss_x < t);
 
         // Return double between 0 and 1
-        return double(KISS_state[0] + KISS_state[1] + KISS_state[2]) / 18446744073709551615ULL;
-    }
-
-    double getRNDnormal(double mu, double sigma)
-    {
-        double U1, U2, W, mult;
-        double X1, X2;
-
-        do
-        {
-            U1 = -1 + getRND() * 2;
-            U2 = -1 + getRND() * 2;
-            W = pow(U1, 2) + pow(U2, 2);
-        } while(W >= 1 || W == 0);
-
-        mult = sqrt((-2 * log(W)) / W);
-        X1 = U1 * mult;
-        X2 = U2 * mult;
-
-        double res = mu + sigma * X1;
-
-        if(res < 0)
-            return getRNDnormal(mu, sigma);
-
-        return res;
+        return double(kiss_x + kiss_y + kiss_z) / 18446744073709551615ULL;
     }
 
   private:
-    ullong KISS_state[4];
+    ullong kiss_x, kiss_y, kiss_z, kiss_c;
 };
 
 class CMathFunctions
@@ -1220,52 +1179,92 @@ class CMathFunctions
         return MAX_UINT;
     }
 
-    static inline uint biListIndexSearch(double val, const dlist & list)
+    static inline uint biListIndexSearch(double val, dlist & list)
     {
         uint N = uint(list.size());
+        uint min = 0, max = N - 1;
 
         if(val < list[0] || val > list[N - 1])
+            return MAX_UINT;
+
+        while(max - min > 1)
+        {
+            uint i = min + (max - min) / 2;
+            if(list[i] >= val)
+                max = i;
+            else
+                min = i;
+        }
+
+        return min;
+    }
+
+    static inline uint biListIndexSearchRec(double val, dlist & list)
+    {
+        uint N = uint(list.size());
+        uint min = 0, max = N - 1;
+
+        if(val < list[0] || val > list[max])
             return MAX_UINT;
 
         if(val == list[0])
             return 0;
 
-        uint min = lower_bound(list.begin(), list.end(), val) - list.begin() - 1;
+        if(val == list[max])
+            return max;
 
-        return min;
-    }
-
-    static inline uint biListIndexSearchRec(double val, const dlist & list)
-    {
-        uint N = uint(list.size());
-
-        if(val < list[0] || val > list[N - 1])
-            return MAX_UINT;
-
-        uint min = upper_bound(list.begin(), list.end(), val) - list.begin() - 1;
+        while(max - min > 1)
+        {
+            uint i = min + (max - min) / 2;
+            if(list[i] > val)
+                max = i;
+            else
+                min = i;
+        }
 
         return min;
     }
 
     static inline uint biListIndexSearchRec(double val, const double * list, uint N)
     {
-        if(val < list[0] || val > list[N - 1])
+        uint min = 0, max = N - 1;
+
+        if(val < list[0] || val > list[max])
             return MAX_UINT;
 
-        uint min = upper_bound(list, list+N, val) - list - 1;
+        if(val == list[0])
+            return 0;
+
+        if(val == list[max])
+            return max;
+
+        while(max - min > 1)
+        {
+            uint i = min + (max - min) / 2;
+            if(list[i] > val)
+                max = i;
+            else
+                min = i;
+        }
 
         return min;
     }
 
     static inline uint biListIndexSearch(double val, const double * list, uint N)
     {
-        if(val < list[0] || val > list[N - 1])
+        uint min = 0, max = N - 1;
+
+        if(val < list[0] || val > list[max])
             return MAX_UINT;
 
-        if(val == list[0])
-            return 0;
-
-        uint min = lower_bound(list, list+N, val) - list - 1;
+        while(max - min > 1)
+        {
+            uint i = min + uint((max - min) / 2);
+            if(list[i] >= val)
+                max = i;
+            else
+                min = i;
+        }
 
         return min;
     }
@@ -1367,12 +1366,11 @@ class CMathFunctions
         Vector3D velo;
 
         double r = sqrt(pos.X() * pos.X() + pos.Y() * pos.Y());
-        if(r > 0)
-        {
-            double kep_const = sqrt(con_G * stellar_mass * M_sun / r);
-            velo.setX(-1.0 * pos.Y() / r * kep_const);
-            velo.setY(pos.X() / r * kep_const);
-        }
+        double kep_const = sqrt(con_G * stellar_mass * M_sun / r);
+
+        velo.setX(-1.0 * pos.Y() / r * kep_const);
+        velo.setY(pos.X() / r * kep_const);
+        velo.setZ(0.0);
 
         return velo;
     }
@@ -1505,7 +1503,7 @@ class CMathFunctions
         return res;
     }
 
-    static inline double integ(const dlist & x, double * y, uint xlow, uint xup)
+    static inline double integ(dlist x, double * y, uint xlow, uint xup)
     {
         double res = 0;
         if(xlow != xup)
@@ -1530,7 +1528,7 @@ class CMathFunctions
         return res;
     }
 
-    static inline double integ(const dlist & x, const dlist & y, uint xlow, uint xup)
+    static inline double integ(dlist & x, dlist & y, uint xlow, uint xup)
     {
         double res = 0;
         if(xlow != xup)
@@ -1540,7 +1538,7 @@ class CMathFunctions
         return res;
     }
 
-    static inline double integ(const dlist & x, const uilist & y, uint xlow, uint xup)
+    static inline double integ(dlist & x, uilist & y, uint xlow, uint xup)
     {
         double res = 0;
         if(xlow != xup)
@@ -1796,7 +1794,111 @@ class CMathFunctions
         return vel / sqrt(con_kB * Tg / (mu * m_H));
     }
 
-    static inline double calc_larm_limit(double B, double Td, double Tg, double ng, double s, double larm_f)
+ 	static inline double calc_X_0(double Td, double fp)
+ 	{
+		//*****************************************************************************
+ 		//*    Input: Td: dust temperature (K)
+ 		//*		      fp: iron fraction inside dust grains
+ 		//*    Output: magnetic suscepbility at 0 frequency X(0)
+ 		//*    Equation: X_0 = np . u^2 / (3. kB . Td)
+ 		//*  
+		//*    Note: This calculation is in the CGS unit
+		//******************************************************************************
+		
+		
+ 	 	double rho_MgFeSiO4 = 3.81; //(g cm-3)
+ 	 	double u = 1.66054e-24; // atomic mass (g)
+		double M_MgFeSiO4 = 172.2351 * u; 
+	
+		double n_atomic = rho_MgFeSiO4 / M_MgFeSiO4;
+ 
+ 		double ge = 2;
+ 		double J = 2.5;
+ 		double uB = 9.27401e-21; 	// Bohr magneton
+ 		double kb = 1.38065e-16;    // Boltzman constant
+ 		
+ 		double constant = pow(ge, 2) * J * (J+1) * pow(uB, 2) / (3 * kb);
+ 		
+ 		return constant * n_atomic * fp / Td;
+ 	}
+ 	
+ 	static inline double calc_K_w(double Td, double fp, double omega)
+ 	{
+ 		//*******************************************************************************
+ 		//*    Input: Td: dust temperature (K)
+ 		//* 		  fp: iron fraction inside dust grains
+ 		//* 		  omega: angular speed of dust grains (rad/s)
+ 		//*     Output: the imagine part of the magnetic suscepbility at frequency w: K_2(w)/w
+ 		//*
+ 		//*     Note: Calculation here is in CGS unit
+ 		//********************************************************************************
+ 		
+ 	 	double rho_MgFeSiO4 = 3.81; //(g cm-3)
+ 	 	double u = 1.66054e-24; // atomic mass (g)
+		double M_MgFeSiO4 = 172.2351 * u; 
+	
+		double n_atomic = rho_MgFeSiO4 / M_MgFeSiO4;
+		
+ 		// spin-spin relaxation timescale
+ 		double tel = 2.727e11 / (n_atomic * fp);
+ 		
+ 		// magnetic suscepbility at 0 frequency
+ 		double X_0 = calc_X_0(Td, fp);
+ 		
+ 		// Imagine part of magnetic suscepbility at frequency w
+ 		double X_2_w = X_0 * tel * omega / pow((1 + pow((omega * tel)/2, 2)), 2);
+ 		
+ 		return X_2_w / omega;
+ 	}
+ 	
+ 	static inline double calc_X_0_super(double Td, double Ncl, double phi_sp, double s)
+ 	{
+ 		//*****************************************************************************
+ 		//*    Input: Td: dust temperature (K)
+ 		//*		      Ncl: number of iron per cluster
+ 		//*			  phi_sp: volume filling factor of iron cluster
+ 		//*			  s: aspect ratio: ratio of minor and major axis of dust
+ 		//*    Output: magnetic suscepbility at 0 frequency X(0)
+ 		//*    Equation: X_0 = 3.5e23 . phi_sp . Ncl . u^2 / (4. pi. s. kB . Td)
+ 		//*  
+		//*    Note: This calculation is in the CGS unit
+		//*****************************************************************************
+		
+		double ge = 2;
+ 		double J = 2.5;
+ 		double uB = 9.27401e-21; 	// Bohr magneton
+ 		double kb = 1.38065e-16;    // Boltzman constant
+ 		
+ 		double constant = 3.5e23 * pow(ge, 2) * J * (J+1) * pow(uB, 2);
+ 		constant /= (4.0 * PI *  kb * s);
+ 		
+ 		return constant * phi_sp * Ncl / Td;
+ 	}
+ 	
+ 	static inline double calc_K_w_super(double Td, double Ncl, double phi_sp, double s, double omega)
+ 	{
+ 	 	//*******************************************************************************
+ 		//*    Input: Td: dust temperature (K)
+ 		//* 		  fp: iron fraction inside dust grains
+ 		//* 		  omega: angular speed of dust grains (rad/s)
+ 		//*     Output: the imagine part of the magnetic suscepbility at frequency w: K_2(w)/w
+ 		//*
+ 		//*     Note: Calculation here is in CGS unit
+ 		//********************************************************************************
+ 		// magnetic suscepbility at 0 frequency
+ 		double X_0 = calc_X_0_super(Td, Ncl, phi_sp, s);
+ 		
+ 		// The rate of thermally activated magnetization of superparamagnetic inclusion
+ 		double tsp = 1e-9 *  exp(Ncl * 0.011 / Td);
+ 		
+ 		// Imagine part of the magnetic suscepbility at frequency w
+ 		double K_2_w = X_0 * tsp * omega / pow((1 + pow((omega * tsp)/2, 2)), 2);
+ 		
+ 		return K_2_w / omega;
+ 	}
+ 	
+ 	
+    static inline double calc_larm_limit_default(double B, double Td, double Tg, double ng, double s, double larm_f)
     {
         double den = 1.0 * ng * Td * sqrt(Tg);
 
@@ -1805,7 +1907,84 @@ class CMathFunctions
 
         return s * s * B / den / larm_f;
     }
+    
+    static inline double calc_larm_limit_super(double B, double Td, double Tg, double ng, double s, double Ncl, double phi_sp)
+    {
+    	//*******************************************************************
+    	//*		 Input: B: magnetic field strength (T)
+    	//*	   		    Td: dust temperature (K)
+    	//*		        Tg: gas temperature (K)
+    	//*		        ng: gas density (m-3)
+    	//*		        s: aspect ratio = minor axis/major axis
+    	//*		        Ncl: number of iron per cluster
+    	//* 		   phi_sp: volumn filling factor of iron clusters 
+    	//* 
+    	//*		Output: the upper radius where dust can not aligned with B field
+    	//*					FOR SUPERPARAMAGNETIC GRAINS
+    	//*		Condition: tlarm <= tgas: tlarm: Larmor timescale, tgas: gas damping timescale
+    	
+    	//*   - Larmor timescale for superparamagnetic grains: 
+    	//*  				tlar = 2 * pi * I * w / (ub * B):
+    	//*  	+ I										  : inertia moment of dust
+    	//* 	+ ub = X,sp(0) * V * hbar * w / (ge * uB) : magnetic moment of dust
+    	//*  + X,sp(0)								  : magnetic suscessbility at w = 0
 
+		//*   - Gas damping timescale:
+		//*			 tgas = 3/ (4*sqrt(pi)) * I / (1.2 * nH * mH * vth * a**4)
+		//*	    + vth: thermal velocity of gas, vth = sqrt(2 * kb * Tgas / mH)  
+    	
+		// 					Calculation in the SI unit
+		//**************************************************************************
+    	
+    	double den = ng * Td * sqrt(Tg);
+
+        if(den == 0)
+            return 1;
+            
+    	double cons = 3.775e19;
+
+        return cons * s * phi_sp * Ncl * B / den;
+    }
+
+    static inline double calc_larm_limit_para(double B, double Td, double Tg, double ng, double s, double fp)
+    {
+        //*******************************************************************
+    	//*		 Input: B: magnetic field strength (T)
+    	//*	   		    Td: dust temperature (K)
+    	//*		        Tg: gas temperature (K)
+    	//*		        ng: gas density (m-3)
+    	//*		        s: aspect ratio = minor axis/major axis
+    	//*		        fp: iron fraction
+ 		//*
+    	//*		Output: the upper radius where dust can not aligned with B field
+    	//				FOR PARAMAGNETIC GRAINS
+    	//*		Condition: tlarm <= tgas: tlarm: Larmor timescale, tgas: gas damping timescale
+    	
+    	//* - Larmor timescale for paramagnetic grains:
+    	//*				tlar = 2 * pi * I * w / (ub * B):
+    	//* 	+ I : inertia moment of dust
+    	//* 	+ ub = X(0) * V * hbar * w / (ge * uB): magnetic moment of dust
+    	//*		+ X(0): magnetic suscessbility at w = 0
+ 
+		// 					Calculation in the SI unit
+		//**************************************************************************
+    	    	
+    	double rho_MgFeSiO4 = 3810; //(kg m-3)
+		double M_MgFeSiO4 = 172.2351*1.66053904e-27; //M_MgFeSiO4 = 172.2351u with u the atomic mass unit u = 1.66053904e-27 kg
+	
+		double n = rho_MgFeSiO4 / M_MgFeSiO4;
+	
+    	double den = ng * Td * sqrt(Tg);
+
+        if(den == 0)
+            return 1;
+            
+    	double cons = 4.52e-10;
+
+        return cons * s * n * fp * B / den ;
+    }
+    
+        
     static inline double planck(double l, double T)
     {
         return (2.0 * con_h * con_c * con_c) /
@@ -1850,6 +2029,7 @@ class CMathFunctions
         if(f == 1)
         {
             double inter = (stop - start);
+            double dx = inter / double(N - 1);
             double dang = PI / double(N - 1);
 
             double mid = (double(N) - 1.5) / 2.0;
@@ -1884,22 +2064,6 @@ class CMathFunctions
         list[N - 1] = stop;
     }
 
-    static inline dlist LinearList(double start, double stop, uint N)
-    {
-        dlist list(N);
-
-        double dx = (stop - start) / (N - 1);
-
-        list[0] = start;
-
-        for(uint i_x = 1; i_x < N - 1; i_x++)
-            list[i_x] = start + i_x * dx;
-
-        list[N - 1] = stop;
-
-        return list;
-    }
-
     static inline void ExpList(double start, double stop, double * list, uint N, double base)
     {
         if(N == 1)
@@ -1930,8 +2094,9 @@ class CMathFunctions
         else if(base > 1)
         {
             uint tmpN;
-            double tmp_mid, tmp_stop;
+            double tmp_start1, tmp_mid, tmp_stop;
 
+            tmp_start1 = start;
             tmp_mid = start + 0.5 * (stop - start);
             tmp_stop = stop;
 
@@ -2096,9 +2261,7 @@ class CMathFunctions
         return D;
     }
 
-    static inline double getRotationAngleObserver(const Vector3D & obs_ex,
-                                                  const Vector3D & photon_ex,
-                                                  const Vector3D & photon_ey)
+    static inline double getRotationAngleObserver(Vector3D obs_ex, Vector3D photon_ex, Vector3D photon_ey)
     {
         double cos_angle_1 = obs_ex * photon_ey;
         double cos_angle_2 = obs_ex * photon_ex;
@@ -2106,102 +2269,145 @@ class CMathFunctions
         return atan3(cos_angle_1, cos_angle_2);
     }
 
-    static inline void getPropMatrixAPi(double cos_theta,
-                                        double sin_theta,
-                                        double cos_2_phi,
-                                        double sin_2_phi,
-                                        double mult,
-                                        Matrix2D * propMatrix)
+    static inline void getDetCoordSystem(Vector3D n1,
+                                         Vector3D n2,
+                                         double rot_angle1,
+                                         double rot_angle2,
+                                         Vector3D & ex,
+                                         Vector3D & ey,
+                                         Vector3D & ez)
     {
-        propMatrix->addValue(0, 0, sin_theta * sin_theta * mult);
-        propMatrix->addValue(0, 1, -cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(0, 2, -sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(1, 0, -cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(1, 1, sin_theta * sin_theta * mult);
-        propMatrix->addValue(2, 0, -sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(2, 2, sin_theta * sin_theta * mult);
-        propMatrix->addValue(3, 3, sin_theta * sin_theta * mult);
+        ex.set(1, 0, 0);
+        ey.set(0, 1, 0);
+        ez.set(0, 0, 1);
+
+        double cos_a = cos(rot_angle1);
+        double sin_a = sin(rot_angle1);
+
+        ex.rot(n1, cos_a, sin_a);
+        ey.rot(n1, cos_a, sin_a);
+        ez.rot(n1, cos_a, sin_a);
+
+        cos_a = cos(rot_angle2);
+        sin_a = sin(rot_angle2);
+
+        ex.rot(n2, cos_a, sin_a);
+        ey.rot(n2, cos_a, sin_a);
+        ez.rot(n2, cos_a, sin_a);
+
+        ex.normalize();
+        ey.normalize();
+        ez.normalize();
     }
 
-    static inline void getPropMatrixBSigmaP(double cos_theta,
+    static inline Matrix2D getPropMatrixASigmaP(double cos_theta,
+                                                double sin_theta,
+                                                double cos_2_phi,
+                                                double sin_2_phi,
+                                                double mult)
+    {
+        Matrix2D propMatrix(4, 4);
+        propMatrix.addValue(0, 0, (1 + cos_theta * cos_theta) * mult);
+        propMatrix.addValue(0, 1, cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(0, 2, sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(0, 3, -2 * cos_theta * mult);
+        propMatrix.addValue(1, 0, cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(1, 1, (1 + cos_theta * cos_theta) * mult);
+        propMatrix.addValue(2, 0, sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(2, 2, (1 + cos_theta * cos_theta) * mult);
+        propMatrix.addValue(3, 0, -2 * cos_theta * mult);
+        propMatrix.addValue(3, 3, (1 + cos_theta * cos_theta) * mult);
+
+        return propMatrix;
+    }
+
+    static inline Matrix2D getPropMatrixASigmaM(double cos_theta,
+                                                double sin_theta,
+                                                double cos_2_phi,
+                                                double sin_2_phi,
+                                                double mult)
+    {
+        Matrix2D propMatrix(4, 4);
+        propMatrix.addValue(0, 0, (1 + cos_theta * cos_theta) * mult);
+        propMatrix.addValue(0, 1, cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(0, 2, sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(0, 3, +2 * cos_theta * mult);
+        propMatrix.addValue(1, 0, cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(1, 1, (1 + cos_theta * cos_theta) * mult);
+        propMatrix.addValue(2, 0, sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(2, 2, (1 + cos_theta * cos_theta) * mult);
+        propMatrix.addValue(3, 0, +2 * cos_theta * mult);
+        propMatrix.addValue(3, 3, (1 + cos_theta * cos_theta) * mult);
+
+        return propMatrix;
+    }
+
+    static inline Matrix2D getPropMatrixAPi(double cos_theta,
                                             double sin_theta,
                                             double cos_2_phi,
                                             double sin_2_phi,
-                                            double mult,
-                                            Matrix2D * propMatrix)
+                                            double mult)
     {
-        propMatrix->addValue(1, 2, -2 * cos_theta * mult);
-        propMatrix->addValue(1, 3, sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(2, 1, +2 * cos_theta * mult);
-        propMatrix->addValue(2, 3, -cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(3, 1, -sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(3, 2, cos_2_phi * sin_theta * sin_theta * mult);
+        Matrix2D propMatrix(4, 4);
+        propMatrix.addValue(0, 0, sin_theta * sin_theta * mult);
+        propMatrix.addValue(0, 1, -cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(0, 2, -sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(1, 0, -cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(1, 1, sin_theta * sin_theta * mult);
+        propMatrix.addValue(2, 0, -sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(2, 2, sin_theta * sin_theta * mult);
+        propMatrix.addValue(3, 3, sin_theta * sin_theta * mult);
+
+        return propMatrix;
     }
 
-    static inline void getPropMatrixASigmaP(double cos_theta,
+    static inline Matrix2D getPropMatrixBSigmaP(double cos_theta,
+                                                double sin_theta,
+                                                double cos_2_phi,
+                                                double sin_2_phi,
+                                                double mult)
+    {
+        Matrix2D propMatrix(4, 4);
+        propMatrix.addValue(1, 2, -2 * cos_theta * mult);
+        propMatrix.addValue(1, 3, sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(2, 1, +2 * cos_theta * mult);
+        propMatrix.addValue(2, 3, -cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(3, 1, -sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(3, 2, cos_2_phi * sin_theta * sin_theta * mult);
+
+        return propMatrix;
+    }
+
+    static inline Matrix2D getPropMatrixBSigmaM(double cos_theta,
+                                                double sin_theta,
+                                                double cos_2_phi,
+                                                double sin_2_phi,
+                                                double mult)
+    {
+        Matrix2D propMatrix(4, 4);
+        propMatrix.addValue(1, 2, +2 * cos_theta * mult);
+        propMatrix.addValue(1, 3, sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(2, 1, -2 * cos_theta * mult);
+        propMatrix.addValue(2, 3, -cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(3, 1, -sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(3, 2, cos_2_phi * sin_theta * sin_theta * mult);
+
+        return propMatrix;
+    }
+
+    static inline Matrix2D getPropMatrixBPi(double cos_theta,
                                             double sin_theta,
                                             double cos_2_phi,
                                             double sin_2_phi,
-                                            double mult,
-                                            Matrix2D * propMatrix)
+                                            double mult)
     {
-        propMatrix->addValue(0, 0, (1 + cos_theta * cos_theta) * mult);
-        propMatrix->addValue(0, 1, cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(0, 2, sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(0, 3, -2 * cos_theta * mult);
-        propMatrix->addValue(1, 0, cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(1, 1, (1 + cos_theta * cos_theta) * mult);
-        propMatrix->addValue(2, 0, sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(2, 2, (1 + cos_theta * cos_theta) * mult);
-        propMatrix->addValue(3, 0, -2 * cos_theta * mult);
-        propMatrix->addValue(3, 3, (1 + cos_theta * cos_theta) * mult);
-    }
+        Matrix2D propMatrix(4, 4);
+        propMatrix.addValue(1, 3, -sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(2, 3, cos_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(3, 1, sin_2_phi * sin_theta * sin_theta * mult);
+        propMatrix.addValue(3, 2, -cos_2_phi * sin_theta * sin_theta * mult);
 
-    static inline void getPropMatrixASigmaM(double cos_theta,
-                                            double sin_theta,
-                                            double cos_2_phi,
-                                            double sin_2_phi,
-                                            double mult,
-                                            Matrix2D * propMatrix)
-    {
-        propMatrix->addValue(0, 0, (1 + cos_theta * cos_theta) * mult);
-        propMatrix->addValue(0, 1, cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(0, 2, sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(0, 3, +2 * cos_theta * mult);
-        propMatrix->addValue(1, 0, cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(1, 1, (1 + cos_theta * cos_theta) * mult);
-        propMatrix->addValue(2, 0, sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(2, 2, (1 + cos_theta * cos_theta) * mult);
-        propMatrix->addValue(3, 0, +2 * cos_theta * mult);
-        propMatrix->addValue(3, 3, (1 + cos_theta * cos_theta) * mult);
-    }
-
-    static inline void getPropMatrixBSigmaM(double cos_theta,
-                                            double sin_theta,
-                                            double cos_2_phi,
-                                            double sin_2_phi,
-                                            double mult,
-                                            Matrix2D * propMatrix)
-    {
-        propMatrix->addValue(1, 2, +2 * cos_theta * mult);
-        propMatrix->addValue(1, 3, sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(2, 1, -2 * cos_theta * mult);
-        propMatrix->addValue(2, 3, -cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(3, 1, -sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(3, 2, cos_2_phi * sin_theta * sin_theta * mult);
-    }
-
-    static inline void getPropMatrixBPi(double cos_theta,
-                                        double sin_theta,
-                                        double cos_2_phi,
-                                        double sin_2_phi,
-                                        double mult,
-                                        Matrix2D * propMatrix)
-    {
-        propMatrix->addValue(1, 3, -sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(2, 3, cos_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(3, 1, sin_2_phi * sin_theta * sin_theta * mult);
-        propMatrix->addValue(3, 2, -cos_2_phi * sin_theta * sin_theta * mult);
+        return propMatrix;
     }
 
     static inline Vector3D interpVector(Vector3D y_1, Vector3D y_2, double x_1, double x_2)
@@ -2216,15 +2422,15 @@ class CMathFunctions
 
         double freq = con_c / wavelength;             // [s^-1]
         double L = intensity * con_c / (freq * freq); // [W Hz^-1 sr^-1]
-        return L * 1e+26 / (distance * distance);     // [Jy]
+        return L * 1.0e+26 / (distance * distance);   // [Jy]
     }
 
-    static inline void lum2Jy(StokesVector * S, double wavelength, double distance)
+    static inline void lum2Jy(class StokesVector & S, double wavelength, double distance)
     {
-        S->setI(lum2Jy(S->I(), wavelength, distance));
-        S->setQ(lum2Jy(S->Q(), wavelength, distance));
-        S->setU(lum2Jy(S->U(), wavelength, distance));
-        S->setV(lum2Jy(S->V(), wavelength, distance));
+        S.setI(lum2Jy(S.I(), wavelength, distance));
+        S.setQ(lum2Jy(S.Q(), wavelength, distance));
+        S.setU(lum2Jy(S.U(), wavelength, distance));
+        S.setV(lum2Jy(S.V(), wavelength, distance));
     }
 
     static inline uint findListIndex(double * list, uint l_limit, uint h_limit, double val)
@@ -2665,7 +2871,7 @@ class CMathFunctions
         qsca = (2.0 / (x * x)) * qsca;
         qext = (4.0 / (x * x)) * real(cxs1[0]);
         qabs = qext - qsca;
-        // qback = (4.0/(x * x)) * abs(cxs1[2 * NANG - 1]) * abs(cxs1[2 * NANG - 1]);
+        //*qback = (4.0/(x * x)) * abs(cxs1[2 * NANG - 1]) * abs(cxs1[2 * NANG - 1]);
 
         for(int j = 0; j < 2 * NANG - 1; j++)
         {
@@ -2679,7 +2885,6 @@ class CMathFunctions
     }*/
 
     static bool calcWVMie(double x,
-                          dlist scat_angle,
                           dcomplex refractive_index,
                           double & qext,
                           double & qabs,
@@ -2692,7 +2897,7 @@ class CMathFunctions
     // Wolf & Voshchinnikov approximation of optical properties for spherical grains.
     {
         // Step width
-        uint n_scat_angle = scat_angle.size();
+        double dang = PI2 / float(NANG - 1);
         double factor = 1e250;
 
         if(x <= MIN_MIE_SIZE_PARAM)
@@ -2708,11 +2913,11 @@ class CMathFunctions
         double y = abs(refractive_index) * x;
         uint num = uint(1.25 * y + 15.5);
         if(y < 1)
-            num = uint(7.5 * y + 9.0);
+            num = 7.5 * y + 9.0;
         else if(y > 100 && y < 50000)
-            num = uint(1.0625 * y + 28.5);
+            num = 1.0625 * y + 28.5;
         else if(y >= 50000)
-            num = uint(1.005 * y + 50.5);
+            num = 1.005 * y + 50.5;
 
         if(num >= MAX_MIE_ITERATIONS - 1)
         {
@@ -2722,7 +2927,7 @@ class CMathFunctions
         }
 
         // logarithmic derivative to Bessel function (complex argument)
-        dcomplex *ru = new dcomplex[num + 1];
+        dcomplex ru[num + 1];
         dcomplex s_tmp = ax / refractive_index;
         ru[num] = dcomplex(num + 1, 0) * s_tmp;
         for(uint n = 1; n <= num - 1; n++)
@@ -2773,34 +2978,54 @@ class CMathFunctions
         qsca = an * (norm(ra0) + norm(rb0));
 
         // first term (iterm=1)
-        double r_iterm = double(iterm);
-        double FN = (2 * r_iterm + 1) / (r_iterm * (r_iterm + 1));
-
-        dlist dPI(n_scat_angle), dTAU(n_scat_angle);
-        dlist dAMU(n_scat_angle), dPI0(n_scat_angle, 0), dPI1(n_scat_angle, 1);
-
-        dcomplex SM1[n_scat_angle], SM2[n_scat_angle];
-
-        for(uint i_scat_ang = 0; i_scat_ang < n_scat_angle; i_scat_ang++)
+        dlist dAMU(NANG), dPI0(NANG), dPI1(NANG);
+        for(uint iang = 0; iang < NANG; iang++)
         {
-            dAMU[i_scat_ang] = cos(scat_angle[i_scat_ang]);
+            dAMU[iang] = cos(double(iang) * dang);
 
-            SM1[i_scat_ang] = dcomplex(0, 0);
-            SM2[i_scat_ang] = dcomplex(0, 0);
+            dPI0[iang] = 0;
+            dPI1[iang] = 1;
+        }
 
-            dTAU[i_scat_ang] = r_iterm * dAMU[i_scat_ang] * dPI1[i_scat_ang] - (r_iterm + 1) * dPI0[i_scat_ang];
+        uint NN = 2 * NANG - 1;
+        dcomplex SM1[NN], SM2[NN];
+        for(uint iang = 0; iang < NN; iang++)
+        {
+            SM1[iang] = dcomplex(0, 0);
+            SM2[iang] = dcomplex(0, 0);
+        }
 
-            SM1[i_scat_ang] = SM1[i_scat_ang] + FN * (ra0 * dPI1[i_scat_ang] + rb0 * dTAU[i_scat_ang]);
-            SM2[i_scat_ang] = SM2[i_scat_ang] + FN * (ra0 * dTAU[i_scat_ang] + rb0 * dPI1[i_scat_ang]);
+        double r_iterm = double(iterm), P, T;
+        double FN = (2 * r_iterm + 1) / (r_iterm * (r_iterm + 1));
+        dlist dPI(NANG), dTAU(NANG);
+        for(uint iang = 0; iang < NANG; iang++)
+        {
+            uint iang2 = 2 * NANG - 2 - iang;
 
-            dPI[i_scat_ang] = dPI1[i_scat_ang];
-            dPI1[i_scat_ang] *= (2 + 1 / r_iterm) * dAMU[i_scat_ang];
-            dPI1[i_scat_ang] -= dPI0[i_scat_ang] * (1 + 1 / r_iterm);
-            dPI0[i_scat_ang] = dPI[i_scat_ang];
+            dPI[iang] = dPI1[iang];
+            dTAU[iang] = r_iterm * dAMU[iang] * dPI[iang] - (r_iterm + 1) * dPI0[iang];
+
+            P = pow(-1, iterm - 1);
+            SM1[iang] = SM1[iang] + FN * (ra0 * dPI[iang] + rb0 * dTAU[iang]);
+
+            T = pow(-1, iterm);
+            SM2[iang] = SM2[iang] + FN * (ra0 * dTAU[iang] + rb0 * dPI[iang]);
+
+            if(iang != iang2)
+            {
+                SM1[iang2] = SM1[iang2] + FN * (ra0 * dPI[iang] * P + rb0 * dTAU[iang] * T);
+                SM2[iang2] = SM2[iang2] + FN * (ra0 * dTAU[iang] * T + rb0 * dPI[iang] * P);
+            }
         }
 
         iterm++;
         r_iterm = double(iterm);
+        for(uint iang = 0; iang < NANG; iang++)
+        {
+            dPI1[iang] = ((2 * r_iterm - 1) / (r_iterm - 1)) * dAMU[iang] * dPI[iang];
+            dPI1[iang] = dPI1[iang] - r_iterm * dPI0[iang] / (r_iterm - 1);
+            dPI0[iang] = dPI[iang];
+        }
 
         double z = -1, besY2, besJ2, an2, qq;
         dcomplex ra1, rb1, rr;
@@ -2825,7 +3050,7 @@ class CMathFunctions
 
             // rbrunngraeber 10/14: Changed from besJ2 = (w1 + besY2 * besJ1) / besY1,
             // because besY2*besJ1 could become very large (1e300) for large grain sizes,
-            // besY2/besY1 is about 1; suggested by fkirchschlager
+            // besY2/besY1 is about 1 animated by fkirchschlager
             besJ2 = besY2 / besY1;
             besJ2 = w1 / besY1 + besJ2 * besJ1;
 
@@ -2848,10 +3073,10 @@ class CMathFunctions
 
             // efficiency factors
             z = -z;
-            rr = z * (r_iterm + 0.5) * (ra1 - rb1);
+            rr = z * (iterm + 0.5) * (ra1 - rb1);
             r = r + rr;
-            ss = ss + (r_iterm - 1) * (r_iterm + 1) / r_iterm * (ra0 * conj(ra1) + rb0 * conj(rb1)) +
-                 an2 / r_iterm / (r_iterm - 1) * (ra0 * conj(rb0));
+            ss = ss + (iterm - 1) * (iterm + 1) / iterm * real(ra0 * conj(ra1) + rb0 * conj(rb1)) +
+                 an2 / iterm / (iterm - 1) * (ra0 * conj(rb0));
             qq = an * real(ra1 + rb1);
             qext = qext + qq;
             qsca = qsca + an * (norm(ra1) + norm(rb1));
@@ -2877,27 +3102,38 @@ class CMathFunctions
             // terms iterm=2,...
             r_iterm = double(iterm);
             FN = (2 * r_iterm + 1) / (r_iterm * (r_iterm + 1));
-            for(uint i_scat_ang = 0; i_scat_ang < n_scat_angle; i_scat_ang++)
+            for(uint iang = 0; iang < NANG; iang++)
             {
-                dTAU[i_scat_ang] = r_iterm * dAMU[i_scat_ang] * dPI1[i_scat_ang] - (r_iterm + 1) * dPI0[i_scat_ang];
+                uint iang2 = 2 * NANG - 2 - iang;
 
-                SM1[i_scat_ang] = SM1[i_scat_ang] + FN * (ra0 * dPI1[i_scat_ang] + rb0 * dTAU[i_scat_ang]);
-                SM2[i_scat_ang] = SM2[i_scat_ang] + FN * (ra0 * dTAU[i_scat_ang] + rb0 * dPI1[i_scat_ang]);
+                dPI[iang] = dPI1[iang];
+                dTAU[iang] = r_iterm * dAMU[iang] * dPI[iang] - (r_iterm + 1) * dPI0[iang];
 
-                dPI[i_scat_ang] = dPI1[i_scat_ang];
-                dPI1[i_scat_ang] *= (2 + 1 / r_iterm) * dAMU[i_scat_ang];
-                dPI1[i_scat_ang] -= dPI0[i_scat_ang] * (1 + 1 / r_iterm);
-                dPI0[i_scat_ang] = dPI[i_scat_ang];
+                P = pow(-1, r_iterm - 1);
+                SM1[iang] = SM1[iang] + FN * (ra0 * dPI[iang] + rb0 * dTAU[iang]);
+
+                T = pow(-1, r_iterm);
+                SM2[iang] = SM2[iang] + FN * (ra0 * dTAU[iang] + rb0 * dPI[iang]);
+
+                if(iang != iang2)
+                {
+                    SM1[iang2] = SM1[iang2] + FN * (ra0 * dPI[iang] * P + rb0 * dTAU[iang] * T);
+                    SM2[iang2] = SM2[iang2] + FN * (ra0 * dTAU[iang] * T + rb0 * dPI[iang] * P);
+                }
             }
 
             iterm++;
             r_iterm = double(iterm);
+            for(uint iang = 0; iang < NANG; iang++)
+            {
+                dPI1[iang] = ((2 * r_iterm - 1) / (r_iterm - 1)) * dAMU[iang] * dPI[iang];
+                dPI1[iang] = dPI1[iang] - r_iterm * dPI0[iang] / (r_iterm - 1);
+                dPI0[iang] = dPI[iang];
+            }
 
-            if(iterm > num)
+            if(iterm == MAX_MIE_ITERATIONS)
                 return false;
         }
-
-        delete ru;
 
         // efficiency factors (final calculations)
         qext = b * qext;
@@ -2907,21 +3143,12 @@ class CMathFunctions
         qabs = qext - qsca;
         gsca = (qext - qpr) / qsca;
 
-        for(uint i_scat_ang = 0; i_scat_ang < n_scat_angle; i_scat_ang++)
+        for(int j = 0; j < 2 * NANG - 1; j++)
         {
-            S11[i_scat_ang] = 0.5 * (abs(SM2[i_scat_ang]) * abs(SM2[i_scat_ang]) + abs(SM1[i_scat_ang]) * abs(SM1[i_scat_ang]));
-            S12[i_scat_ang] = 0.5 * (abs(SM2[i_scat_ang]) * abs(SM2[i_scat_ang]) - abs(SM1[i_scat_ang]) * abs(SM1[i_scat_ang]));
-            S33[i_scat_ang] = real(SM2[i_scat_ang] * conj(SM1[i_scat_ang]));
-            S34[i_scat_ang] = imag(SM2[i_scat_ang] * conj(SM1[i_scat_ang]));
-
-            // if SM2 and SM1 get really large (if x >> 1 for instance)
-            // then double precision may not be enough
-            // to get S12/S34 = 0 for theta = 0/pi (cos(theta) = +-1)
-            if(abs(dAMU[i_scat_ang]) == 1)
-            {
-                S12[i_scat_ang] = 0;
-                S34[i_scat_ang] = 0;
-            }
+            S11[j] = 0.5 * (abs(SM2[j]) * abs(SM2[j]) + abs(SM1[j]) * abs(SM1[j]));
+            S12[j] = 0.5 * (abs(SM2[j]) * abs(SM2[j]) - abs(SM1[j]) * abs(SM1[j]));
+            S33[j] = real(SM2[j] * conj(SM1[j]));
+            S34[j] = imag(SM2[j] * conj(SM1[j]));
         }
 
         return true;

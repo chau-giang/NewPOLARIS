@@ -1,14 +1,8 @@
 #pragma once
 #include "Grid.h"
 #include "Matrix2D.h"
-#include "Typedefs.h"
-#include "Cell.h"
-#include "MathFunctions.h"
-#include "Photon.h"
-#include "Stokes.h"
-#include "Vector.h"
-
-class parameters;
+#include "chelper.h"
+#include "typedefs.h"
 
 #ifndef CDUST
 #define CDUST
@@ -48,13 +42,8 @@ class CDustComponent
         a_eff_3_5 = 0;
         a_eff_2 = 0;
         mass = 0;
-        relWeightTab = 0;
         fraction = 0;
         calorimetry_temperatures = 0;
-
-        CextMean = 0;
-        CabsMean = 0;
-        CscaMean = 0;
 
         tCext1 = 0;
         tCext2 = 0;
@@ -70,20 +59,40 @@ class CDustComponent
 
         stochastic_heating_max_size = 0;
         delta0 = 8.28e23 * 2.5e-12 * 1e8 * 1e-6 * 1e6;
-        larm_f = 4.1e-19;
+        larm_f = 4.1e-21;
+        number_cluster = 0;
+        volume_filling_cluster = 0;
+        iron_fraction = 0;
         aspect_ratio = 0;
         sub_temp = 1e6;
         material_density = 0;
+        tensile_strength = 0;
+        size_choice = 0;
         gold_g_factor = 0;
+        wrong_internal_factor_lowJ = 0;
+        wrong_internal_factor_highJ = 0;
         dust_mass_fraction = 0;
 
-        Q_ref = 0.4;
-        alpha_Q = 3.0;
-
-        // min_temp = 0;
+        min_temp = 0;
         max_temp = 0;
         min_a_alig = 1e200;
         max_a_alig = 0;
+        min_a_disr = 1.e200;
+        max_a_disr = 0;
+        min_a_disr_max = 1.e200;
+        max_a_disr_max = 0;
+        min_size_param_modify = 1.e200;
+        max_size_param_modify = 0;
+
+        min_a_bar_low_J_lower = 1.e200;
+        max_a_bar_low_J_lower = 0;
+        min_a_bar_low_J_upper = 1.e200;
+        max_a_bar_low_J_upper = 0; 
+        min_a_bar_high_J_lower = 1.e200;
+        max_a_bar_high_J_lower = 0;
+        min_a_bar_high_J_upper = 1.e200;
+        max_a_bar_high_J_upper = 0;
+    
         f_highJ = 0.25;
         f_cor = 0;
         delta_rat = 2;
@@ -95,6 +104,7 @@ class CDustComponent
         calorimetry_loaded = false;
         sublimate = false;
         is_align = false;
+        is_disr = false;
         is_mixture = false;
         individual_dust_fractions = false;
 
@@ -128,7 +138,6 @@ class CDustComponent
         nr_of_dust_species = 0;
         nr_of_incident_angles = 0;
         nr_of_scat_theta = 0;
-        scat_theta = 0;
         nr_of_scat_phi = 0;
         nr_of_scat_mat_elements = 0;
         nr_of_calorimetry_temperatures = 0;
@@ -205,45 +214,10 @@ class CDustComponent
                 delete[] enthalpy[a];
             delete[] enthalpy;
         }
-        if(nr_of_scat_theta != 0)
-        {
-            for(uint a = 0; a < nr_of_dust_species; a++)
-                delete[] nr_of_scat_theta[a];
-            delete[] nr_of_scat_theta;
-        }
-        if(scat_theta != 0)
-        {
-            for(uint a = 0; a < nr_of_dust_species; a++)
-            {
-                for(uint w = 0; w < nr_of_wavelength; w++)
-                    delete[] scat_theta[a][w];
-                delete[] scat_theta[a];
-            }
-            delete[] scat_theta;
-        }
         if(Qtrq != 0)
             delete[] Qtrq;
         if(HG_g_factor != 0)
             delete[] HG_g_factor;
-
-        if(CextMean != 0)
-        {
-            for(uint a = 0; a < nr_of_dust_species; a++)
-                delete[] CextMean[a];
-            delete[] CextMean;
-        }
-        if(CabsMean != 0)
-        {
-            for(uint a = 0; a < nr_of_dust_species; a++)
-                delete[] CabsMean[a];
-            delete[] CabsMean;
-        }
-        if(CscaMean != 0)
-        {
-            for(uint a = 0; a < nr_of_dust_species; a++)
-                delete[] CscaMean[a];
-            delete[] CscaMean;
-        }
 
         if(tCext1 != 0)
             delete[] tCext1;
@@ -290,8 +264,6 @@ class CDustComponent
             delete[] a_eff_2;
         if(mass != 0)
             delete[] mass;
-        if(relWeightTab != 0)
-            delete[] relWeightTab;
 
         if(sca_mat != 0)
             cleanScatteringData();
@@ -300,42 +272,42 @@ class CDustComponent
     // ----------------------------------------------------------------------
     // ----------- Efficiencies for grain size and wavelength ---------------
     // ----------------------------------------------------------------------
-    inline double getQext1(uint a, uint w) const
+    inline double getQext1(uint a, uint w)
     {
         return Qext1[a][w];
     }
 
-    inline double getQext2(uint a, uint w) const
+    inline double getQext2(uint a, uint w)
     {
         return Qext2[a][w];
     }
 
-    inline double getQabs1(uint a, uint w) const
+    inline double getQabs1(uint a, uint w)
     {
         return Qabs1[a][w];
     }
 
-    inline double getQabs2(uint a, uint w) const
+    inline double getQabs2(uint a, uint w)
     {
         return Qabs2[a][w];
     }
 
-    inline double getQsca1(uint a, uint w) const
+    inline double getQsca1(uint a, uint w)
     {
         return Qsca1[a][w];
     }
 
-    inline double getQsca2(uint a, uint w) const
+    inline double getQsca2(uint a, uint w)
     {
         return Qsca2[a][w];
     }
 
-    inline double getQcirc(uint a, uint w) const
+    inline double getQcirc(uint a, uint w)
     {
         return Qcirc[a][w];
     }
 
-    inline double getHGg(uint a, uint w) const
+    inline double getHGg(uint a, uint w)
     {
         return HGg[a][w];
     }
@@ -387,37 +359,37 @@ class CDustComponent
     // ------------------------------------------------------------------------
     // ----------- Cross-sections for grain size and wavelength ---------------
     // ------------------------------------------------------------------------
-    double getCext1(uint a, uint w) const
+    double getCext1(uint a, uint w)
     {
         return PI * a_eff_2[a] * getQext1(a, w);
     }
 
-    double getCext2(uint a, uint w) const
+    double getCext2(uint a, uint w)
     {
         return PI * a_eff_2[a] * getQext2(a, w);
     }
 
-    double getCabs1(uint a, uint w) const
+    double getCabs1(uint a, uint w)
     {
         return PI * a_eff_2[a] * getQabs1(a, w);
     }
 
-    double getCabs2(uint a, uint w) const
+    double getCabs2(uint a, uint w)
     {
         return PI * a_eff_2[a] * getQabs2(a, w);
     }
 
-    double getCsca1(uint a, uint w) const
+    double getCsca1(uint a, uint w)
     {
         return PI * a_eff_2[a] * getQsca1(a, w);
     }
 
-    double getCsca2(uint a, uint w) const
+    double getCsca2(uint a, uint w)
     {
         return PI * a_eff_2[a] * getQsca2(a, w);
     }
 
-    double getCcirc(uint a, uint w) const
+    double getCcirc(uint a, uint w)
     {
         return PI * a_eff_2[a] * getQcirc(a, w);
     }
@@ -425,24 +397,25 @@ class CDustComponent
     // -------------------------------------------------------------------------------
     // ----------- Cross-sections for wavelength mixed in current cell ---------------
     // -------------------------------------------------------------------------------
-    double getCext1(CGridBasic * grid, const photon_package & pp) const
+    double getCext1(CGridBasic * grid, photon_package * pp, uint i_density)
     {
         // Get wavelength of photon package
-        uint w = pp.getDustWavelengthID();
-
-        // Return precalculated value if available
-        if(tCext1 != 0)
-            return tCext1[w];
+        uint w = pp->getWavelengthID();
 
         // Get local min and max grain sizes
         double a_min = getSizeMin(grid, pp);
         double a_max = getSizeMax(grid, pp);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, pp);
+        // Return precalculated value if available
+        double a_disr = grid->getDisruptRadius(pp, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
+        if((a_disr == 0) && (a_disr_max == 0) && (tCext1 != 0)) // No RATD Simulation
+        {
+            return tCext1[w];
+        }
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, pp, i_density);
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= a_eff_2[a] * getQext1(a, w);
@@ -452,24 +425,27 @@ class CDustComponent
         return res;
     }
 
-    double getCext2(CGridBasic * grid, const photon_package & pp) const
+    double getCext2(CGridBasic * grid, photon_package * pp, uint i_density)
     {
         // Get wavelength of photon package
-        uint w = pp.getDustWavelengthID();
-
-        // Return precalculated value if available
-        if(tCext2 != 0)
-            return tCext2[w];
+        uint w = pp->getWavelengthID();
 
         // Get local min and max grain sizes
         double a_min = getSizeMin(grid, pp);
         double a_max = getSizeMax(grid, pp);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, pp);
+        // Return precalculated value if available
+        double a_disr = grid->getDisruptRadius(pp, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
+        if((a_disr == 0) && (a_disr_max == 0) && (tCext2 != 0)) // No RATD Simulation
+        {
+            return tCext2[w];
+        }
+
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, pp, i_density);
+
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= a_eff_2[a] * getQext2(a, w);
@@ -479,24 +455,27 @@ class CDustComponent
         return res;
     }
 
-    double getCabs1(CGridBasic * grid, const photon_package & pp) const
+    double getCabs1(CGridBasic * grid, photon_package * pp, uint i_density)
     {
         // Get wavelength of photon package
-        uint w = pp.getDustWavelengthID();
-
-        // Return precalculated value if available
-        if(tCabs1 != 0)
-            return tCabs1[w];
+        uint w = pp->getWavelengthID();
 
         // Get local min and max grain sizes
         double a_min = getSizeMin(grid, pp);
         double a_max = getSizeMax(grid, pp);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, pp);
+        // Return precalculated value if available
+        double a_disr = grid->getDisruptRadius(pp, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
+        if((a_disr == 0) && (a_disr_max == 0) && (tCabs1 != 0)) // No RATD Simulation
+        {
+            return tCabs1[w];
+        }
+
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, pp, i_density);
+
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= a_eff_2[a] * getQabs1(a, w);
@@ -506,24 +485,25 @@ class CDustComponent
         return res;
     }
 
-    double getCabs2(CGridBasic * grid, const photon_package & pp) const
+    double getCabs2(CGridBasic * grid, photon_package * pp, uint i_density)
     {
         // Get wavelength of photon package
-        uint w = pp.getDustWavelengthID();
-
-        // Return precalculated value if available
-        if(tCabs2 != 0)
-            return tCabs2[w];
+        uint w = pp->getWavelengthID();
 
         // Get local min and max grain sizes
         double a_min = getSizeMin(grid, pp);
         double a_max = getSizeMax(grid, pp);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, pp);
+        // Return precalculated value if available
+        double a_disr = grid->getDisruptRadius(pp, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
+        if((a_disr == 0) && (a_disr_max == 0) && (tCabs2 != 0)) // No RATD Simulation
+        {
+            return tCabs2[w];
+        }
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, pp, i_density);
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= a_eff_2[a] * getQabs2(a, w);
@@ -533,24 +513,26 @@ class CDustComponent
         return res;
     }
 
-    double getCsca1(CGridBasic * grid, const photon_package & pp) const
+    double getCsca1(CGridBasic * grid, photon_package * pp, uint i_density)
     {
         // Get wavelength of photon package
-        uint w = pp.getDustWavelengthID();
-
-        // Return precalculated value if available
-        if(tCsca1 != 0)
-            return tCsca1[w];
+        uint w = pp->getWavelengthID();
 
         // Get local min and max grain sizes
         double a_min = getSizeMin(grid, pp);
         double a_max = getSizeMax(grid, pp);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, pp);
+        // Return precalculated value if available
+        double a_disr = grid->getDisruptRadius(pp, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
+        if((a_disr == 0) && (a_disr_max == 0) && (tCsca1 != 0)) // No RATD Simulation
+        {
+            return tCsca1[w];
+        }
+
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, pp, i_density);
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= a_eff_2[a] * getQsca1(a, w);
@@ -560,24 +542,27 @@ class CDustComponent
         return res;
     }
 
-    double getCsca2(CGridBasic * grid, const photon_package & pp) const
+    double getCsca2(CGridBasic * grid, photon_package * pp, uint i_density)
     {
         // Get wavelength of photon package
-        uint w = pp.getDustWavelengthID();
-
-        // Return precalculated value if available
-        if(tCsca2 != 0)
-            return tCsca2[w];
+        uint w = pp->getWavelengthID();
 
         // Get local min and max grain sizes
         double a_min = getSizeMin(grid, pp);
         double a_max = getSizeMax(grid, pp);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, pp);
+
+        // Return precalculated value if available
+        double a_disr = grid->getDisruptRadius(pp, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
+        if((a_disr == 0) && (a_disr_max == 0) && (tCsca2 != 0)) // No RATD Simulation
+        {
+            return tCsca2[w];
+        }
+
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, pp, i_density);
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= a_eff_2[a] * getQsca2(a, w);
@@ -587,24 +572,27 @@ class CDustComponent
         return res;
     }
 
-    double getCcirc(CGridBasic * grid, const photon_package & pp) const
+    double getCcirc(CGridBasic * grid, photon_package * pp, uint i_density)
     {
         // Get wavelength of photon package
-        uint w = pp.getDustWavelengthID();
-
-        // Return precalculated value if available
-        if(tCcirc != 0)
-            return tCcirc[w];
+        uint w = pp->getWavelengthID();
 
         // Get local min and max grain sizes
         double a_min = getSizeMin(grid, pp);
         double a_max = getSizeMax(grid, pp);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, pp);
+        // Return precalculated value if available
+        double a_disr = grid->getDisruptRadius(pp, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
+        if((a_disr == 0) && (a_disr_max == 0) && (tCcirc != 0)) // No RATD Simulation
+        {
+            return tCcirc[w];
+        }
+
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, pp, i_density);
+
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= a_eff_2[a] * getQcirc(a, w);
@@ -614,24 +602,27 @@ class CDustComponent
         return res;
     }
 
-    double getHGg(CGridBasic * grid, const photon_package & pp) const
+    double getHGg(CGridBasic * grid, photon_package * pp, uint i_density)
     {
         // Get wavelength of photon package
-        uint w = pp.getDustWavelengthID();
-
-        // Return precalculated value if available
-        if(tHGg != 0)
-            return tHGg[w];
+        uint w = pp->getWavelengthID();
 
         // Get local min and max grain sizes
         double a_min = getSizeMin(grid, pp);
         double a_max = getSizeMax(grid, pp);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, pp);
+        // Return precalculated value if available
+        double a_disr = grid->getDisruptRadius(pp, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
+        if((a_disr == 0) && (a_disr_max == 0) && (tHGg != 0)) // No RATD Simulation
+        {
+            return tHGg[w];
+        }
+
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, pp, i_density);
+
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= getHGg(a, w);
@@ -643,54 +634,53 @@ class CDustComponent
     // -----------------------------------------------------------------------------
     // ----------- Average cross-sections for grain size and wavelength ------------
     // -----------------------------------------------------------------------------
-
-    inline double getCextMean(uint a, uint w) const
+    inline double getCextMean(uint a, uint w)
     {
-        return CextMean[a][w];
+        return PI * a_eff_2[a] * (2.0 * getQext1(a, w) + getQext2(a, w)) / 3.0;
     }
 
-    inline double getCabsMean(uint a, uint w) const
+    inline double getCabsMean(uint a, uint w)
     {
-        return CabsMean[a][w];
+        return PI * a_eff_2[a] * (2.0 * getQabs1(a, w) + getQabs2(a, w)) / 3.0;
     }
 
-    inline double getCscaMean(uint a, uint w) const
+    inline double getCscaMean(uint a, uint w)
     {
-        return CscaMean[a][w];
+        return PI * a_eff_2[a] * (2.0 * getQsca1(a, w) + getQsca2(a, w)) / 3.0;
     }
 
     // -----------------------------------------------------------------------------
     // ----------- Average cross-sections for wavelength mixed in current cell -----
     // -----------------------------------------------------------------------------
-    double getCextMean(CGridBasic * grid, const photon_package & pp) const
+    double getCextMean(CGridBasic * grid, photon_package * pp, uint i_density)
     {
-        return (2.0 * getCext1(grid, pp) + getCext2(grid, pp)) / 3.0;
+        return (2.0 * getCext1(grid, pp, i_density) + getCext2(grid, pp, i_density)) / 3.0;
     }
 
-    double getCabsMean(CGridBasic * grid, const photon_package & pp) const
+    double getCabsMean(CGridBasic * grid, photon_package * pp, uint i_density)
     {
-        return (2.0 * getCabs1(grid, pp) + getCabs2(grid, pp)) / 3.0;
+        return (2.0 * getCabs1(grid, pp, i_density) + getCabs2(grid, pp, i_density)) / 3.0;
     }
 
-    double getCscaMean(CGridBasic * grid, const photon_package & pp) const
+    double getCscaMean(CGridBasic * grid, photon_package * pp, uint i_density)
     {
-        return (2.0 * getCsca1(grid, pp) + getCsca2(grid, pp)) / 3.0;
+        return (2.0 * getCsca1(grid, pp, i_density) + getCsca2(grid, pp, i_density)) / 3.0;
     }
 
     // ------------------------------------------------------------------------------------
     // ----------- Average cross-sections for wavelength mixed with global conditions -----
     // ------------------------------------------------------------------------------------
-    double getCextMean(double w) const
+    double getCextMean(double w)
     {
         return (2.0 * getCext1(w) + getCext2(w)) / 3.0;
     }
 
-    double getCabsMean(double w) const
+    double getCabsMean(double w)
     {
         return (2.0 * getCabs1(w) + getCabs2(w)) / 3.0;
     }
 
-    double getCscaMean(double w) const
+    double getCscaMean(double w)
     {
         return (2.0 * getCsca1(w) + getCsca2(w)) / 3.0;
     }
@@ -698,7 +688,7 @@ class CDustComponent
     // ------------------------------------------------------------------------------
     // ----------- Cross-sections for wavelength mixed with global limits -----------
     // ------------------------------------------------------------------------------
-    double getCext1(uint w) const
+    double getCext1(uint w)
     {
         double * Cext1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -710,7 +700,7 @@ class CDustComponent
         return res;
     }
 
-    double getCext2(uint w) const
+    double getCext2(uint w)
     {
         double * Cext2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -722,7 +712,7 @@ class CDustComponent
         return res;
     }
 
-    double getCabs1(uint w) const
+    double getCabs1(uint w)
     {
         double * Cabs1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -734,7 +724,7 @@ class CDustComponent
         return res;
     }
 
-    double getCabs2(uint w) const
+    double getCabs2(uint w)
     {
         double * Cabs2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -746,7 +736,7 @@ class CDustComponent
         return res;
     }
 
-    double getCsca1(uint w) const
+    double getCsca1(uint w)
     {
         double * Csca1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -758,7 +748,7 @@ class CDustComponent
         return res;
     }
 
-    double getCsca2(uint w) const
+    double getCsca2(uint w)
     {
         double * Csca2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -770,7 +760,7 @@ class CDustComponent
         return res;
     }
 
-    double getCcirc(uint w) const
+    double getCcirc(uint w)
     {
         double * Ccirc = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -782,13 +772,13 @@ class CDustComponent
         return res;
     }
 
-    double getHGg(uint w) const
+    double getHGg(uint w)
     {
         double * HGg = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
             HGg[a] = a_eff_3_5[a] * getHGg(a, w);
         double res =
-            1.0 / getWeight() *
+            PI / getWeight() *
             CMathFunctions::integ_dust_size(a_eff, HGg, nr_of_dust_species, a_min_global, a_max_global);
         delete[] HGg;
         return res;
@@ -797,7 +787,7 @@ class CDustComponent
     // ------------------------------------------------------------------------------
     // ----------- Efficiencies for wavelength mixed with global limits -----------
     // ------------------------------------------------------------------------------
-    double getQext1(uint w) const
+    double getQext1(uint w)
     {
         double * Qext1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -809,7 +799,7 @@ class CDustComponent
         return res;
     }
 
-    double getQext2(uint w) const
+    double getQext2(uint w)
     {
         double * Qext2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -821,7 +811,7 @@ class CDustComponent
         return res;
     }
 
-    double getQabs1(uint w) const
+    double getQabs1(uint w)
     {
         double * Qabs1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -833,7 +823,7 @@ class CDustComponent
         return res;
     }
 
-    double getQabs2(uint w) const
+    double getQabs2(uint w)
     {
         double * Qabs2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -845,7 +835,7 @@ class CDustComponent
         return res;
     }
 
-    double getQsca1(uint w) const
+    double getQsca1(uint w)
     {
         double * Qsca1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -857,7 +847,7 @@ class CDustComponent
         return res;
     }
 
-    double getQsca2(uint w) const
+    double getQsca2(uint w)
     {
         double * Qsca2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -869,7 +859,7 @@ class CDustComponent
         return res;
     }
 
-    double getQcirc(uint w) const
+    double getQcirc(uint w)
     {
         double * Qcirc = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -884,7 +874,7 @@ class CDustComponent
     // -----------------------------------------------------------------------------------
     // ----------- Mass cross-sections for wavelength mixed with global limits -----------
     // -----------------------------------------------------------------------------------
-    double getKappaExt1(uint w) const
+    double getKappaExt1(uint w)
     {
         double * Cext1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -896,7 +886,7 @@ class CDustComponent
         return res;
     }
 
-    double getKappaExt2(uint w) const
+    double getKappaExt2(uint w)
     {
         double * Cext2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -908,7 +898,7 @@ class CDustComponent
         return res;
     }
 
-    double getKappaAbs1(uint w) const
+    double getKappaAbs1(uint w)
     {
         double * Cabs1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -920,7 +910,7 @@ class CDustComponent
         return res;
     }
 
-    double getKappaAbs2(uint w) const
+    double getKappaAbs2(uint w)
     {
         double * Cabs2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -932,7 +922,7 @@ class CDustComponent
         return res;
     }
 
-    double getKappaSca1(uint w) const
+    double getKappaSca1(uint w)
     {
         double * Csca1 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -944,7 +934,7 @@ class CDustComponent
         return res;
     }
 
-    double getKappaSca2(uint w) const
+    double getKappaSca2(uint w)
     {
         double * Csca2 = new double[nr_of_dust_species];
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -959,51 +949,80 @@ class CDustComponent
     // ---------------------------------------------------------------------------
     // ---------------------------------------------------------------------------
 
-    double getDeltaRat() const
+    double getDeltaRat()
     {
         return delta_rat;
     }
 
-    double * getRelWeight(double a_min, double a_max, double size_param = 0) const
+    double * getRelWeight(CGridBasic * grid, cell_basic * cell, uint i_density)
     {
+
+        double a_min = getSizeMin(grid, cell);
+        double a_max = getSizeMax(grid, cell);
+
+        double a_disr = grid->getDisruptRadius(cell, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(cell, i_density);
+
+        // Get local size parameter for size distribution
+        double size_param = getSizeParam(grid, cell);
+        double size_param_modif = grid->getSizeParamModify(cell, i_density);
+
         double * rel_weight = new double[nr_of_dust_species];
 
-        if(getRelWeightTab(0) != MAX_DOUBLE)
-            for(uint a = 0; a < nr_of_dust_species; a++)
-                rel_weight[a] = getRelWeightTab(a);
-        else
+        if (a_disr == 0 && a_disr_max == 0) // first loop of RATD Simulation or no RATD simulation
         {
-            // Create normalization factor
             for(uint a = 0; a < nr_of_dust_species; a++)
-                rel_weight[a] = a_eff_3_5[a] * pow(a_eff[a], size_param);
-
-            double weight = CMathFunctions::integ_dust_size(a_eff, rel_weight, nr_of_dust_species, a_min, a_max);
-
-            // Create the final relative mass distribution
+                rel_weight[a] = a_eff_3_5[a] * pow(1/a_eff[a], size_param); 
+        }
+        else 
+        {
             for(uint a = 0; a < nr_of_dust_species; a++)
             {
-                rel_weight[a] /= weight;
+                if (isnan(size_param_modif))
+                {
+                    rel_weight[a] = 0;
+                }
+                else
+                {
+                    if (a_eff[a] <= a_disr)
+                    {
+                        //cout << "Size_param" << size_param_modif << "\n" << endl;
+                        rel_weight[a] = a_eff_3_5[a] * pow(1/a_eff[a], size_param_modif);
+                    }
+                    else if ((a_eff[a] >= a_disr_max) && (a_eff[a] <= a_max))
+                    {
+                        if(a_disr_max == a_max)
+                        {
+                            rel_weight[a] = 0;
+                        }
+                        else
+                            rel_weight[a] = a_eff_3_5[a] * pow(1/a_eff[a], size_param);
+                    }
+                    else
+                        rel_weight[a] = 0;
+                }
             }
         }
-
+        
+    	double weight = CMathFunctions::integ_dust_size(a_eff, rel_weight, nr_of_dust_species, a_min, a_max);
+ 		if (weight == 0)
+ 	    	weight = 1; // for the case that all dust grains are destroyed by RATD, or totally sublimxated by UV radiation
+ 
+        //Create the final relative mass distribution
+        for(uint a = 0; a < nr_of_dust_species; a++)
+        {
+             rel_weight[a] /= weight;
+        }
         return rel_weight;
     }
 
-    double getRelWeightTab(uint a) const
+    double * getRelWeight(CGridBasic * grid, photon_package * pp, uint i_density)
     {
-        if(relWeightTab != 0)
-            return relWeightTab[a];
-        return MAX_DOUBLE;
+    	cell_basic * cell = pp->getPositionCell();
+        return getRelWeight(grid, cell, i_density);
     }
 
-    void preCalcRelWeight()
-    {
-        relWeightTab = new double[nr_of_dust_species];
-        fill(relWeightTab,relWeightTab+nr_of_dust_species,MAX_DOUBLE);
-        relWeightTab = getRelWeight(a_min_global, a_max_global);
-    }
-
-    double getWeight() const
+    double getWeight()
     {
         double weight =
             CMathFunctions::integ_dust_size(a_eff, a_eff_3_5, nr_of_dust_species, a_min_global, a_max_global);
@@ -1034,19 +1053,14 @@ class CDustComponent
         return gold_g_factor;
     }
 
-    double getQref()
-    {
-        return Q_ref;
-    }
-
-    double getAlphaQ()
-    {
-        return alpha_Q;
-    }
-
     void setAlignmentMechanism(uint al)
     {
         alignment = al;
+    }
+
+    void setDisruptionMechanism(uint ad)
+    {
+        disruption = ad;
     }
 
     void setPhaseFunctionID(uint ph)
@@ -1069,10 +1083,10 @@ class CDustComponent
         return nr_stochastic_sizes;
     }
 
-    // double getMinDustTemp()
-    // {
-    //     return min_temp;
-    // }
+    double getMinDustTemp()
+    {
+        return min_temp;
+    }
 
     double getMaxDustTemp()
     {
@@ -1089,13 +1103,78 @@ class CDustComponent
         return max_a_alig;
     }
 
-    double getScatteringMatrixElement(uint a,
-                                      uint w,
-                                      uint incID,
-                                      uint sphID,
-                                      uint sthID,
-                                      uint i_mat,
-                                      uint j_mat) const
+    double getMinDisruptRadius()
+    {
+        return min_a_disr;
+    }
+
+    double getMaxDisruptRadius()
+    {
+        return max_a_disr;
+    }
+
+    double getMinMaxDisruptRadius()
+    {
+        return min_a_disr_max;
+    }
+
+    double getMaxMaxDisruptRadius()
+    {
+        return max_a_disr_max;
+    }
+
+    double getMinSizeParamModify()
+    {
+        return min_size_param_modify;
+    }
+
+    double getMaxSizeParamModify()
+    {
+        return max_size_param_modify;
+    }
+    
+    double getMinBarnetLowLowerRadius()
+    {
+        return min_a_bar_low_J_lower;
+    }
+
+    double getMaxBarnetLowLowerRadius()
+    {
+        return max_a_bar_low_J_lower;
+    }
+    
+    double getMinBarnetLowUpperRadius()
+    {
+        return min_a_bar_low_J_upper;
+    }
+
+    double getMaxBarnetLowUpperRadius()
+    {
+        return max_a_bar_low_J_upper;
+    }
+ 
+     
+    double getMinBarnetHighLowerRadius()
+    {
+        return min_a_bar_high_J_lower;
+    }
+
+    double getMaxBarnetHighLowerRadius()
+    {
+        return max_a_bar_high_J_lower;
+    }
+    
+    double getMinBarnetHighUpperRadius()
+    {
+        return min_a_bar_high_J_upper;
+    }
+
+    double getMaxBarnetHighUpperRadius()
+    {
+        return max_a_bar_high_J_upper;
+    }
+    
+    double getScatteringMatrixElement(uint a, uint w, uint incID, uint sphID, uint sthID, uint i_mat, uint j_mat)
     {
         if(sca_mat == 0)
             return 0;
@@ -1103,7 +1182,7 @@ class CDustComponent
         return sca_mat[a][w][incID][sphID][sthID](i_mat, j_mat);
     }
 
-    const Matrix2D & getScatteringMatrix(uint a, uint w, uint incID, uint sphID, uint sthID) const
+    const Matrix2D & getScatteringMatrix(uint a, uint w, uint incID, uint sphID, uint sthID)
     {
         return sca_mat[a][w][incID][sphID][sthID];
     }
@@ -1132,12 +1211,12 @@ class CDustComponent
     }
 
     StokesVector getRadFieldScatteredFraction(CGridBasic * grid,
-                                              const photon_package & pp,
+                                              photon_package * pp,
                                               uint i_density,
                                               const Vector3D & en_dir,
-                                              double energy) const;
+                                              double energy);
 
-    double getScatteredFraction(uint a, uint w, double theta) const
+    double getScatteredFraction(uint a, uint w, double theta)
     {
         double res = 1;
 
@@ -1160,42 +1239,50 @@ class CDustComponent
         return res;
     }
 
-    double getScatteredFractionMie(uint a, uint w, double theta) const
+    double getScatteredFractionMie(uint a, uint w, double theta)
     {
         return phase_pdf[a][w].getValue(theta);
     }
 
-    double getScatteredFractionMie(uint a, uint w, uint sth) const
+    double getScatteredFractionMie(uint a, uint w, uint sth)
     {
         return phase_pdf[a][w].getValue(sth);
     }
 
-    void scatter(CGridBasic * grid, photon_package * pp, CRandomGenerator * rand_gen)
+    void scatter(CGridBasic * grid, photon_package * pp, uint i_density, bool adjust_stokes = false)
     {
         switch(phID)
         {
             case PH_HG:
             {
-                uint a = getInteractingDust(grid, pp, rand_gen, CROSS_SCA);
-                henyeygreen(pp, a, rand_gen);
+                uint a = getInteractingDust(grid, pp, i_density, CROSS_SCA);
+                henyeygreen(pp, a, adjust_stokes);
                 break;
             }
 
             case PH_MIE:
             {
-                uint a = getInteractingDust(grid, pp, rand_gen, CROSS_SCA);
-                miesca(pp, a, rand_gen);
+                uint a = getInteractingDust(grid, pp, i_density, CROSS_SCA);
+                miesca(pp, a, adjust_stokes);
                 break;
             }
 
             default:
-                pp->setRandomDirection(rand_gen->getRND(), rand_gen->getRND());
+                pp->calcRandomDirection();
                 pp->updateCoordSystem();
-                break;
+
+                if(adjust_stokes > 0)
+                {
+                    StokesVector S = pp->getStokesVector();
+                    double albedo = getCscaMean(grid, pp, i_density) / getCextMean(grid, pp, i_density);
+                    S *= albedo / PIx4;
+                    pp->setStokesVector(S);
+                }
+                return;
         }
     }
 
-    double getStochasticHeatingMaxSize() const
+    double getStochasticHeatingMaxSize()
     {
         return stochastic_heating_max_size;
     }
@@ -1205,7 +1292,7 @@ class CDustComponent
         stochastic_heating_max_size = val;
     }
 
-    double getFraction() const
+    double getFraction()
     {
         return fraction;
     }
@@ -1215,7 +1302,7 @@ class CDustComponent
         fraction = val;
     }
 
-    double getDustMassFraction() const
+    double getDustMassFraction()
     {
         return dust_mass_fraction;
     }
@@ -1254,9 +1341,10 @@ class CDustComponent
         return str_stream.str();
     }
 
-    double convDensityToNumber(CGridBasic * grid, const cell_basic & cell, bool from_gas = false) const
+//*******************************************************************************
+    double convDensityToNumber(CGridBasic * grid, cell_basic * cell, uint i_density, bool from_gas = false)
     {
-        double avg_mass = getAvgMass(grid, cell);
+        double avg_mass = getAvgMass(grid, cell, i_density);
 
         if(avg_mass == 0)
             return 0;
@@ -1275,7 +1363,8 @@ class CDustComponent
         return conversion_factor;
     }
 
-    double convDensityToMass(CGridBasic * grid, const cell_basic & cell, bool from_gas = false) const
+//*******************************************************************************
+    double convDensityToMass(CGridBasic * grid, cell_basic * cell, uint i_density, bool from_gas = false)
     {
         double conversion_factor = 1.0;
         if(from_gas)
@@ -1285,54 +1374,57 @@ class CDustComponent
             conversion_factor *= getDustMassFraction();
         }
         else if(!grid->getDustIsMassDensity())
-            conversion_factor *= getAvgMass(grid, cell);
+            conversion_factor *= getAvgMass(grid, cell, i_density);
 
         return conversion_factor;
     }
 
-    double getNumberDensity(CGridBasic * grid, const cell_basic & cell) const
+//    double getNumberDensity(CGridBasic * grid, cell_basic * cell)
+//    {
+//        if(grid->useDustDensities())
+//            return convDensityToNumber(grid, cell) * grid->getDustDensity(cell);
+//        else
+//            return convDensityToNumber(grid, cell, true) * grid->getGasDensity(cell);
+//    }
+
+//    double getNumberDensity(CGridBasic * grid, photon_package * pp)
+//    {
+//        cell_basic * cell = pp->getPositionCell();
+//        return getNumberDensity(grid, cell);
+//    }
+
+    double getNumberDensity(CGridBasic * grid, cell_basic * cell, uint i_density)
     {
         if(grid->useDustDensities())
-            return convDensityToNumber(grid, cell) * grid->getDustDensity(cell);
+            return convDensityToNumber(grid, cell, i_density) * grid->getDustDensity(cell, i_density);
         else
-            return convDensityToNumber(grid, cell, true) * grid->getGasDensity(cell);
+            return convDensityToNumber(grid, cell, i_density, true) * grid->getGasDensity(cell, i_density);
     }
 
-    double getNumberDensity(CGridBasic * grid, const photon_package & pp) const
+    double getNumberDensity(CGridBasic * grid, photon_package * pp, uint i_density)
     {
-        return getNumberDensity(grid, *pp.getPositionCell());
+        cell_basic * cell = pp->getPositionCell();
+        return getNumberDensity(grid, cell, i_density);
     }
 
-    double getNumberDensity(CGridBasic * grid, const cell_basic & cell, uint i_density) const
-    {
-        if(grid->useDustDensities())
-            return convDensityToNumber(grid, cell) * grid->getDustDensity(cell, i_density);
-        else
-            return convDensityToNumber(grid, cell, true) * grid->getGasDensity(cell, i_density);
-    }
+//    double getMassDensity(CGridBasic * grid, cell_basic * cell)
+//    {
+//        if(grid->useDustDensities())
+//            return convDensityToMass(grid, cell) * grid->getDustDensity(cell);
+//        else
+//            return getDustMassFraction() * grid->getGasMassDensity(cell);
+//    }
 
-    double getNumberDensity(CGridBasic * grid, const photon_package & pp, uint i_density) const
-    {
-        return getNumberDensity(grid, *pp.getPositionCell(), i_density);
-    }
+//    uint getMassDensity(CGridBasic * grid, photon_package * pp)
+//    {
+//        cell_basic * cell = pp->getPositionCell();
+//        return getMassDensity(grid, cell);
+//    }
 
-    double getMassDensity(CGridBasic * grid, const cell_basic & cell) const
-    {
-        if(grid->useDustDensities())
-            return convDensityToMass(grid, cell) * grid->getDustDensity(cell);
-        else
-            return getDustMassFraction() * grid->getGasMassDensity(cell);
-    }
-
-    uint getMassDensity(CGridBasic * grid, const photon_package & pp) const
-    {
-        return getMassDensity(grid, *pp.getPositionCell());
-    }
-
-    double getMassDensity(CGridBasic * grid, const cell_basic & cell, uint i_density) const
+    double getMassDensity(CGridBasic * grid, cell_basic * cell, uint i_density)
     {
         if(grid->useDustDensities())
-            return convDensityToMass(grid, cell) * grid->getDustDensity(cell, i_density);
+            return convDensityToMass(grid, cell, i_density) * grid->getDustDensity(cell, i_density);
         else
             return getDustMassFraction() * grid->getGasMassDensity(cell, i_density);
     }
@@ -1356,7 +1448,7 @@ class CDustComponent
         }
         else if(a_min <= a_eff[nr_of_dust_species - 1])
         {
-            // Check if inside boundaries
+	    // Check if inside boundaries
             a_min_global = a_min;
         }
         else
@@ -1393,7 +1485,7 @@ class CDustComponent
         return true;
     }
 
-    double combinedRFactor(double R1, double R2, double R3) const
+    double combinedRFactor(double R1, double R2, double R3)
     {
         double res = (R1 + R2 + R3 + R1 * R2 + R1 * R3 + R2 * R3 + 3 * R1 * R2 * R3) /
                      (1 + 2 * R1 * R2 + 2 * R1 * R3 + 2 * R2 * R3 + 2 * R1 * R2 * R3);
@@ -1416,12 +1508,30 @@ class CDustComponent
         larm_f = val;
     }
 
+    void setNumberIronCluster(double val)
+    {
+        number_cluster = val;
+    }
+    
+    void setVolumeFillingFactor(double val)
+    {
+        volume_filling_cluster = val;
+    }
+ 
+    void setIronFraction(double val)
+    {
+        iron_fraction = val;
+    }
+ 
+
     double getAspectRatio()
     {
         return aspect_ratio;
     }
 
-    double getSizeParam(CGridBasic * grid, const cell_basic & cell) const
+//*******************************************************************************
+
+    double getSizeParam(CGridBasic * grid, cell_basic * cell)
     {
         double size_param = grid->getGrainSizeParam(cell);
         if(size_param != 0)
@@ -1429,17 +1539,20 @@ class CDustComponent
         return 0;
     }
 
-    double getSizeParam(CGridBasic * grid, const photon_package & pp) const
+    double getSizeParam(CGridBasic * grid, photon_package * pp)
     {
-        return getSizeParam(grid, *pp.getPositionCell());
+        cell_basic * cell = pp->getPositionCell();
+        return getSizeParam(grid, cell);
     }
 
-    double getSizeParam() const
+    double getSizeParam()
     {
         return 0;
     }
 
-    double getSizeMin(CGridBasic * grid, const cell_basic & cell) const
+//*******************************************************************************
+
+    double getSizeMin(CGridBasic * grid, cell_basic * cell)
     {
         double a_min = grid->getMinGrainRadius(cell);
         if(a_min > 0)
@@ -1447,12 +1560,13 @@ class CDustComponent
         return a_min_global;
     }
 
-    double getSizeMin(CGridBasic * grid, const photon_package & pp) const
+    double getSizeMin(CGridBasic * grid, photon_package * pp)
     {
-        return getSizeMin(grid, *pp.getPositionCell());
+        cell_basic * cell = pp->getPositionCell();
+        return getSizeMin(grid, cell);
     }
 
-    double getSizeMin() const
+    double getSizeMin()
     {
         return a_min_global;
     }
@@ -1462,7 +1576,9 @@ class CDustComponent
         a_min_global = val;
     }
 
-    double getSizeMax(CGridBasic * grid, const cell_basic & cell) const
+//*******************************************************************************
+
+    double getSizeMax(CGridBasic * grid, cell_basic * cell)
     {
         double a_max = grid->getMaxGrainRadius(cell);
         if(a_max != 0 && a_max < nr_of_dust_species)
@@ -1470,12 +1586,13 @@ class CDustComponent
         return a_max_global;
     }
 
-    double getSizeMax(CGridBasic * grid, const photon_package & pp) const
+    double getSizeMax(CGridBasic * grid, photon_package * pp)
     {
-        return getSizeMax(grid, *pp.getPositionCell());
+        cell_basic * cell = pp->getPositionCell();
+        return getSizeMax(grid, cell);
     }
 
-    double getSizeMax() const
+    double getSizeMax()
     {
         return a_max_global;
     }
@@ -1485,7 +1602,9 @@ class CDustComponent
         a_max_global = val;
     }
 
-    bool sizeIndexUsed(uint a, double a_min, double a_max) const
+//*******************************************************************************
+
+    bool sizeIndexUsed(uint a, double a_min, double a_max)
     {
         if((a_eff[a] - a_min) > -a_min * 1e-5 && (a_max - a_eff[a]) > -a_max * 1e-5)
             return true;
@@ -1501,7 +1620,7 @@ class CDustComponent
         return false;
     }
 
-    bool sizeIndexUsed(uint a) const
+    bool sizeIndexUsed(uint a)
     {
         if((a_eff[a] - a_min_global) > -a_min_global * 1e-5 &&
            (a_max_global - a_eff[a]) > -a_max_global * 1e-5)
@@ -1518,7 +1637,7 @@ class CDustComponent
         return false;
     }
 
-    double getInternalIDG(double Td, double Tg) const
+    double getInternalIDG(double Td, double Tg)
     {
         double alpha = sqrt((1 + 0.5 / (aspect_ratio * aspect_ratio)) * (1 + Td / Tg));
         double delta = 2 / (1 + aspect_ratio * aspect_ratio) - 1;
@@ -1542,7 +1661,7 @@ class CDustComponent
         return res;
     }
 
-    double getInternalGOLD(double Td, double Tg, double vg) const
+    double getInternalGOLD(double Td, double Tg, double vg)
     {
         double h = 2 / (1 + aspect_ratio * aspect_ratio);
         double alpha = 0.5 / Td * (2 / h + 1) * (0.5 * (Td + Tg) + mu * m_H * vg * vg / (6 * con_kB));
@@ -1568,7 +1687,7 @@ class CDustComponent
         return res;
     }
 
-    double getInternalRAT() const
+    double getInternalRAT()
     {
         // x = delta, alpha = 1;
         double x = 2. / (1. + aspect_ratio * aspect_ratio) - 1.;
@@ -1591,7 +1710,7 @@ class CDustComponent
         return res;
     }
 
-    double findTemperature(uint a, double qb) const
+    double findTemperature(uint a, double qb)
     {
         // Return temperature for energy (qb) value (grain size a)
         double temp = tab_em[a].getValue(qb);
@@ -1602,9 +1721,10 @@ class CDustComponent
         return temp;
     }
 
-    double findTemperature(CGridBasic * grid, cell_basic * cell, double qb) const
+    double findTemperature(CGridBasic * grid, cell_basic * cell, uint i_density, double qb)
     {
-        if(tCabs1 != 0 && tCabs2 != 0)
+        double a_disr = grid->getDisruptRadius(cell, i_density);
+        if(a_disr == 0 && tCabs1 != 0 && tCabs2 != 0)
         {
             // Get temperature from current absorbed energy
             return max(double(TEMP_MIN), tab_em_eff.getValue(qb));
@@ -1623,29 +1743,29 @@ class CDustComponent
         double * tmpCabs = new double[nr_of_wavelength];
 
         // init photon package for position and wavelength
-        photon_package pp = photon_package();
+        photon_package * pp = new photon_package();
 
         // Set position of the photon into current cell
-        pp.setPositionCell(cell);
+        pp->setPositionCell(cell);
 
         for(uint w = 0; w < nr_of_wavelength; w++)
         {
             // Set wavelength of photon package
-            pp.setWavelength(wavelength_list[w], w);
+            pp->setWavelengthID(w);
 
             // Pre calculate absorption cross-sections
-            tmpCabs[w] = getCabsMean(grid, pp);
+            tmpCabs[w] = getCabsMean(grid, pp, i_density);
         }
 
         for(uint t = 0; t < nr_of_temperatures; t++)
         {
-            // Get temperature from tab_temp spline
-            double tmp_temp = tab_temp.getValue(t);
-
             // Calculate absorption cross-section times Planck function for each
             // wavelength
             for(uint w = 0; w < nr_of_wavelength; w++)
-                tmpQB[w] = tmpCabs[w] * CMathFunctions::planck(wavelength_list[w], tmp_temp);
+                tmpQB[w] = tmpCabs[w] * tab_planck[w].getValue(t);
+
+            // Get temperature from tab_temp spline
+            double tmp_temp = tab_temp.getValue(t);
 
             // Calculate QB integrated over all wavelengths
             tmp_tab_em.setValue(
@@ -1655,26 +1775,27 @@ class CDustComponent
         // Delete multiple pointer
         delete[] tmpCabs;
         delete[] tmpQB;
+        delete pp;
 
         // Create spline for interpolation
         tmp_tab_em.createSpline();
 
-        // Return temperature from current absorbed energy
+        // Return temperature from current absorbed eneryg
         return max(double(TEMP_MIN), tmp_tab_em.getValue(qb));
     }
 
-    uint findTemperatureID(double t) const
+    uint findTemperatureID(double t)
     {
         return tab_temp.getYIndex(t);
     }
 
-    double getPlanck(uint w, double temp) const
+    double getTabPlanck(uint w, double temp)
     {
-        double pl = CMathFunctions::planck(wavelength_list[w], temp);
+        double pl = tab_planck[w].getValue(temp);
         return max(1e-200, pl);
     }
 
-    double getAbsRate(CGridBasic * grid, const cell_basic & cell, uint a, bool use_energy_density) const
+    double getAbsRate(CGridBasic * grid, cell_basic * cell, uint a, bool use_energy_density)
     {
         double abs_rate = 0;
         if(use_energy_density)
@@ -1693,27 +1814,38 @@ class CDustComponent
         return abs(abs_rate) / (PIx4 * grid->getVolume(cell));
     }
 
-    double getAbsRate(CGridBasic * grid, const photon_package & pp, uint a, bool use_energy_density) const
+    double getAbsRate(CGridBasic * grid, photon_package * pp, uint a, bool use_energy_density)
     {
-        return getAbsRate(grid, *pp.getPositionCell(), a, use_energy_density);
+        return getAbsRate(grid, pp->getPositionCell(), a, use_energy_density);
     }
 
+    void setTensileStrength(double val)
+    {
+        tensile_strength = val;
+    }
+
+
+    void setSizeChoice(double val)
+    {
+        size_choice = val;
+    }
+ 
     void setFHighJ(double val)
     {
         f_highJ = val;
     }
 
-    void setQref(double val)
+    void setWrongInternalRATlowJ(double val)
     {
-        Q_ref = val;
+        wrong_internal_factor_lowJ = val;
     }
-
-    void setAlphaQ(double val)
+    
+    void setWrongInternalRAThighJ(double val)
     {
-        alpha_Q = val;
+        wrong_internal_factor_highJ = val;
     }
-
-    double getQrat(uint a, uint w, double theta) const
+    
+    double getQrat(uint a, uint w, double theta)
     {
         if(theta < 0)
             theta = 0;
@@ -1733,7 +1865,7 @@ class CDustComponent
         return res;
     }
 
-    double getQratApproximation(uint a, uint w) const
+    double getQratApproximation(uint a, uint w)
     {
         double ww = wavelength_list[w];
         double aa = getEffectiveRadius(a);
@@ -1745,54 +1877,60 @@ class CDustComponent
         return res;
     }
 
-    double getQB(uint a, uint tID) const
+    double getQB(uint a, uint tID)
     {
         return tab_em[a].getX(tID);
     }
 
-    uint findWavelengthID(uint a, uint tIDnew, double rnd) const
+    uint findWavelengthID(uint a, uint tIDnew, double rnd)
     {
         return avg_planck_frac[tIDnew * nr_of_dust_species + a].getIndex(rnd);
     }
 
-    double findTheta(uint a, uint w, double rnd) const
+    double findTheta(uint a, uint w, double rnd)
     {
         return avg_scattering_frac[a][w].getValue(rnd);
     }
 
-    uint findSizeID(photon_package * pp, prob_list & prob, double a_min, double a_max, CRandomGenerator * rand_gen) const
+    uint findSizeID(photon_package * pp, prob_list & prob, double a_min, double a_disr, double a_disr_max, double a_max)
     {
         uint a;
 
         // Ensure that the grain size index is one of the used ones
         while(true)
         {
+            // Pick a random number
+            double rnd = pp->getRND();
+
             // Find the related grain size index
-            a = prob.getIndex(rand_gen->getRND());
+            a = prob.getIndex(rnd);
 
             // If in case the size index is outside of the used grain sizes, pick another
             // one
-            if(sizeIndexUsed(a, a_min, a_max))
+            if(sizeIndexUsed(a, a_min, a_disr) || sizeIndexUsed(a, a_disr_max, a_max))
                 break;
         }
 
         return a;
     }
 
-    double getAvgMass(CGridBasic * grid, const cell_basic & cell) const
+    double getAvgMass(CGridBasic * grid, cell_basic * cell, uint i_density)
     {
-        if(avg_mass != 0)
-            return avg_mass;
 
-        // Get local min and max grain sizes
+        // Get local min and max grain sizesV
         double a_min = getSizeMin(grid, cell);
         double a_max = getSizeMax(grid, cell);
+        double a_disr = grid->getDisruptRadius(cell, i_density);
+        double a_disr_max = grid->getMaxDisruptRadius(cell, i_density);
 
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam(grid, cell);
+        // Check if RATD calculation or not
+        if(a_disr == 0 && a_disr_max ==0 && avg_mass != 0) 
+        {
+            return avg_mass;
+        }
 
         // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
+        double * rel_weight = getRelWeight(grid, cell, i_density);
 
         // Create the final mass distribution
         for(uint a = 0; a < nr_of_dust_species; a++)
@@ -1806,11 +1944,30 @@ class CDustComponent
 
         // Delete pointer array
         delete[] rel_weight;
-
         return avg_mass;
     }
 
-    double getAvgMass() const
+    double TotalMass(CGridBasic * grid, cell_basic * cell, double a_min, double a_max, double size_param)
+    {
+        double * rel_weight = new double[nr_of_dust_species];
+
+        for(uint a = 0; a < nr_of_dust_species; a++)
+        {
+            rel_weight[a] = a_eff_3_5[a] * pow(1/a_eff[a], size_param);
+            rel_weight[a] *= mass[a];
+        }
+
+        // Calculate the average mass of the dust grains in the current cell
+        double mass =
+            CMathFunctions::integ_dust_size(a_eff, rel_weight, nr_of_dust_species, a_min, a_max);
+
+        // Delete pointer array
+        delete[] rel_weight;
+
+        return mass;
+    }
+
+    double getAvgMass()
     {
         // Get integration over the dust size distribution
         double weight = getWeight();
@@ -1853,12 +2010,12 @@ class CDustComponent
         return (12 * nr_carbon_atoms + nr_hydrogen_atoms) * m_H;
     }
 
-    double getEnthalpy(uint a, uint t) const
+    double getEnthalpy(uint a, uint t)
     {
         return enthalpy[a][t];
     }
 
-    double getEnthalpyBinWidth(uint a, uint t) const
+    double getEnthalpyBinWidth(uint a, uint t)
     {
         double diff = 0;
         if(t == nr_of_calorimetry_temperatures - 1)
@@ -1870,57 +2027,52 @@ class CDustComponent
         return diff;
     }
 
-    double getCalorimetricTemperature(uint i) const
+    double getCalorimetricTemperature(uint i)
     {
         return calorimetry_temperatures[i];
     }
 
-    double getMinCalorimetricTemperature() const
+    double getMinCalorimetricTemperature()
     {
         return calorimetry_temperatures[0];
     }
 
-    double getMaxCalorimetricTemperature() const
+    double getMaxCalorimetricTemperature()
     {
         return calorimetry_temperatures[nr_of_calorimetry_temperatures - 1];
     }
 
-    uint getNrOfCalorimetryTemperatures() const
+    uint getNrOfCalorimetryTemperatures()
     {
         return nr_of_calorimetry_temperatures;
     }
 
-    uint getNrOfDustSpecies() const
+    uint getNrOfDustSpecies()
     {
         return nr_of_dust_species;
     }
 
-    uint getNrOfIncidentAngles() const
+    uint getNrOfIncidentAngles()
     {
         return nr_of_incident_angles;
     }
 
-    uint getNrOfScatTheta(uint a, uint w) const
-    {
-        return nr_of_scat_theta[a][w];
-    }
-
-    uint ** getNrOfScatTheta()
+    uint getNrOfScatTheta()
     {
         return nr_of_scat_theta;
     }
 
-    uint getNrOfScatPhi() const
+    uint getNrOfScatPhi()
     {
         return nr_of_scat_phi;
     }
 
-    uint getNrOfScatMatElements() const
+    uint getNrOfScatMatElements()
     {
         return nr_of_scat_mat_elements;
     }
 
-    string getStringID() const
+    string getStringID()
     {
         return stringID;
     }
@@ -2016,14 +2168,14 @@ class CDustComponent
         return true;
     }
 
-    void updateStokesVector(photon_package * pp, uint wnew) const
+    void updateStokesVector(photon_package * pp, uint wnew)
     {
         // Get wavelength of photon package
-        uint w = pp->getDustWavelengthID();
-        *pp->getStokesVector() *= wavelength_diff[w] / wavelength_diff[wnew];
+        uint w = pp->getWavelengthID();
+        pp->getStokesVector() *= wavelength_diff[w] / wavelength_diff[wnew];
     }
 
-    double getEffectiveRadius(uint a) const
+    double getEffectiveRadius(uint a)
     {
         return a_eff[a];
     }
@@ -2033,12 +2185,12 @@ class CDustComponent
         return a_eff;
     }
 
-    double getEffectiveRadius1_5(uint a) const
+    double getEffectiveRadius1_5(uint a)
     {
         return a_eff_1_5[a];
     }
 
-    double getEffectiveRadius3_5(uint a) const
+    double getEffectiveRadius3_5(uint a)
     {
         return a_eff_3_5[a];
     }
@@ -2048,59 +2200,80 @@ class CDustComponent
         return a_eff_3_5;
     }
 
-    double getEffectiveRadius_2(uint a) const
+    double getEffectiveRadius_2(uint a)
     {
         return a_eff_2[a];
     }
 
-    double getMass(uint a) const
+    double getMass(uint a)
     {
         return mass[a];
     }
 
-    double getVolume(uint a) const
+    double getVolume(uint a)
     {
         return 4.0 / 3.0 * PI * a_eff[a] * a_eff[a] * a_eff[a];
     }
 
-    double getMaterialDensity(uint a) const
+    double getMaterialDensity(uint a)
     {
+
         return mass[a] / getVolume(a);
     }
 
-    double getMaterialDensity() const
-    {
-        // Get local min and max grain sizes
-        double a_min = getSizeMin();
-        double a_max = getSizeMax();
-
-        // Get local size parameter for size distribution
-        double size_param = getSizeParam();
-
-        // Get integration over the dust size distribution
-        double * rel_weight = getRelWeight(a_min, a_max, size_param);
-
-        for(uint a = 0; a < nr_of_dust_species; a++)
-            rel_weight[a] *= mass[a] / getVolume(a);
-
-        double res = CMathFunctions::integ_dust_size(a_eff, rel_weight, nr_of_dust_species, a_min, a_max);
-
-        delete[] rel_weight;
-
-        return res;
-    }
-
-    double getFHighJ() const
+    double getFHighJ()
     {
         return f_highJ;
     }
 
-    double getCorrelationFactor() const
+
+    double getLarmF() 
+    {
+        return larm_f;
+    }
+    
+    double getNumberIronCluster() 
+    {
+        return number_cluster;
+    }
+    
+    double getVolumeFillingFactor() 
+    {
+        return volume_filling_cluster;
+    }
+    
+    double getIronFraction() 
+    {
+        return iron_fraction;
+    }
+    
+    
+    double getTensileStrength() 
+    {
+        return tensile_strength;
+    }
+
+    double getSizeChoice() 
+    {
+        return size_choice;
+    }
+ 
+    double getCorrelationFactor()
     {
         return f_cor;
     }
+    
+    double getWrongInternalRATlowJ() 
+    {
+        return wrong_internal_factor_lowJ;
+    }
+    
+    double getWrongInternalRAThighJ() 
+    {
+        return wrong_internal_factor_highJ;
+    }
 
-    bool isAligned() const
+    bool isAligned()
     {
         return is_align;
     }
@@ -2108,6 +2281,16 @@ class CDustComponent
     void setIsAligned(bool val)
     {
         is_align = val;
+    }
+
+    bool isDisrupted() 
+    {
+        return is_disr;
+    }
+
+    void setIsDisrupted(bool val)
+    {
+        is_disr = val;
     }
 
     void setIsMixture(bool val)
@@ -2183,52 +2366,20 @@ class CDustComponent
         return nr_of_components;
     }
 
-    void SetNrOfScatTheta(uint ** nr_of_scat_theta_tmp)
+    uint getScatThetaID(double theta)
     {
-        nr_of_scat_theta = nr_of_scat_theta_tmp;
-    }
+        uint res = uint(theta / PI * double(nr_of_scat_theta - 1) + 0.5);
 
-    void SetScatTheta(double *** scat_theta_tmp)
-    {
-        scat_theta = scat_theta_tmp;
-    }
+        if(res > nr_of_scat_theta - 1)
+            res = nr_of_scat_theta - 1;
 
-    double *getScatTheta(uint a, uint w)
-    {
-        return scat_theta[a][w];
-    }
-
-    double getScatTheta(uint a, uint w, uint sth) const
-    {
-        return scat_theta[a][w][sth];
-    }
-
-    uint getScatThetaID(double theta, uint a, uint w) const
-    {
-        // Returns the index of the value in scat_theta[a][w] closest to theta
-        uint sth;
-
-        // If no refinement was done, don't use binary
-        // search to save (lots of) time
-        if( (2*NANG-1) == nr_of_scat_theta[a][w])
-            sth = uint(theta/PI * 2*(NANG-1) + 0.5);
-        else
-        {
-            if(theta == scat_theta[a][w][0])
-                return 0;
-
-            sth = CMathFunctions::biListIndexSearch(theta,scat_theta[a][w],nr_of_scat_theta[a][w]);
-            if(sth != MAX_UINT && (scat_theta[a][w][sth+1] + scat_theta[a][w][sth]) / 2. <= theta )
-                sth++;
-        }
-
-        return sth;
+        return res;
     }
 
     void preCalcEffProperties(parameters & param);
 
-    void henyeygreen(photon_package * pp, uint a, CRandomGenerator * rand_gen);
-    void miesca(photon_package * pp, uint a, CRandomGenerator * rand_gen);
+    void henyeygreen(photon_package * pp, uint a, bool adjust_stokes = false);
+    void miesca(photon_package * pp, uint a, bool adjust_stokes = false);
 
     void preCalcTemperatureLists(double _minTemp, double _maxTemp, uint _nr_of_temperatures);
     void preCalcAbsorptionRates();
@@ -2244,10 +2395,9 @@ class CDustComponent
     bool adjustTempAndWavelengthBW(CGridBasic * grid,
                                    photon_package * pp,
                                    uint i_density,
-                                   bool use_energy_density,
-                                   CRandomGenerator * rand_gen);
+                                   bool use_energy_density);
     double updateDustTemperature(CGridBasic * grid,
-                                 const photon_package & pp,
+                                 photon_package * pp,
                                  uint i_density,
                                  uint a,
                                  bool use_energy_density);
@@ -2255,15 +2405,24 @@ class CDustComponent
     void calcStochasticHeatingPropabilities(CGridBasic * grid,
                                             cell_basic * cell,
                                             uint i_density,
-                                            dlist & wavelength_list_full) const;
+                                            dlist & wavelength_list_full);
+    void calcStochasticHeatingTemperatures(CGridBasic * grid,
+                                           cell_basic * cell,
+                                           uint i_density,
+                                           dlist & wavelength_list_full);
 
     void calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+   	double calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i_density, uint a);
+   	double calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density, uint Smax);
+    void calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+    void calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+    void calcSizeParamModify(CGridBasic * grid, cell_basic * cell, uint i_density);
+	void calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+	void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+
 
     void initDustProperties();
     void initScatteringMatrixArray();
-    void initScatteringMatrixArray(uint nr_of_scat_theta);
-    void initNrOfScatThetaArray();
-    void initScatThetaArray();
     void initCalorimetry();
 
     bool readDustParameterFile(parameters & param, uint dust_component_choice);
@@ -2276,57 +2435,53 @@ class CDustComponent
 
     bool writeComponent(string path_data, string path_plot);
     bool calcSizeDistribution(dlist values, double * mass);
-    bool add(double ** size_fraction, CDustComponent * comp, uint ** nr_of_scat_theta_tmp, double *** scat_theta_tmp);
+    bool add(double ** size_fraction, CDustComponent * comp);
 
-    uint getInteractingDust(CGridBasic * grid, photon_package * pp, CRandomGenerator * rand_gen, uint cross_section = CROSS_ABS) const;
+    uint getInteractingDust(CGridBasic * grid, photon_package * pp, uint i_density, uint cross_section = CROSS_ABS);
 
-    void calcPACrossSections(uint a, uint w, cross_sections & cs, double theta) const;
+    void calcPACrossSections(uint a, uint w, cross_sections & cs, double theta);
     void calcExtCrossSections(CGridBasic * grid,
-                              const photon_package & pp,
+                              photon_package * pp,
                               uint i_density,
-                              double * avg_Cext,
-                              double * avg_Cpol,
-                              double * avg_Ccirc) const;
+                              double & avg_Cext,
+                              double & avg_Cpol,
+                              double & avg_Ccirc);
     void calcCrossSections(CGridBasic * grid,
-                           const photon_package & pp,
+                           photon_package * pp,
                            uint i_density,
                            uint a,
                            double mag_field_theta,
-                           cross_sections & cs) const;
-    double calcGoldReductionFactor(const Vector3D & v, const Vector3D & B) const;
+                           cross_sections & cs);
+    double calcGoldReductionFactor(Vector3D & v, Vector3D & B);
 
-    void calcEmissivityHz(CGridBasic * grid,
-                          const photon_package & pp,
-                          uint i_density,
-                          StokesVector * dust_emissivity) const;
-    double calcEmissivity(CGridBasic * grid, const photon_package & pp, uint i_density) const;
-    StokesVector calcEmissivityEmi(CGridBasic * grid,
-                                   const photon_package & pp,
+    StokesVector calcEmissivitiesHz(CGridBasic * grid, photon_package * pp, uint i_density);
+    double calcEmissivities(CGridBasic * grid, photon_package * pp, uint i_density);
+    StokesVector calcEmissivitiesEmi(CGridBasic * grid,
+                                     photon_package * pp,
+                                     uint i_density,
+                                     double phi,
+                                     double energy,
+                                     Vector3D en_dir);
+
+    double getCalorimetryA(uint a, uint f, uint i, spline & abs_rate_per_wl);
+    long double * getStochasticProbability(uint a, spline & abs_rate_per_wl);
+
+    photon_package getEscapePhoton(CGridBasic * grid,
+                                   photon_package * pp,
+                                   uint a,
                                    uint i_density,
-                                   uint emission_component,
-                                   double phi,
-                                   double energy,
-                                   Vector3D en_dir) const;
-
-    double getCalorimetryA(uint a, uint f, uint i, const spline & abs_rate_per_wl) const;
-    long double * getStochasticProbability(uint a, const spline & abs_rate_per_wl) const;
-
-    void getEscapePhoton(CGridBasic * grid,
-                         photon_package * pp,
-                         uint a,
-                         Vector3D obs_ex,
-                         Vector3D dir_obs,
-                         photon_package * pp_escape) const;
-    void getEscapePhotonMie(CGridBasic * grid,
-                            photon_package * pp,
-                            uint a,
-                            Vector3D obs_ex,
-                            Vector3D dir_obs,
-                            photon_package * pp_escape) const;
-    double getCellEmission(CGridBasic * grid, const photon_package & pp, uint i_density) const;
+                                   Vector3D obs_ex,
+                                   Vector3D dir_obs);
+    photon_package getEscapePhotonMie(CGridBasic * grid,
+                                      photon_package * pp,
+                                      uint a,
+                                      uint i_density,
+                                      Vector3D obs_ex,
+                                      Vector3D dir_obs);
+    double getCellEmission(CGridBasic * grid, photon_package * pp, uint i_density);
 
   private:
-    interp ** avg_scattering_frac;
+    spline ** avg_scattering_frac;
     interp ** phase_pdf;
 
     spline *HG_g_factor, *Qtrq;
@@ -2345,8 +2500,7 @@ class CDustComponent
     double * calorimetry_temperatures;
     double * mass;
     double *tCext1, *tCext2, *tCabs1, *tCabs2, *tCsca1, *tCsca2, *tCcirc, *tHGg;
-    double * relWeightTab;
-    double **CextMean, **CabsMean, **CscaMean;
+    double * scattering_angles;
 
     string stringID;
     string size_keyword;
@@ -2356,19 +2510,32 @@ class CDustComponent
     double aspect_ratio;
     double sub_temp;
     double material_density;
+    double tensile_strength;
+    double size_choice;
+    double wrong_internal_factor_lowJ;
+    double wrong_internal_factor_highJ;
     double dust_mass_fraction;
-    // double min_temp;
-    double max_temp;
+    double min_temp, max_temp;
     double min_a_alig, max_a_alig;
+    double min_a_disr, max_a_disr;
+    double min_a_disr_max, max_a_disr_max;
+    double min_size_param_modify, max_size_param_modify;
 
+    double min_a_bar_low_J_lower, max_a_bar_low_J_lower;
+    double min_a_bar_low_J_upper, max_a_bar_low_J_upper;  
+    double min_a_bar_high_J_lower, max_a_bar_high_J_lower;
+    double min_a_bar_high_J_upper, max_a_bar_high_J_upper;
+ 
+    
     // alignment paramaters
-    bool is_align;
     double f_highJ;
     double f_cor;
     double larm_f;
     double gold_g_factor;
-    double Q_ref;
-    double alpha_Q;
+    
+    double number_cluster;
+    double volume_filling_cluster;
+    double iron_fraction;
 
     double delta_rat;
     double mu;
@@ -2380,6 +2547,8 @@ class CDustComponent
     bool dust_offset;
     bool scat_loaded, calorimetry_loaded;
     bool sublimate;
+    bool is_align;
+    bool is_disr;
     bool is_mixture;
     bool individual_dust_fractions;
 
@@ -2391,11 +2560,11 @@ class CDustComponent
     uint wavelength_offset;
     uint calorimetry_type;
     uint alignment;
+    uint disruption;
     uint phID;
     uint nr_of_dust_species;
     uint nr_of_incident_angles;
-    uint **nr_of_scat_theta;
-    double ***scat_theta;
+    uint nr_of_scat_theta;
     uint nr_of_scat_phi;
     uint nr_of_scat_mat_elements;
     uint nr_of_calorimetry_temperatures;
@@ -2416,8 +2585,6 @@ class CDustMixture
         single_component = 0;
         mixed_component = 0;
 
-        nr_of_dust_species = 0;
-
         scattering_to_raytracing = false;
 
         extinction_magnitude = 0;
@@ -2437,13 +2604,13 @@ class CDustMixture
             delete[] mixed_component;
     }
 
-    uint getMixtureID(CGridBasic * grid, const cell_basic & cell) const
+    uint getMixtureID(CGridBasic * grid, cell_basic * cell)
     {
         uint dust_choice = grid->getDustChoiceID(cell);
         return dust_choices_to_index[dust_choice];
     }
 
-    uint getMixtureID(CGridBasic * grid, const photon_package & pp) const
+    uint getMixtureID(CGridBasic * grid, photon_package * pp)
     {
         uint dust_choice = grid->getDustChoiceID(pp);
         return dust_choices_to_index[dust_choice];
@@ -2470,19 +2637,12 @@ class CDustMixture
                 mixed_component[i_mixture].preCalcEffProperties(param);
     }
 
-    void preCalcRelWeight()
-    {
-        if(mixed_component != 0)
-            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                mixed_component[i_mixture].preCalcRelWeight();
-    }
-
-    string getPhaseFunctionStr(uint i_mixture)
+    string getPhaseFunctionStr()
     {
         string str_res = "\nERROR: Phase function is undefined!\n";
         if(mixed_component != 0)
         {
-            switch(mixed_component[i_mixture].getPhaseFunctionID())
+            switch(mixed_component[0].getPhaseFunctionID())
             {
                 case PH_ISO:
                     str_res = "Isotropic scattering";
@@ -2531,7 +2691,7 @@ class CDustMixture
         {
             if(grid->useDustChoice())
             {
-                uint i_mixture = getMixtureID(grid, *cell);
+                uint i_mixture = getMixtureID(grid, cell);
                 mixed_component[i_mixture].calcTemperature(grid, cell, 0, use_energy_density);
             }
             else
@@ -2542,13 +2702,13 @@ class CDustMixture
 
     void calcStochasticHeatingPropabilities(CGridBasic * grid,
                                             cell_basic * cell,
-                                            dlist & wavelength_list_full) const
+                                            dlist & wavelength_list_full)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
-                uint i_mixture = getMixtureID(grid, *cell);
+                uint i_mixture = getMixtureID(grid, cell);
                 mixed_component[i_mixture].calcStochasticHeatingPropabilities(
                     grid, cell, 0, wavelength_list_full);
             }
@@ -2556,6 +2716,25 @@ class CDustMixture
             {
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
                     mixed_component[i_mixture].calcStochasticHeatingPropabilities(
+                        grid, cell, i_mixture, wavelength_list_full);
+            }
+        }
+    }
+
+    void calcStochasticHeatingTemperatures(CGridBasic * grid, cell_basic * cell, dlist & wavelength_list_full)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, cell);
+                mixed_component[i_mixture].calcStochasticHeatingTemperatures(
+                    grid, cell, 0, wavelength_list_full);
+            }
+            else
+            {
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcStochasticHeatingTemperatures(
                         grid, cell, i_mixture, wavelength_list_full);
             }
         }
@@ -2695,7 +2874,7 @@ class CDustMixture
         }
     }
 
-    double getCextMean(CGridBasic * grid, const photon_package & pp) const
+    double getCextMeanGrid(CGridBasic * grid, photon_package * pp)
     {
         double sum = 0;
         if(mixed_component != 0)
@@ -2703,30 +2882,17 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, pp);
-                sum = mixed_component[i_mixture].getCextMean(grid, pp);
+                sum = mixed_component[i_mixture].getCextMean(grid, pp, i_mixture);
             }
             else
-            {
-                if(grid->getCextMeanTab(pp.getPositionCell()->getUniqueID(),pp.getDustWavelengthID()) != MAX_DOUBLE)
-                    sum = grid->getCextMeanTab(pp.getPositionCell()->getUniqueID(),pp.getDustWavelengthID());
-                else
-                {
-                    double dens = 0;
-                    for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    {
-                        double i_dens = getNumberDensity(grid, pp, i_mixture);
-                        dens += i_dens;
-                        sum += mixed_component[i_mixture].getCextMean(grid, pp) * i_dens;
-                    }
-                    if(dens != 0)
-                        sum /= dens;
-                }
-            }
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    sum += mixed_component[i_mixture].getCextMean(grid, pp, i_mixture) *
+                           getRelativeDustNumberDensity(grid, pp, i_mixture);
         }
         return sum;
     }
 
-    double getCabsMean(CGridBasic * grid, const photon_package & pp) const
+    double getCabsMeanGrid(CGridBasic * grid, photon_package * pp)
     {
         double sum = 0;
         if(mixed_component != 0)
@@ -2734,30 +2900,17 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, pp);
-                sum = mixed_component[i_mixture].getCabsMean(grid, pp);
+                sum = mixed_component[i_mixture].getCabsMean(grid, pp, i_mixture);
             }
             else
-            {
-                if(grid->getCabsMeanTab(pp.getPositionCell()->getUniqueID(),pp.getDustWavelengthID()) != MAX_DOUBLE)
-                    sum = grid->getCabsMeanTab(pp.getPositionCell()->getUniqueID(),pp.getDustWavelengthID());
-                else
-                {
-                    double dens = 0;
-                    for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    {
-                        double i_dens = getNumberDensity(grid, pp, i_mixture);
-                        dens += i_dens;
-                        sum += mixed_component[i_mixture].getCabsMean(grid, pp) * i_dens;
-                    }
-                    if(dens != 0)
-                        sum /= dens;
-                }
-            }
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    sum += mixed_component[i_mixture].getCabsMean(grid, pp, i_mixture) *
+                           getRelativeDustNumberDensity(grid, pp, i_mixture);
         }
         return sum;
     }
 
-    double getCscaMean(CGridBasic * grid, const photon_package & pp) const
+    double getCscaMeanGrid(CGridBasic * grid, photon_package * pp)
     {
         double sum = 0;
         if(mixed_component != 0)
@@ -2765,36 +2918,23 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, pp);
-                sum = mixed_component[i_mixture].getCscaMean(grid, pp);
+                sum = mixed_component[i_mixture].getCscaMean(grid, pp, i_mixture);
             }
             else
-            {
-                if(grid->getCscaMeanTab(pp.getPositionCell()->getUniqueID(),pp.getDustWavelengthID()) != MAX_DOUBLE)
-                    sum = grid->getCscaMeanTab(pp.getPositionCell()->getUniqueID(),pp.getDustWavelengthID());
-                else
-                {
-                    double dens = 0;
-                    for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    {
-                        double i_dens = getNumberDensity(grid, pp, i_mixture);
-                        dens += i_dens;
-                        sum += mixed_component[i_mixture].getCscaMean(grid, pp) * i_dens;
-                    }
-                    if(dens != 0)
-                        sum /= dens;
-                }
-            }
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    sum += mixed_component[i_mixture].getCscaMean(grid, pp, i_mixture) *
+                           getRelativeDustNumberDensity(grid, pp, i_mixture);
         }
         return sum;
     }
 
-    bool adjustTempAndWavelengthBW(CGridBasic * grid, photon_package * pp, bool use_energy_density, CRandomGenerator * rand_gen)
+    bool adjustTempAndWavelengthBW(CGridBasic * grid, photon_package * pp, bool use_energy_density)
     {
         if(mixed_component != 0)
         {
-            uint i_mixture = getEmittingMixture(grid, pp, rand_gen);
+            uint i_mixture = getEmittingMixture(grid, pp);
             return mixed_component[i_mixture].adjustTempAndWavelengthBW(
-                grid, pp, i_mixture, use_energy_density, rand_gen);
+                grid, pp, i_mixture, use_energy_density);
         }
         return false;
     }
@@ -2805,7 +2945,7 @@ class CDustMixture
         {
             if(grid->useDustChoice())
             {
-                uint i_mixture = getMixtureID(grid, *cell);
+                uint i_mixture = getMixtureID(grid, cell);
                 mixed_component[i_mixture].calcAlignedRadii(grid, cell, 0);
             }
             else
@@ -2814,6 +2954,82 @@ class CDustMixture
         }
     }
 
+    void calcDisruptRadii(CGridBasic * grid, cell_basic * cell)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, cell);
+                mixed_component[i_mixture].calcDisruptRadii(grid, cell, 0);
+            }
+            else
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcDisruptRadii(grid, cell, i_mixture);
+        }
+    }
+
+    void calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, cell);
+                mixed_component[i_mixture].calcMaxDisruptRadii(grid, cell, 0);
+            }
+            else
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcMaxDisruptRadii(grid, cell, i_mixture);
+        }
+    }
+
+    void calcSizeParamModify(CGridBasic * grid, cell_basic * cell)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, cell);
+                mixed_component[i_mixture].calcSizeParamModify(grid, cell, 0);
+            }
+            else
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcSizeParamModify(grid, cell, i_mixture);
+        }
+    }
+
+    void calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, cell);
+                mixed_component[i_mixture].calcBarnetLowJRadii(grid, cell, 0);
+            }
+            else
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcBarnetLowJRadii(grid, cell, i_mixture);
+        }
+    }
+    
+    void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, cell);
+                mixed_component[i_mixture].calcBarnetHighJRadii(grid, cell, 0);
+            }
+            else
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcBarnetHighJRadii(grid, cell, i_mixture);
+        }
+    }
+ 
+    
     void addToWavelengthGrid(double wavelength)
     {
         // Add wavelength to list
@@ -2839,7 +3055,7 @@ class CDustMixture
 
     void finalizeWavelengthList()
     {
-        sort(wavelength_list.begin(), wavelength_list.end());
+        // sort(wavelength_list.begin(), wavelength_list.end());
         wavelength_list.erase(unique(wavelength_list.begin(), wavelength_list.end()), wavelength_list.end());
 
         nr_of_wavelength = wavelength_list.size();
@@ -2855,7 +3071,7 @@ class CDustMixture
         return scattering_to_raytracing;
     }
 
-    const dlist & getWavelengthList() const
+    dlist getWavelengthList()
     {
         return wavelength_list;
     }
@@ -2867,7 +3083,7 @@ class CDustMixture
 
     double getWavelength(photon_package * pp)
     {
-        return wavelength_list[pp->getDustWavelengthID()];
+        return wavelength_list[pp->getWavelengthID()];
     }
 
     uint getNrOfWavelength()
@@ -2881,7 +3097,7 @@ class CDustMixture
         if(it != wavelength_list.end())
             return distance(wavelength_list.begin(), it);
 
-        cout << "\nHINT: Wavelength not found!" << endl;
+        cout << "\nHINT: wavelength not found! -> " << distance(wavelength_list.begin(), it) << endl;
         return 0;
     }
 
@@ -2890,7 +3106,7 @@ class CDustMixture
         return mixed_component[i_mixture].getSizeMin();
     }
 
-    double getSizeMin(CGridBasic * grid, const cell_basic & cell) const
+    double getSizeMin(CGridBasic * grid, cell_basic * cell)
     {
         double min_a = 1e200;
         if(mixed_component != 0)
@@ -2926,18 +3142,18 @@ class CDustMixture
         return mixed_component[i_mixture].getNrOfCalorimetryTemperatures();
     }
 
-    // double getMinDustTemp()
-    // {
-    //     double min_temp = 1e200;
-    //     if(mixed_component != 0)
-    //         for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-    //         {
-    //             double temp = mixed_component[i_mixture].getMinDustTemp();
-    //             if(temp < min_temp)
-    //                 min_temp = temp;
-    //         }
-    //     return min_temp;
-    // }
+    double getMinDustTemp()
+    {
+        double min_temp = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double temp = mixed_component[i_mixture].getMinDustTemp();
+                if(temp < min_temp)
+                    min_temp = temp;
+            }
+        return min_temp;
+    }
 
     double getMaxDustTemp()
     {
@@ -2978,8 +3194,211 @@ class CDustMixture
         return max_a_alig;
     }
 
+//******************************************************************************
+
+    double getMinDisruptRadius()
+    {
+        double min_a_disr = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_disr = mixed_component[i_mixture].getMinDisruptRadius();
+                if(a_disr < min_a_disr)
+                    min_a_disr = a_disr;
+            }
+        return min_a_disr;
+    }
+
+    double getMaxDisruptRadius()
+    {
+        double max_a_disr = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_disr = mixed_component[i_mixture].getMaxDisruptRadius();
+                if(a_disr > max_a_disr)
+                    max_a_disr = a_disr;
+            }
+        return max_a_disr;
+    }
+
+//******************************************************************************
+
+    double getMinMaxDisruptRadius()
+    {
+        double min_a_disr_max = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_disr_max = mixed_component[i_mixture].getMinMaxDisruptRadius();
+                if(a_disr_max < min_a_disr_max)
+                    min_a_disr_max = a_disr_max;
+            }
+        return min_a_disr_max;
+    }
+
+    double getMaxMaxDisruptRadius()
+    {
+        double max_a_disr_max = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_disr_max = mixed_component[i_mixture].getMaxMaxDisruptRadius();
+                if(a_disr_max > max_a_disr_max)
+                    max_a_disr_max = a_disr_max;
+            }
+        return max_a_disr_max;
+    }
+
+
+//******************************************************************************
+
+    double getMinSizeParamModify()
+    {
+        double min_size_param_modify = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double new_size_param = mixed_component[i_mixture].getMinSizeParamModify();
+                if(new_size_param < min_size_param_modify)
+                    min_size_param_modify = new_size_param;
+            }
+        return min_size_param_modify;
+    }
+
+    double getMaxSizeParamModify()
+    {
+        double max_size_param_modify = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double new_size_param = mixed_component[i_mixture].getMaxSizeParamModify();
+                if(new_size_param > max_size_param_modify)
+                    max_size_param_modify = new_size_param;
+            }
+        return max_size_param_modify;
+    }
+
+//******************************************************************************
+
+    double getMinBarnetLowLowerRadius()
+    {
+        double min_a_bar_low_J_lower = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_low_J_lower = mixed_component[i_mixture].getMinBarnetLowLowerRadius();
+                if(a_bar_low_J_lower < min_a_bar_low_J_lower)
+                    min_a_bar_low_J_lower = a_bar_low_J_lower;
+            }
+        return min_a_bar_low_J_lower;
+    }
+
+    double getMaxBarnetLowLowerRadius()
+    {
+        double max_a_bar_low_J_lower = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_low_J_lower = mixed_component[i_mixture].getMaxBarnetLowLowerRadius();
+                if(a_bar_low_J_lower > max_a_bar_low_J_lower)
+                    max_a_bar_low_J_lower = a_bar_low_J_lower;
+            }
+        return max_a_bar_low_J_lower;
+    }
+    
+    
+//******************************************************************************
+
+    double getMinBarnetLowUpperRadius()
+    {
+        double min_a_bar_low_J_upper = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_low_J_upper = mixed_component[i_mixture].getMinBarnetLowUpperRadius();
+                if(a_bar_low_J_upper < min_a_bar_low_J_upper)
+                    min_a_bar_low_J_upper = a_bar_low_J_upper;
+            }
+        return min_a_bar_low_J_upper;
+    }
+
+    double getMaxBarnetLowUpperRadius()
+    {
+        double max_a_bar_low_J_upper = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_low_J_upper = mixed_component[i_mixture].getMaxBarnetLowUpperRadius();
+                if(a_bar_low_J_upper > max_a_bar_low_J_upper)
+                    max_a_bar_low_J_upper = a_bar_low_J_upper;
+            }
+        return max_a_bar_low_J_upper;
+    }
+
+ 
+//******************************************************************************
+
+    double getMinBarnetHighLowerRadius()
+    {
+        double min_a_bar_high_J_lower = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_high_J_lower = mixed_component[i_mixture].getMinBarnetHighLowerRadius();
+                if(a_bar_high_J_lower < min_a_bar_high_J_lower)
+                    min_a_bar_high_J_lower = a_bar_high_J_lower;
+            }
+        return min_a_bar_high_J_lower;
+    }
+
+    double getMaxBarnetHighLowerRadius()
+    {
+        double max_a_bar_high_J_lower = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_high_J_lower = mixed_component[i_mixture].getMaxBarnetHighLowerRadius();
+                if(a_bar_high_J_lower > max_a_bar_high_J_lower)
+                    max_a_bar_high_J_lower = a_bar_high_J_lower;
+            }
+        return max_a_bar_high_J_lower;
+    }
+    
+    
+//******************************************************************************
+
+    double getMinBarnetHighUpperRadius()
+    {
+        double min_a_bar_high_J_upper = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_high_J_upper = mixed_component[i_mixture].getMinBarnetHighUpperRadius();
+                if(a_bar_high_J_upper < min_a_bar_high_J_upper)
+                    min_a_bar_high_J_upper = a_bar_high_J_upper;
+            }
+        return min_a_bar_high_J_upper;
+    }
+
+    double getMaxBarnetHighUpperRadius()
+    {
+        double max_a_bar_high_J_upper = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_bar_high_J_upper = mixed_component[i_mixture].getMaxBarnetHighUpperRadius();
+                if(a_bar_high_J_upper > max_a_bar_high_J_upper)
+                    max_a_bar_high_J_upper = a_bar_high_J_upper;
+            }
+        return max_a_bar_high_J_upper;
+    }
+
+
+//******************************************************************************
+
     // Dust number density functions
-    double getNumberDensity(CGridBasic * grid, const cell_basic & cell) const
+    double getNumberDensity(CGridBasic * grid, cell_basic * cell)
     {
         double sum = 0;
         if(mixed_component != 0)
@@ -2987,26 +3406,21 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                sum = mixed_component[i_mixture].getNumberDensity(grid, cell);
+                sum = mixed_component[i_mixture].getNumberDensity(grid, cell, i_mixture);
             }
             else
-            {
-                if(grid->getNumberDensityTab(cell.getUniqueID()) != MAX_DOUBLE)
-                    sum = grid->getNumberDensityTab(cell.getUniqueID());
-                else
-                    for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                        sum += mixed_component[i_mixture].getNumberDensity(grid, cell, i_mixture);
-            }
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    sum += mixed_component[i_mixture].getNumberDensity(grid, cell, i_mixture);
         }
         return sum;
     }
 
-    double getNumberDensity(CGridBasic * grid, const photon_package & pp) const
+    double getNumberDensity(CGridBasic * grid, photon_package * pp)
     {
-        return getNumberDensity(grid, *pp.getPositionCell());
+        return getNumberDensity(grid, pp->getPositionCell());
     }
 
-    double getNumberDensity(CGridBasic * grid, const cell_basic & cell, uint i_mixture) const
+    double getNumberDensity(CGridBasic * grid, cell_basic * cell, uint i_mixture)
     {
         double sum = 0;
         if(mixed_component != 0)
@@ -3014,7 +3428,7 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 if(i_mixture == getMixtureID(grid, cell))
-                    sum = mixed_component[i_mixture].getNumberDensity(grid, cell);
+                    sum = mixed_component[i_mixture].getNumberDensity(grid, cell, i_mixture);
             }
             else
                 sum = mixed_component[i_mixture].getNumberDensity(grid, cell, i_mixture);
@@ -3022,13 +3436,13 @@ class CDustMixture
         return sum;
     }
 
-    double getNumberDensity(CGridBasic * grid, const photon_package & pp, uint i_mixture) const
+    double getNumberDensity(CGridBasic * grid, photon_package * pp, uint i_mixture)
     {
-        return getNumberDensity(grid, *pp.getPositionCell(), i_mixture);
+        return getNumberDensity(grid, pp->getPositionCell(), i_mixture);
     }
 
     // Dust mass density functions
-    double getMassDensity(CGridBasic * grid, const cell_basic & cell) const
+    double getMassDensity(CGridBasic * grid, cell_basic * cell)
     {
         double sum = 0;
         if(mixed_component != 0)
@@ -3036,7 +3450,7 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                sum = mixed_component[i_mixture].getMassDensity(grid, cell);
+                sum = mixed_component[i_mixture].getMassDensity(grid, cell, i_mixture);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
@@ -3045,12 +3459,12 @@ class CDustMixture
         return sum;
     }
 
-    double getMassDensity(CGridBasic * grid, const photon_package & pp) const
+    double getMassDensity(CGridBasic * grid, photon_package * pp)
     {
-        return getMassDensity(grid, *pp.getPositionCell());
+        return getMassDensity(grid, pp->getPositionCell());
     }
 
-    double getMassDensity(CGridBasic * grid, const cell_basic & cell, uint i_mixture) const
+    double getMassDensity(CGridBasic * grid, cell_basic * cell, uint i_mixture)
     {
         double sum = 0;
         if(mixed_component != 0)
@@ -3058,7 +3472,7 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 if(i_mixture == getMixtureID(grid, cell))
-                    sum = mixed_component[i_mixture].getMassDensity(grid, cell);
+                    sum = mixed_component[i_mixture].getMassDensity(grid, cell, i_mixture);
             }
             else
                 sum = mixed_component[i_mixture].getMassDensity(grid, cell, i_mixture);
@@ -3066,12 +3480,12 @@ class CDustMixture
         return sum;
     }
 
-    double getMassDensity(CGridBasic * grid, const photon_package & pp, uint i_mixture) const
+    double getMassDensity(CGridBasic * grid, photon_package * pp, uint i_mixture)
     {
-        return getMassDensity(grid, *pp.getPositionCell(), i_mixture);
+        return getMassDensity(grid, pp->getPositionCell(), i_mixture);
     }
 
-    double getRelativeDustNumberDensity(CGridBasic * grid, const cell_basic & cell, uint i_density) const
+    double getRelativeDustNumberDensity(CGridBasic * grid, cell_basic * cell, uint i_density)
     {
         double dens = getNumberDensity(grid, cell);
         if(dens != 0)
@@ -3080,12 +3494,13 @@ class CDustMixture
             return 0;
     }
 
-    double getRelativeDustNumberDensity(CGridBasic * grid, const photon_package & pp, uint i_density) const
+    double getRelativeDustNumberDensity(CGridBasic * grid, photon_package * pp, uint i_density)
     {
-        return getRelativeDustNumberDensity(grid, *pp.getPositionCell(), i_density);
+        cell_basic * cell = pp->getPositionCell();
+        return getRelativeDustNumberDensity(grid, cell, i_density);
     }
 
-    double getRelativeDustMassDensity(CGridBasic * grid, const cell_basic & cell, uint i_density) const
+    double getRelativeDustMassDensity(CGridBasic * grid, cell_basic * cell, uint i_density)
     {
         double dens = getMassDensity(grid, cell);
         if(dens != 0)
@@ -3094,32 +3509,46 @@ class CDustMixture
             return 0;
     }
 
-    double getRelativeDustMassDensity(CGridBasic * grid, const photon_package & pp, uint i_density) const
+    double getRelativeDustMassDensity(CGridBasic * grid, photon_package * pp, uint i_density)
     {
-        return getRelativeDustMassDensity(grid, *pp.getPositionCell(), i_density);
+        cell_basic * cell = pp->getPositionCell();
+        return getRelativeDustMassDensity(grid, cell, i_density);
     }
 
-    void calcEmissivityHz(CGridBasic * grid, const photon_package & pp, StokesVector * dust_emissivity)
+    double getDustTemperature(CGridBasic * grid, cell_basic * cell)
     {
+        double sum = 0;
+        if(mixed_component != 0)
+        {
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                sum += grid->getDustTemperature(cell, i_mixture) *
+                       getRelativeDustMassDensity(grid, cell, i_mixture);
+        }
+        return sum;
+    }
+
+    StokesVector calcEmissivitiesHz(CGridBasic * grid, photon_package * pp)
+    {
+        // Init Stokes vector
+        StokesVector tmp_stokes;
+
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, pp);
-                mixed_component[i_mixture].calcEmissivityHz(grid, pp, 0, dust_emissivity);
+                tmp_stokes = mixed_component[i_mixture].calcEmissivitiesHz(grid, pp, 0);
             }
             else
-            {
-                *dust_emissivity = 0;
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
                 {
-                    mixed_component[i_mixture].calcEmissivityHz(grid, pp, i_mixture, dust_emissivity);
+                    tmp_stokes += mixed_component[i_mixture].calcEmissivitiesHz(grid, pp, i_mixture);
                 }
-            }
         }
+        return tmp_stokes;
     }
 
-    double calcEmissivity(CGridBasic * grid, const photon_package & pp)
+    double calcEmissivities(CGridBasic * grid, photon_package * pp)
     {
         // Init variables
         double pl_abs = 0;
@@ -3129,101 +3558,99 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, pp);
-                pl_abs = mixed_component[i_mixture].calcEmissivity(grid, pp, 0);
+                pl_abs = mixed_component[i_mixture].calcEmissivities(grid, pp, 0);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    pl_abs += mixed_component[i_mixture].calcEmissivity(grid, pp, i_mixture);
+                    pl_abs += mixed_component[i_mixture].calcEmissivities(grid, pp, i_mixture);
         }
 
         return pl_abs;
     }
 
-    void calcEmissivityExt(CGridBasic * grid, const photon_package & pp, Matrix2D * dust_ext_matrix) const
+    Matrix2D calcEmissivitiesExt(CGridBasic * grid, photon_package * pp)
     {
         // Init variables
         double Cext = 0, Cpol = 0, Ccirc = 0;
+
+        // Calculate orientation of the Stokes vector in relation to the magnetic field
+        double phi = grid->getPhiMag(pp);
+        double sin_2ph = sin(2.0 * phi);
+        double cos_2ph = cos(2.0 * phi);
 
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, pp);
-                double dens_dust = mixed_component[i_mixture].getNumberDensity(grid, pp);
-                mixed_component[i_mixture].calcExtCrossSections(grid, pp, 0, &Cext, &Cpol, &Ccirc);
-                Cext *= -dens_dust;
-                Cpol *= -dens_dust;
-                Ccirc *= -dens_dust;
+                mixed_component[i_mixture].calcExtCrossSections(grid, pp, 0, Cext, Cpol, Ccirc);
+                double dens_dust = getNumberDensity(grid, pp, 0);
+                Cext *= dens_dust;
+                Cpol *= dens_dust;
+                Ccirc *= dens_dust;
             }
             else
             {
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
                 {
                     double tmpCext, tmpCpol, tmpCcirc;
-                    double dens_dust = mixed_component[i_mixture].getNumberDensity(grid, pp, i_mixture);
+                    double dens_dust = getNumberDensity(grid, pp, i_mixture);
                     mixed_component[i_mixture].calcExtCrossSections(
-                        grid, pp, i_mixture, &tmpCext, &tmpCpol, &tmpCcirc);
-                    Cext -= tmpCext * dens_dust;
-                    Cpol -= tmpCpol * dens_dust;
-                    Ccirc -= tmpCcirc * dens_dust;
+                        grid, pp, i_mixture, tmpCext, tmpCpol, tmpCcirc);
+                    Cext += tmpCext * dens_dust;
+                    Cpol += tmpCpol * dens_dust;
+                    Ccirc += tmpCcirc * dens_dust;
                 }
             }
         }
 
         // Create extinction matrix for the dust grains
-        double phi = grid->getPhiMag(pp);
-        double sin_2ph = sin(2.0 * phi);
-        double cos_2ph = cos(2.0 * phi);
+        Matrix2D dust_matrix(4, 4);
 
-        // Reset matrix
-        dust_ext_matrix->resize(4, 4);
+        dust_matrix.setValue(0, 0, Cext);
+        dust_matrix.setValue(1, 1, Cext);
+        dust_matrix.setValue(2, 2, Cext);
+        dust_matrix.setValue(3, 3, Cext);
 
-        dust_ext_matrix->setValue(0, 0, Cext);
-        dust_ext_matrix->setValue(1, 1, Cext);
-        dust_ext_matrix->setValue(2, 2, Cext);
-        dust_ext_matrix->setValue(3, 3, Cext);
+        dust_matrix.setValue(0, 1, Cpol * cos_2ph);
+        dust_matrix.setValue(0, 2, Cpol * sin_2ph);
 
-        dust_ext_matrix->setValue(0, 1, Cpol * cos_2ph);
-        dust_ext_matrix->setValue(0, 2, Cpol * sin_2ph);
+        dust_matrix.setValue(1, 0, Cpol * cos_2ph);
+        dust_matrix.setValue(2, 0, Cpol * sin_2ph);
 
-        dust_ext_matrix->setValue(1, 0, Cpol * cos_2ph);
-        dust_ext_matrix->setValue(2, 0, Cpol * sin_2ph);
+        dust_matrix.setValue(1, 3, Ccirc * sin_2ph);
+        dust_matrix.setValue(2, 3, -Ccirc * cos_2ph);
 
-        dust_ext_matrix->setValue(1, 3, Ccirc * sin_2ph);
-        dust_ext_matrix->setValue(2, 3, -Ccirc * cos_2ph);
+        dust_matrix.setValue(3, 1, -Ccirc * sin_2ph);
+        dust_matrix.setValue(3, 2, Ccirc * cos_2ph);
 
-        dust_ext_matrix->setValue(3, 1, -Ccirc * sin_2ph);
-        dust_ext_matrix->setValue(3, 2, Ccirc * cos_2ph);
+        return dust_matrix;
     }
 
-    void calcEmissivityEmi(CGridBasic * grid,
-                           const photon_package & pp,
-                           uint i_offset,
-                           uint emission_component,
-                           StokesVector * dust_emissivity) const
+    StokesVector calcEmissivitiesEmi(CGridBasic * grid, photon_package * pp, uint i_offset = MAX_UINT)
     {
         // Init variables
         double energy = 0;
         double phi = grid->getPhiMag(pp);
         Vector3D en_dir;
+        StokesVector tmp_stokes;
 
         // Check if radiation field is available and scattering should be included
-        if(scattering_to_raytracing &&
-           (emission_component == DUST_EMI_FULL || emission_component == DUST_EMI_SCAT))
+        if(scattering_to_raytracing)
         {
             // Get wavelength of photon package
-            uint w = pp.getDustWavelengthID();
+            uint w = pp->getWavelengthID();
 
             // Get radiation field and calculate angle to the photon package direction
-            if(grid->isRadiationFieldAvailable())
-                grid->getRadiationFieldInterp(pp, wavelength_list[w], &energy, &en_dir);
+            if(grid->getRadiationFieldAvailable())
+                grid->getRadiationFieldInterp(pp, wavelength_list[w], energy, en_dir);
             else if(i_offset != MAX_UINT)
             {
                 // Use the rad field as stokes vector if all necessary things were already calculated
-                *dust_emissivity += grid->getStokesFromRadiationField(pp, i_offset);
+                tmp_stokes += grid->getStokesFromRadiationField(pp, i_offset);
             }
             else
-                grid->getRadiationField(pp, w, &energy, &en_dir);
+                grid->getRadiationField(pp, w, energy, en_dir);
         }
 
         if(mixed_component != 0)
@@ -3231,20 +3658,21 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, pp);
-                *dust_emissivity += mixed_component[i_mixture].calcEmissivityEmi(
-                    grid, pp, 0, emission_component, phi, energy, en_dir);
+                tmp_stokes +=
+                    mixed_component[i_mixture].calcEmissivitiesEmi(grid, pp, 0, phi, energy, en_dir);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    *dust_emissivity += mixed_component[i_mixture].calcEmissivityEmi(
-                        grid, pp, i_mixture, emission_component, phi, energy, en_dir);
+                    tmp_stokes += mixed_component[i_mixture].calcEmissivitiesEmi(
+                        grid, pp, i_mixture, phi, energy, en_dir);
         }
+        return tmp_stokes;
     }
 
     StokesVector getRadFieldScatteredFraction(CGridBasic * grid,
-                                              const photon_package & pp,
+                                              photon_package * pp,
                                               const Vector3D & en_dir,
-                                              double energy) const
+                                              double energy)
     {
         StokesVector tmp_stokes;
 
@@ -3264,7 +3692,7 @@ class CDustMixture
         return tmp_stokes;
     }
 
-    uint getNrOfMixtures() const
+    uint getNrOfMixtures()
     {
         return dust_choices.size();
     }
@@ -3275,7 +3703,7 @@ class CDustMixture
         {
             if(grid->useDustChoice())
             {
-                uint i_mixture = getMixtureID(grid, *cell);
+                uint i_mixture = getMixtureID(grid, cell);
                 mixed_component[i_mixture].convertTempInQB(grid, cell, 0, min_gas_density, use_gas_temp);
             }
             else
@@ -3285,104 +3713,62 @@ class CDustMixture
         }
     }
 
-    uint getScatteringMixture(CGridBasic * grid, photon_package * pp, CRandomGenerator * rand_gen) const
+    uint getScatteringMixture(CGridBasic * grid, photon_package * pp)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
-                uint i_mixture = getMixtureID(grid, *pp);
+                uint i_mixture = getMixtureID(grid, pp);
                 return i_mixture;
             }
             else
             {
-                double rnd = rand_gen->getRND();
-                double dens = 0;
-                double pb[getNrOfMixtures()];
-
+                double rnd = pp->getRND();
+                double pb = 1.0;
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
                 {
-                    double i_dens = getNumberDensity(grid, *pp, i_mixture);
-                    pb[i_mixture] = i_dens * mixed_component[i_mixture].getCscaMean(grid, *pp);
-                    if(i_mixture > 0)
-                        pb[i_mixture] += pb[i_mixture-1];
-                    dens += i_dens;
-                }
-
-                double cscamean_tmp = getCscaMean(grid, *pp);
-
-                if(dens!=0 && cscamean_tmp != 0)
-                {
-                    for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    {
-                        pb[i_mixture] /= dens * cscamean_tmp;
-                        if(pb[i_mixture] > (1-rnd))
-                            return i_mixture;
-                    }
+                    pb -= getRelativeDustNumberDensity(grid, pp, i_mixture) *
+                          mixed_component[i_mixture].getCscaMean(grid, pp, i_mixture) / getCscaMeanGrid(grid, pp);
+                    if(rnd > pb)
+                        return i_mixture;
                 }
             }
         }
         return 0;
     }
 
-    uint getEmittingMixture(CGridBasic * grid, photon_package * pp, CRandomGenerator * rand_gen) const
+    uint getEmittingMixture(CGridBasic * grid, photon_package * pp)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
-                uint i_mixture = getMixtureID(grid, *pp);
+                uint i_mixture = getMixtureID(grid, pp);
                 return i_mixture;
             }
             else
             {
-                double rnd = rand_gen->getRND();
-                double dens = 0;
-                double pb[getNrOfMixtures()];
-
+                double rnd = pp->getRND();
+                double pb = 1.0;
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
                 {
-                    double i_dens = getNumberDensity(grid, *pp, i_mixture);
-                    pb[i_mixture] = i_dens * mixed_component[i_mixture].getCabsMean(grid, *pp);
-                    if(i_mixture > 0)
-                        pb[i_mixture] += pb[i_mixture-1];
-                    dens += i_dens;
-                }
-
-                double cabsmean_tmp = getCabsMean(grid, *pp);
-
-                if(dens!=0 && cabsmean_tmp != 0)
-                {
-                    for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    {
-                        pb[i_mixture] /= dens * cabsmean_tmp;
-                        if(pb[i_mixture] > (1-rnd))
-                            return i_mixture;
-                    }
+                    pb -= getRelativeDustNumberDensity(grid, pp, i_mixture) *
+                          mixed_component[i_mixture].getCabsMean(grid, pp, i_mixture) / getCabsMeanGrid(grid, pp);
+                    if(rnd > pb)
+                        return i_mixture;
                 }
             }
         }
         return 0;
     }
 
-    void scatter(CGridBasic * grid, photon_package * pp, CRandomGenerator * rand_gen, bool adjust_stokes = false)
+    void scatter(CGridBasic * grid, photon_package * pp, bool adjust_stokes = false)
     {
         if(mixed_component != 0)
         {
-            uint i_mixture = getScatteringMixture(grid, pp, rand_gen);
-            mixed_component[i_mixture].scatter(grid, pp, rand_gen);
-
-            // Reduce the Stokes vector by the mean albedo of the particles
-            if(adjust_stokes)
-            {
-                if(getCextMean(grid, *pp) > 0.0)
-                    *pp->getStokesVector() *= getCscaMean(grid, *pp) / getCextMean(grid, *pp);
-                else
-                {
-                    cout << "HINT: Mean cross section for extinction is zero or negative!" << endl;
-                    pp->getStokesVector()->clear();
-                }
-            }
+            uint i_mixture = getScatteringMixture(grid, pp);
+            mixed_component[i_mixture].scatter(grid, pp, adjust_stokes);
         }
     }
 
@@ -3464,68 +3850,33 @@ class CDustMixture
         return size_fraction;
     }
 
-    void getEscapePhoton(CGridBasic * grid,
-                         photon_package * pp,
-                         Vector3D obs_ex,
-                         Vector3D dir_obs,
-                         photon_package * pp_escape,
-                         CRandomGenerator * rand_gen) const
+    photon_package getEscapePhoton(CGridBasic * grid, photon_package * pp, Vector3D obs_ex, Vector3D dir_obs)
     {
         if(mixed_component != 0)
         {
-            uint i_mixture = getScatteringMixture(grid, pp, rand_gen);
-            uint a = mixed_component[i_mixture].getInteractingDust(grid, pp, rand_gen, CROSS_SCA);
-            mixed_component[i_mixture].getEscapePhoton(grid, pp, a, obs_ex, dir_obs, pp_escape);
-
-            // Reduce the Stokes vector by the mean albedo of the particles
-            if(getCextMean(grid, *pp) > 0.0)
-                *pp_escape->getStokesVector() *= getCscaMean(grid, *pp) / getCextMean(grid, *pp);
-            else
-            {
-                cout << "HINT: Mean cross section for extinction is zero or negative!" << endl;
-                pp_escape->getStokesVector()->clear();
-            }
+            uint i_mixture = getScatteringMixture(grid, pp);
+            uint a = mixed_component[i_mixture].getInteractingDust(grid, pp, i_mixture, CROSS_SCA);
+            return mixed_component[i_mixture].getEscapePhoton(grid, pp, a, i_mixture, obs_ex, dir_obs);
         }
+        return photon_package();
     }
 
-    double getCellEmission(CGridBasic * grid, photon_package * pp, CRandomGenerator * rand_gen) const
+    double getCellEmission(CGridBasic * grid, photon_package * pp)
     {
         if(mixed_component != 0)
         {
-            uint i_mixture = getEmittingMixture(grid, pp, rand_gen);
+            uint i_mixture = getEmittingMixture(grid, pp);
             if(grid->useDustChoice())
-                return mixed_component[i_mixture].getCellEmission(grid, *pp, 0);
+                return mixed_component[i_mixture].getCellEmission(grid, pp, 0);
             else
-                return mixed_component[i_mixture].getCellEmission(grid, *pp, i_mixture);
+                return mixed_component[i_mixture].getCellEmission(grid, pp, i_mixture);
         }
         return 0;
     }
 
-    double getTotalCellEmission(CGridBasic * grid, const photon_package & pp) const
+    double getTabPlanck(uint w, double temp)
     {
-        double sum = 0;
-        if(mixed_component != 0)
-        {
-            if(grid->useDustChoice())
-            {
-                uint i_mixture = getMixtureID(grid, pp);
-                sum = mixed_component[i_mixture].getCellEmission(grid, pp, 0);
-            }
-            else
-            {
-                if(grid->getTotalCellEmissionTab(pp.getPositionCell()->getUniqueID()) != MAX_DOUBLE)
-                    sum = grid->getTotalCellEmissionTab(pp.getPositionCell()->getUniqueID());
-                else
-                    for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                        sum += mixed_component[i_mixture].getCellEmission(grid, pp, i_mixture);
-            }
-        }
-        return sum;
-    }
-
-    double getPlanck(uint w, double temp)
-    {
-        return mixed_component[0].getPlanck(w, temp);
+        return mixed_component[0].getTabPlanck(w, temp);
     }
 
     bool createDustMixtures(parameters & param, string path_data, string path_plot);
@@ -3534,9 +3885,7 @@ class CDustMixture
     bool mixComponents(parameters & param, uint i_mixture);
     bool preCalcDustProperties(parameters & param, uint i_mixture);
 
-    void printParameters(parameters & param, CGridBasic * grid);
-
-    void getNrOfUniqueScatTheta(uint ** & nr_of_scat_theta, double *** & scat_theta);
+    void printParameter(parameters & param, CGridBasic * grid);
 
   private:
     CDustComponent * single_component;
@@ -3551,7 +3900,6 @@ class CDustMixture
     uint nr_of_components;
     uint nr_of_wavelength;
     uint wavelength_offset;
-    uint nr_of_dust_species;
 
     uilist dust_choices;
     uilist dust_choices_to_index;

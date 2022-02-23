@@ -1,5 +1,5 @@
 #include "Matrix2D.h"
-#include "Typedefs.h"
+#include "typedefs.h"
 
 #ifndef CVECTOR3D
 #define CVECTOR3D
@@ -24,7 +24,7 @@ class Vector3D
     ~Vector3D(void)
     {}
 
-    void printValues() const
+    void printValues()
     {
         cout << "(" << float(x) << ":" << float(y) << ":" << float(z) << ")";
     }
@@ -109,7 +109,7 @@ class Vector3D
         return tmp;
     }
 
-    void rot(const Vector3D & n, double cos_a, double sin_a)
+    void rot(Vector3D & n, double cos_a, double sin_a)
     {
         Vector3D cx(x, y, z);
         Vector3D cr = cross(n, cx);
@@ -186,15 +186,24 @@ class Vector3D
         y = r * sin(ph);
     }
 
-    Vector3D getSphericalCoord() const
+    Vector3D getSphericalCoord()
     {
+        if(x * x + y * y + z * z == 0)
+            return Vector3D(0, 0, 0);
+
         double r = sqrt(x * x + y * y + z * z);
 
         double arg;
         if(r != 0)
             arg = z / r;
         else
-            return Vector3D(0, 0, 0);
+            arg = 1;
+
+        if(arg > 1)
+            arg = 1;
+
+        if(arg < -1)
+            arg = -1;
 
         double ph = atan2(y, x), th = acos(arg);
 
@@ -204,7 +213,7 @@ class Vector3D
         return Vector3D(r, ph, th);
     }
 
-    Vector3D getCylindricalCoord() const
+    Vector3D getCylindricalCoord()
     {
         if(x * x + y * y + z * z == 0)
             return Vector3D(0, 0, 0);
@@ -218,7 +227,7 @@ class Vector3D
         return Vector3D(r, ph, z);
     }
 
-    double getPhiCoord() const
+    double getPhiCoord()
     {
         if(x * x + y * y + z * z == 0)
             return 0;
@@ -267,12 +276,12 @@ class Vector3D
         return Vector3D(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx);
     }
 
-    Vector3D operator+(const Vector3D & rhs) const
+    Vector3D operator+(const Vector3D & rhs)
     {
         return Vector3D(x + rhs.X(), y + rhs.Y(), z + rhs.Z());
     }
 
-    Vector3D operator-(const Vector3D & rhs) const
+    Vector3D operator-(const Vector3D & rhs)
     {
         return Vector3D(x - rhs.X(), y - rhs.Y(), z - rhs.Z());
     }
@@ -391,31 +400,14 @@ class Vector3D
     }
 
     // random direction according to http://mathworld.wolfram.com/SpherePointPicking.html
-    void rndDir(double r1, double r2, uint exponentThetaBias = 1)
-    {
-        // if exponentThetaBias != 1: bias towards midplane, i.e. u = cos(th) = 0
-        // this requires a rescaling of the Stokes vector!
-        // If exponentThetaBias = 1 (default): isotropic
-        double u = pow( 2.0 * (r1 - 0.5), exponentThetaBias );
-        double ph = PIx2 * r2;
-        double sqr = sqrt(1.0 - u * u);
-        x = sqr * cos(ph);
-        y = sqr * sin(ph);
-        z = u;
-        normalize();
-    }
 
-    // for TRUST benchmark restrict photon directions to increase SNR
-    void rndDirTRUST(double r1, double r2)
+    void rndDir(double r1, double r2)
     {
-        // cos(th) should be between -1 and -0.5
-        // the boundary is actually -0.49237 = -4pc / sqrt(4pc**2 + (sqrt(2)*5pc)**2)
-        // this requires a rescaling of the Stokes vector!
-        double u = -1.0 + 0.5 * r1;
-        double ph = PIx2 * r2;
+        double u = 1.0 - 2.0 * r1;
+        double th = PIx2 * r2;
         double sqr = sqrt(1.0 - u * u);
-        x = sqr * cos(ph);
-        y = sqr * sin(ph);
+        x = sqr * cos(th);
+        y = sqr * sin(th);
         z = u;
         normalize();
     }
@@ -587,7 +579,7 @@ double atan3(double x, double y)
 // inline Vector3D operator-(const Vector3D & lhs,const Vector3D & rhs) { return
 // Vector3D(lhs.X()-rhs.X(),lhs.X()-rhs.Y(),lhs.X()-rhs.Z());};
 
-inline const Vector3D operator*(double val, const Vector3D & rhs)
+inline Vector3D operator*(double val, const Vector3D & rhs)
 {
     return Vector3D(rhs.X() * val, rhs.Y() * val, rhs.Z() * val);
 }
@@ -638,7 +630,7 @@ double getAngleTheta(Vector3D lhs, Vector3D rhs)
     //	/(lhs.length()*rhs.length()) ));
 }
 
-Vector3D projection(const Vector3D & v, const Vector3D & w)
+Vector3D projection(Vector3D v, Vector3D w)
 {
     double tmp = w.sq_length();
     tmp = (v * w) / tmp;
@@ -647,7 +639,7 @@ Vector3D projection(const Vector3D & v, const Vector3D & w)
     return res;
 }
 
-double getAnglePhi(const Vector3D & ex, const Vector3D & ey, const Vector3D & proj)
+double getAnglePhi(Vector3D ex, Vector3D ey, Vector3D proj)
 {
     Vector3D px, py;
     double lx, ly, sx, sy;
@@ -722,6 +714,7 @@ double rot_sgn(Vector3D n, Vector3D o_d, Vector3D n_d)
 
     return 0;
 }
-};
+
+}
 
 #endif

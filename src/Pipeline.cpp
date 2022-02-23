@@ -9,9 +9,6 @@
 #include "Source.h"
 #include "Spherical.h"
 #include "Voronoi.h"
-#include "OPIATE.h"
-#include "Detector.h"
-#include "MathFunctions.h"
 
 bool CPipeline::Init(int argc, char ** argv)
 {
@@ -57,7 +54,10 @@ bool CPipeline::Init(int argc, char ** argv)
         return false;
     }
 
-    CCommandParser parser(argv[1]);
+    CCommandParser parser(argv[1]); /**/
+
+    // CCommandParser parser("/home/s0reissl/polaris projects/Francois/cmd_file");
+    // CCommandParser parser("/home/s0reissl/polaris projects/Camilo/dustPolaris.cmd");
 
     if(!parser.parse())
     {
@@ -86,7 +86,7 @@ void CPipeline::Finish()
     s = len - h * 3600 - m * 60;
 
     cout << SEP_LINE;
-    printf("  Total time of processing: %lu h %02lu min %02lu sec  \n", h, m, s);
+    printf("  Total time of processing: %luh %02lumin. %02lusec.  \n", h, m, s);
 
     cout << CLR_LINE;
     cout << SEP_LINE;
@@ -98,8 +98,8 @@ void CPipeline::Finish()
     string opath = path_data + "time.txt";
     ofstream t_writer(opath.c_str());
     t_writer << "Total time:\r" << endl;
-    t_writer << h << " h " << m << " min " << s << " sec\r\n\r" << endl;
-    t_writer << len << " s\r" << endl;
+    t_writer << h << "h " << m << "min " << s << "sec\r\n\r" << endl;
+    t_writer << len << " ms\r" << endl;
     t_writer.close();
 
     /*#ifdef WINDOWS
@@ -118,7 +118,6 @@ void CPipeline::Run()
     {
         parameters & param = param_list[i];
 
-        omp_set_num_threads(param.getNrOfThreads());
         printParameters(param, size);
 
         switch(param.getCommand())
@@ -127,11 +126,25 @@ void CPipeline::Run()
                 result = calcMonteCarloRadiationField(param);
                 break;
 
+            case CMD_TEMP_DISR:
+                result = calcMonteCarloRadiationField(param);
+                break;
+
             case CMD_TEMP_RAT:
                 result = calcMonteCarloRadiationField(param);
                 break;
 
+
+            case CMD_TEMP_RAT_DISR:
+                result = calcMonteCarloRadiationField(param);
+                break;
+
             case CMD_RAT:
+                result = calcMonteCarloRadiationField(param);
+                break;
+
+
+            case CMD_DISR:
                 result = calcMonteCarloRadiationField(param);
                 break;
 
@@ -153,7 +166,7 @@ void CPipeline::Run()
                 break;
 
             case CMD_OPIATE:
-                result = calcOpiateMapsViaRayTracing(param);
+                // TBD
                 break;
 
             case CMD_SYNCHROTRON:
@@ -183,7 +196,7 @@ void CPipeline::Error()
     s = len - h * 3600 - m * 60;
 
     cout << SEP_LINE;
-    printf("  Total time of processing: %lu h %02lu min %02lu sec  \n", h, m, s);
+    printf("  Total time of processing: %luh %02lumin. %02lusec.  \n", h, m, s);
 
     cout << CLR_LINE;
     cout << SEP_LINE;
@@ -199,9 +212,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     // In case of (save radiation field), (calc RATs), and (calc stochastic heating
     // temperatures)
     bool use_energy_density = false;
-    if(param.getSaveRadiationField() || param.isRatSimulation() || param.getStochasticHeatingMaxSize() > 0)
-        use_energy_density = true;
-
+    if(param.getSaveRadiationField() || param.isRATDSimulation() || param.isRatSimulation() || param.getStochasticHeatingMaxSize() > 0)
+	use_energy_density = true;
     CGridBasic * grid = 0;
     CDustMixture * dust = new CDustMixture();
 
@@ -211,7 +223,7 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     if(!assignGridType(grid, param))
         return false;
 
-    if(!createWavelengthList(param, dust, 0, 0))
+    if(!createWavelengthList(param, dust))
         return false;
 
     if(!assignDustMixture(param, dust, grid))
@@ -225,13 +237,13 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
 
     // Print helpfull information
     grid->createCellList();
-    dust->printParameters(param, grid);
+    dust->printParameter(param, grid);
     grid->printParameters();
 
     if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(), true))
         return false;
 
-    if(!grid->writePlotFiles(path_plot + "input_", param))
+    if(!grid->writeGNUPlotFiles(path_plot + "input_", param))
         return false;
 
     if(!grid->writeAMIRAFiles(path_plot + "input_", param, param.getInpAMIRAPoints()))
@@ -251,6 +263,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     rad.setSourcesLists(sources_mc, sources_ray);
     rad.initiateRadFieldMC(param);
 
+    omp_set_num_threads(param.getNrOfThreads());
+
     if(param.isTemperatureSimulation())
     {
         if(param.getDustOffset())
@@ -266,15 +280,48 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     if(param.isTemperatureSimulation())
         rad.calcFinalTemperature(use_energy_density);
 
-    if(param.isRatSimulation())
-        rad.calcAlignedRadii();
+        
+    if(param.isRATDSimulation())
+    {
+        cout << "\n DISRUPTION SIMULATION \n" << endl;
+        cout << "\n First loop\n" << endl;
+        rad.calcDisruptRadii();
+        rad.calcMaxDisruptRadii();
+        rad.calcSizeParamModify();
 
+        cout << "\n Second loop \n" << endl;
+        rad.calcMonteCarloRadiationField(param.getCommand(),
+                                        use_energy_density,
+                                       false); //(param.getCommand() == CMD_RAT));
+        rad.calcFinalTemperature(use_energy_density);
+        rad.calcDisruptRadii();
+        rad.calcMaxDisruptRadii();
+        rad.calcSizeParamModify();
+
+        cout << "\n Final temperature and alignment \n" << endl;
+        rad.calcMonteCarloRadiationField(param.getCommand(),
+                                         use_energy_density,
+                                         false); //(param.getCommand() == CMD_RAT))
+
+        rad.calcFinalTemperature(use_energy_density);
+        rad.calcDisruptRadii();
+        rad.calcMaxDisruptRadii();
+        rad.calcSizeParamModify();
+    }
+        
+    if(param.isRatSimulation())
+    {
+    	rad.calcAlignedRadii();
+        rad.calcBarnetLowJRadii();
+        rad.calcBarnetHighJRadii();
+    }
+    
     cout << SEP_LINE;
 
     if(!grid->writeMidplaneFits(path_data + "output_", param, param.getOutMidDataPoints()))
         return false;
 
-    if(!grid->writePlotFiles(path_plot + "output_", param))
+    if(!grid->writeGNUPlotFiles(path_plot + "output_", param))
         return false;
 
     if(!grid->writeAMIRAFiles(path_plot + "output_", param, param.getOutAMIRAPoints()))
@@ -289,6 +336,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     else if(param.getCommand() == CMD_RAT)
         grid->saveBinaryGridFile(param.getPathOutput() + "grid_rat.dat");
 
+    else if(param.getCommand() == CMD_DISR)
+        grid->saveBinaryGridFile(param.getPathOutput() + "grid_ratd.dat");
     delete grid;
     delete dust;
     deleteSourceLists();
@@ -307,7 +356,7 @@ bool CPipeline::calcPolarizationMapsViaMC(parameters & param)
     if(!assignGridType(grid, param))
         return false;
 
-    if(!createWavelengthList(param, dust, 0, 0))
+    if(!createWavelengthList(param, dust))
         return false;
 
     if(!assignDustMixture(param, dust, grid))
@@ -320,13 +369,13 @@ bool CPipeline::calcPolarizationMapsViaMC(parameters & param)
 
     // Print helpfull information
     grid->createCellList();
-    dust->printParameters(param, grid);
+    dust->printParameter(param, grid);
     grid->printParameters();
 
     if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(), true))
         return false;
 
-    if(!grid->writePlotFiles(path_plot + "input_", param))
+    if(!grid->writeGNUPlotFiles(path_plot + "input_", param))
         return false;
 
     if(!grid->writeAMIRAFiles(path_plot + "input_", param, param.getInpAMIRAPoints()))
@@ -350,6 +399,8 @@ bool CPipeline::calcPolarizationMapsViaMC(parameters & param)
     rad.setDust(dust);
     rad.setSourcesLists(sources_mc, sources_ray);
     rad.setDetectors(detector);
+
+    omp_set_num_threads(param.getNrOfThreads());
 
     rad.initiateDustMC(param);
     rad.calcPolMapsViaMC();
@@ -375,7 +426,7 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
     if(!assignGridType(grid, param))
         return false;
 
-    if(!createWavelengthList(param, dust,0, 0))
+    if(!createWavelengthList(param, dust))
         return false;
 
     if(!assignDustMixture(param, dust, grid))
@@ -388,13 +439,13 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
 
     // Print helpfull information
     grid->createCellList();
-    dust->printParameters(param, grid);
+    dust->printParameter(param, grid);
     grid->printParameters();
 
     if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(), true))
         return false;
 
-    if(!grid->writePlotFiles(path_plot + "input_", param))
+    if(!grid->writeGNUPlotFiles(path_plot + "input_", param))
         return false;
 
     if(!grid->writeAMIRAFiles(path_plot + "input_", param, param.getInpAMIRAPoints()))
@@ -416,12 +467,14 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
     if(!rad.initiateDustRaytrace(param))
         return false;
 
+    omp_set_num_threads(param.getNrOfThreads());
+
     if(param.getStochasticHeatingMaxSize() > 0)
         rad.calcStochasticHeating();
 
     // Calculate radiation field before raytracing (if sources defined and no radiation
     // field in grid)
-    if(!grid->isRadiationFieldAvailable() && dust->getScatteringToRay() && !sources_mc.empty())
+    if(!grid->getRadiationFieldAvailable() && dust->getScatteringToRay() && !sources_mc.empty())
         rad.calcMonteCarloRadiationField(param.getCommand(), true, true);
 
     if(!rad.calcPolMapsViaRaytracing(param))
@@ -458,7 +511,7 @@ bool CPipeline::calcChMapsViaRayTracing(parameters & param)
     if(!assignGasSpecies(param, gas, grid))
         return false;
 
-    if(!createWavelengthList(param, dust, gas, 0))
+    if(!createWavelengthList(param, dust, gas))
         return false;
 
     if(!assignDustMixture(param, dust, grid))
@@ -466,19 +519,19 @@ bool CPipeline::calcChMapsViaRayTracing(parameters & param)
 
     grid->setSIConversionFactors(param);
 
-    if(!grid->loadGridFromBinrayFile(param, gas->getNrOffsetEntries(grid, param)))
+    if(!grid->loadGridFromBinrayFile(param, 6 * param.getMaxNrOfLineTransitions()))
         return false;
 
     // Print helpfull information
     grid->createCellList();
-    dust->printParameters(param, grid);
-    gas->printParameters(param, grid);
+    dust->printParameter(param, grid);
+    gas->printParameter(param, grid);
     grid->printParameters();
 
     if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(), true))
         return false;
 
-    if(!grid->writePlotFiles(path_plot + "input_", param))
+    if(!grid->writeGNUPlotFiles(path_plot + "input_", param))
         return false;
 
     if(!grid->writeAMIRAFiles(path_plot + "input_", param, param.getInpAMIRAPoints()))
@@ -501,6 +554,8 @@ bool CPipeline::calcChMapsViaRayTracing(parameters & param)
     if(!rad.initiateLineRaytrace(param))
         return false;
 
+    omp_set_num_threads(param.getNrOfThreads());
+
     if(!rad.calcChMapsViaRaytracing(param))
         return false;
 
@@ -511,80 +566,6 @@ bool CPipeline::calcChMapsViaRayTracing(parameters & param)
 
     return true;
 }
-
-bool CPipeline::calcOpiateMapsViaRayTracing(parameters & param)
-{
-    CGridBasic * grid = 0;
-    CDustMixture * dust = new CDustMixture();
-    //CGasMixture * gas = new CGasMixture();
-    COpiateDataBase * op = new COpiateDataBase();
-
-    if(!createOutputPaths(param.getPathOutput()))
-        return false;
-
-    if(!assignGridType(grid, param))
-        return false;
-
-    if(!op->readOpiateDataBase(param))
-        return false;
-
-    if(!createWavelengthList(param, dust, 0, op))
-        return false;
-
-    if(!assignDustMixture(param, dust, grid))
-        return false;
-
-    grid->setSIConversionFactors(param);
-
-    if(!grid->loadGridFromBinrayFile(param,1))
-        return false;
-
-    grid->createCellList();
-
-    // Print helpfull information
-    dust->printParameters(param, grid);
-    //gas->printParameters(param, grid);
-    //op->printParameters(param,grid);
-    grid->printParameters();
-
-    if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(), true))
-        return false;
-
-    if(!grid->writePlotFiles(path_plot + "input_", param))
-        return false;
-
-    if(!grid->writeAMIRAFiles(path_plot + "input_", param, param.getInpAMIRAPoints()))
-        return false;
-
-    createSourceLists(param, dust, grid);
-    if(sources_ray.size() == 0)
-    {
-        cout << "\nERROR: No sources for raytracing simulations defined!" << endl;
-        return false;
-    }
-
-    CRadiativeTransfer rad(param);
-
-    rad.setGrid(grid);
-    rad.setDust(dust);
-    rad.setOpiateDataBase(op);
-    rad.setSourcesLists(sources_mc, sources_ray);
-
-    if(!rad.initiateOPIATERaytrace(param))
-        return false;
-
-    if(!rad.calcOPIATEMapsViaRaytracing(param))
-        return false;
-
-    delete grid;
-    delete dust;
-//    delete gas;
-    delete op;
-    deleteSourceLists();
-
-    return true;
-}
-
 
 bool CPipeline::calcPolarizationMapsViaSynchrotron(parameters & param)
 {
@@ -597,7 +578,7 @@ bool CPipeline::calcPolarizationMapsViaSynchrotron(parameters & param)
     if(!assignGridType(grid, param))
         return false;
 
-    if(!createWavelengthList(param, dust, 0, 0))
+    if(!createWavelengthList(param, dust))
         return false;
 
     if(!assignDustMixture(param, dust, grid))
@@ -610,13 +591,13 @@ bool CPipeline::calcPolarizationMapsViaSynchrotron(parameters & param)
 
     // Print helpfull information
     grid->createCellList();
-    dust->printParameters(param, grid);
+    dust->printParameter(param, grid);
     grid->printParameters();
 
     if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(), true))
         return false;
 
-    if(!grid->writePlotFiles(path_plot + "input_", param))
+    if(!grid->writeGNUPlotFiles(path_plot + "input_", param))
         return false;
 
     if(!grid->writeAMIRAFiles(path_plot + "input_", param, param.getInpAMIRAPoints()))
@@ -638,6 +619,7 @@ bool CPipeline::calcPolarizationMapsViaSynchrotron(parameters & param)
     if(!rad.initiateSyncRaytrace(param))
         return false;
 
+    omp_set_num_threads(param.getNrOfThreads());
     if(!rad.calcSyncMapsViaRaytracing(param))
         return false;
 
@@ -739,9 +721,6 @@ CDetector * CPipeline::createDetectorList(parameters & param, CDustMixture * dus
         double sideLength_x = dust_mc_detectors[i + 6];
         double sideLength_y = dust_mc_detectors[i + 7];
 
-        double map_shift_x = dust_mc_detectors[i + 8];
-        double map_shift_y = dust_mc_detectors[i + 9];
-
         uint bins_x = uint(dust_mc_detectors[i + NR_OF_MC_DET - 2]);
         uint bins_y = uint(dust_mc_detectors[i + NR_OF_MC_DET - 1]);
 
@@ -767,8 +746,6 @@ CDetector * CPipeline::createDetectorList(parameters & param, CDustMixture * dus
                            bins_y,
                            sideLength_x,
                            sideLength_y,
-                           map_shift_x,
-                           map_shift_y,
                            distance,
                            lam_min,
                            lam_max,
@@ -796,9 +773,9 @@ void CPipeline::createSourceLists(parameters & param, CDustMixture * dust, CGrid
     cout << CLR_LINE;
     cout << "-> Creating source list             \r" << flush;
 
-    if(param.isRaytracingSimulation())
+    if(param.isRaytracing())
     {
-        // Ray tracing simulations are only using background sources!
+        // Raytracing simulations are only using background sources!
         if(param.getNrOfDiffuseSources() > 0)
         {
             cout << "\nWARNING: Diffuse sources cannot be considered in "
@@ -934,7 +911,7 @@ void CPipeline::createSourceLists(parameters & param, CDustMixture * dust, CGrid
 
         if(param.getDustSource())
         {
-            if(!dust->getScatteringToRay() && grid->isRadiationFieldAvailable())
+            if(!dust->getScatteringToRay() && grid->getRadiationFieldAvailable())
                 nr_ofSources--;
             else if(param.getCommand() != CMD_DUST_EMISSION)
                 cout << "\nWARNING: Dust source cannot be considered in line or "
@@ -943,20 +920,6 @@ void CPipeline::createSourceLists(parameters & param, CDustMixture * dust, CGrid
             else
             {
                 CSourceBasic * tmp_source = new CSourceDust();
-                tmp_source->setParameter(param, grid, dust, 0);
-                sources_mc.push_back(tmp_source);
-            }
-        }
-
-        if(param.isGasSpeciesLevelPopMC())
-        {
-            if(param.getCommand() != CMD_LINE_EMISSION || !param.isGasSpeciesLevelPopMC())
-            {
-                nr_ofSources--;
-            }
-            else
-            {
-                CSourceBasic * tmp_source = new CSourceGas();
                 tmp_source->setParameter(param, grid, dust, 0);
                 sources_mc.push_back(tmp_source);
             }
@@ -1188,7 +1151,7 @@ bool CPipeline::writeSources(parameters & param, CGridBasic * grid)
     }
 
     // path_plot = "E:\\gnutests\\";
-    string plot_out = path_plot + "sources.py";
+    string plot_out = path_plot + "sources.plt";
     ofstream outStream(plot_out.c_str());
 
     if(outStream.fail())
@@ -1223,7 +1186,7 @@ bool CPipeline::assignDustMixture(parameters & param, CDustMixture * dust, CGrid
     if(!dust->createDustMixtures(param, path_data, path_plot))
         return false;
 
-    // Write plot files to show dust properties
+    // Write Gnuplot files to show dust properties
     if(!dust->writeComponent(path_data, path_plot))
         return false;
 
@@ -1231,14 +1194,11 @@ bool CPipeline::assignDustMixture(parameters & param, CDustMixture * dust, CGrid
 
     // Check if either the radiation field is present or the radiation field can be
     // calculated otherwise, disable scattering added to the raytracing then
-    if(param.getScatteringToRay())
-        !grid->isRadiationFieldAvailable() && param.getNrOfPointSources() == 0 &&
-                param.getNrOfDiffuseSources() == 0 && param.getNrOfLaserSources() == 0 &&
-                !param.getISRFSource() && !param.getDustSource()
-            ? dust->setScatteringToRay(false)
-            : dust->setScatteringToRay(true);
-    else
+    if(dust->getScatteringToRay() && !grid->getRadiationFieldAvailable() &&
+       param.getNrOfPointSources() == 0 && param.getNrOfDiffuseSources() == 0 &&
+       param.getNrOfLaserSources() == 0 && !param.getISRFSource() && !param.getDustSource())
         dust->setScatteringToRay(false);
+
     return true;
 }
 
@@ -1266,6 +1226,14 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printPlotParameters(param);
             break;
 
+       case CMD_TEMP_DISR:
+            cout << "- Command          : TEMPERATURE DISTRIBUTION and RATD DISRUPTION" << endl;
+            printPathParameters(param);
+            printSourceParameters(param);
+            printConversionParameters(param);
+            printPlotParameters(param);
+            break;
+
         case CMD_FORCE:
             cout << "- Command          : RADIATION FORCE" << endl;
             printPathParameters(param);
@@ -1282,8 +1250,24 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printPlotParameters(param);
             break;
 
+        case CMD_TEMP_RAT_DISR:
+            cout << "- Command          : TEMPERATURE DISTRIBUTION, RAT ALIGNMENT, and RATD DISRUPTION" << endl;
+            printPathParameters(param);
+            printSourceParameters(param);
+            printConversionParameters(param);
+            printPlotParameters(param);
+            break;
+
         case CMD_RAT:
             cout << "- Command          : RAT ALIGNMENT" << endl;
+            printPathParameters(param);
+            printSourceParameters(param, true);
+            printConversionParameters(param);
+            printPlotParameters(param);
+            break;
+
+        case CMD_DISR:
+            cout << "- Command          : RATD DISRUPTION" << endl;
             printPathParameters(param);
             printSourceParameters(param, true);
             printConversionParameters(param);
@@ -1297,6 +1281,7 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printConversionParameters(param);
             printAlignmentParameters(param);
             printDetectorParameters(param);
+            printDisruptionParameters(param);
             printPlotParameters(param);
             break;
 
@@ -1317,6 +1302,7 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printConversionParameters(param);
             printAlignmentParameters(param);
             printDetectorParameters(param, true);
+            printDisruptionParameters(param);
             printPlotParameters(param);
             break;
 
@@ -1340,16 +1326,19 @@ void CPipeline::printParameters(parameters & param, uint max_id)
     cout << SEP_LINE;
 }
 
-bool CPipeline::createWavelengthList(parameters & param, CDustMixture * dust, CGasMixture * gas, COpiateDataBase * op)
+bool CPipeline::createWavelengthList(parameters & param, CDustMixture * dust, CGasMixture * gas)
 {
     dlist values;
 
     switch(param.getCommand())
     {
         case CMD_TEMP:
+        case CMD_TEMP_DISR:
         case CMD_TEMP_RAT:
+        case CMD_TEMP_RAT_DISR:
         case CMD_RAT:
-            dust->addToWavelengthGrid(WL_MIN, WL_MAX, WL_STEPS);
+        case CMD_DISR:
+	    dust->addToWavelengthGrid(WL_MIN, WL_MAX, WL_STEPS);
             break;
 
         case CMD_DUST_EMISSION:
@@ -1397,91 +1386,38 @@ bool CPipeline::createWavelengthList(parameters & param, CDustMixture * dust, CG
             if(gas == 0)
                 return false;
 
-            if(param.isGasSpeciesLevelPopMC())
-            {
-                for(uint i_species = 0; i_species < gas->getNrOfSpecies(); i_species++)
-                {
-                    for(uint i_trans = 0; i_trans < gas->getNrOfTransitions(i_species); i_trans++)
-                    {
-                        // Calculate from frequency
-                        double wavelength = con_c / gas->getTransitionFrequency(i_species, i_trans);
+            // Get detector parameters list
+            maplist line_ray_detector_list = param.getLineRayDetectors();
+            maplist::iterator it;
 
-                        // Add wavelength to global list of wavelength
-                        dust->addToWavelengthGrid(wavelength);
-                    }
-                }
+            // Check if a detector is defined
+            if(line_ray_detector_list.empty())
+            {
+                cout << "\nERROR: No spectral line detector of gas species defined!" << endl;
+                return false;
             }
-            else
+
+            // Perform radiative transfer for each chosen gas species
+            for(it = line_ray_detector_list.begin(); it != line_ray_detector_list.end(); ++it)
             {
-                // Get detector parameters list
-                maplist line_ray_detector_list = param.getLineRayDetectors();
-                maplist::iterator it;
+                // Get ID of the current gas species
+                uint i_species = it->first;
 
-                // Check if a detector is defined
-                if(line_ray_detector_list.empty())
+                // Get number of spectral line transitions that have to be simulated
+                uint nr_of_transitions = param.getNrOfGasSpeciesTransitions(i_species);
+
+                // Perform radiative transfer for each chosen spectral line transition
+                for(uint i_line = 0; i_line < nr_of_transitions; i_line++)
                 {
-                    cout << "\nERROR: No spectral line detector of gas species defined!" << endl;
-                    return false;
-                }
+                    // Calculate from frequency
+                    double wavelength = con_c / gas->getTransitionFrequencyFromIndex(i_species, i_line);
 
-                // Perform radiative transfer for each chosen gas species
-                for(it = line_ray_detector_list.begin(); it != line_ray_detector_list.end(); ++it)
-                {
-                    // Get ID of the current gas species
-                    uint i_species = it->first;
-
-                    // Get number of spectral line transitions that have to be simulated
-                    uint nr_of_spectral_lines = param.getNrOfSpectralLines(i_species);
-
-                    // Perform radiative transfer for each chosen spectral line transition
-                    for(uint i_line = 0; i_line < nr_of_spectral_lines; i_line++)
-                    {
-                        // Calculate from frequency
-                        double wavelength = con_c / gas->getSpectralLineFrequency(i_species, i_line);
-
-                        // Add wavelength to global list of wavelength
-                        dust->addToWavelengthGrid(wavelength);
-                    }
+                    // Add wavelength to global list of wavelength
+                    dust->addToWavelengthGrid(wavelength);
                 }
             }
             break;
         }
-
-        case CMD_OPIATE:
-
-            if(op==0)
-            {
-                cout << "\nERROR: No OPIATE database loaded!" << endl;
-                return false;
-            }
-
-            // Get detector parameters list
-            values = param.getOPIATERayDetectors();
-
-            // Check if a detector is defined
-            if(values.empty())
-            {
-                cout << "\nERROR: No OPIATE detector defined (see <detector_opiate>)!" << endl;
-                return false;
-            }
-
-            for(uint i=0;i<param.getNrOfOPIATESpecies();i++)
-            {
-                string spec_name=param.getOpiateSpec(i);
-                if(op->findIndexByName(spec_name))
-                {
-                    double wavelength = con_c / op->getCurrentFrequency();
-                    dust->addToWavelengthGrid(wavelength);
-                }
-                else
-                {
-                    cout << "\nERROR: Label \"" << spec_name << "\" is not listed in OPIATE database! " << endl;
-                    cout << "         Check the command \"<detector_opiate>\" in command file!" << endl;
-                    return false;
-                }
-            }
-
-            break;
 
         case CMD_SYNCHROTRON:
             // Get detector parameters list
@@ -1537,7 +1473,7 @@ bool CPipeline::calcRadPressure(parameter & param)
     if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(),
 true)) return false;
 
-    if(!grid->writePlotFiles(path_plot + "input_", param))
+    if(!grid->writeGNUPlotFiles(path_plot + "input_", param))
         return false;
 
     if(!grid->writeAMIRAFiles(path_plot + "input_", param, param.getInpAMIRAPoints()))
@@ -1556,6 +1492,8 @@ true)) return false;
     rad.setDust(dust);
     rad.setSourcesLists(sources_mc, sources_ray);
     rad.initiateRadFieldMC(param);
+
+    omp_set_num_threads(param.getNrOfThreads());
 
     //rad.calcRadiativePressure(param);
     preparePressureData(grid, dust, param, true, 0);
@@ -1716,7 +1654,7 @@ wavelength_list[w - 1]) * tmpZ[w - 1] + 0.5 * (wavelength_list[w] - wavelength_l
 #pragma omp parallel for schedule(dynamic)
     for(int i = 1; i <= 3; i++)
     {
-        photon_package pp = photon_package();
+        photon_package * pp = new photon_package;
 
         string rad_filename = path_plot + "Frad" + prev[i - 1] + ".dat";
         string gra_filename = path_plot + "Fgrav" + prev[i - 1] + ".dat";
@@ -1857,9 +1795,10 @@ wavelength_list[w - 1]) * tmpZ[w - 1] + 0.5 * (wavelength_list[w] - wavelength_l
         rad_writer.close();
         gra_writer.close();
 
+        delete pp;
     }
 
-    photon_package pp = photon_package();
+    photon_package * pp = new photon_package;
     uint pos_counter, avg_counter = 0;
 
     //0
@@ -2064,6 +2003,8 @@ wavelength_list[w - 1]) * tmpZ[w - 1] + 0.5 * (wavelength_list[w] - wavelength_l
 
         pos_counter++;
     }
+
+    delete pp;
 
     pos_counter--;
 

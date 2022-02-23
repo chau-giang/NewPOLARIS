@@ -14,45 +14,27 @@ using namespace std;
 // Header and Version of POLARIS
 #define PROG_ID "POLARIS    V4.06.00        "
 
-// Flags to activate WINDOWS support, some DEBUG messages, BENCHMARK settings
+// Flags to activate WINDOWS support, some DEBUG messages, and CAMPS BENCHMARK
 //#define DEBUG
 //#define WINDOWS
-#define NONE 0
-#define CAMPS 1
-#define TRUST 2
-#define PINTE 3
-// should be NONE, CAMPS, TRUST or PINTE
-#define BENCHMARK NONE
-
-// use pre-calculated values (per cell) for mean cross-sections,
-// number densities, cell emission. This saves a lot of time if
-// all these quantities are constant throughout the simulation
-// but it eats some additional RAM (depend on n_wavel and n_cell)
-#define USE_PRECALC_TABLE true
-
-// if dust is a source, the cell from which the photons start are calculated
-// via the cell energy CDF with constant photon energies (DUST_EMI_PROB true)
-// OR
-// all cells launch the same amount of photons with photon energies weighted
-// by the cell energy (DUST_EMI_PROB false)
-#define DUST_EMI_PROB true
+//#define CAMPS_BENCHMARK
 
 // Constants taken from astropy/numpy (reference: CODATA 2014, IAU 2012 Resolution B2)
 #define PI 3.1415926535897932384626433832795028841971 // PI
 #define PIsq sqrt(PI)                                 // sqrt(PI)
-#define PI2 (PI / 2.0)                                // PI / 2
-#define PI4 (PI / 4.0)                                // PI / 4
-#define invPI2 (2.0 / PI)                             // 2 / PI
-#define PIx2 (PI * 2.0)                               // 2 * PI
-#define PIx4 (PI * 4.0)                               // 4 * PI
-#define PI4x3 (PI * 3.0 / 4.0)                        // 3 * PI / 4
+#define PI2 PI / 2.0                                  // PI / 2
+#define PI4 PI / 4.0                                  // PI / 4
+#define invPI2 2.0 / PI                               // 2 / PI
+#define PIx2 PI * 2.0                                 // 2 * PI
+#define PIx4 PI * 4.0                                 // 4 * PI
+#define PI4x3 PI * 3.0 / 4.0                          // 3 * PI / 4
 #define TWOTHIRD 0.6666666666666666666666666666666    // 2 / 3
 #define m_H 1.66053904e-27                            // Atomic mass unit [kg]
 #define con_h 6.62607004e-34                          // Planck constant [Js]
 #define con_hq 1.0545718e-34                          // Reduced Planck constant [Js]
 #define con_kB 1.38064852e-23                         // Boltzmann constant [J / K]
 #define con_c 299792458.0                             // Speed of light in vacuum [m / s]
-#define PIx4_c (PIx4 / con_c)                         // 4 * PI / c
+#define PIx4_c PIx4 / con_c                           // (4 * PI / c)
 #define con_e 1.6021766208e-19                        // Electron charge [C]
 #define con_Ryd 10973731.568508                       // Rydberg constant [1 / m]
 #define con_AU 149597870700.0                         // Astronomical Unit [m]
@@ -69,56 +51,34 @@ using namespace std;
 #define con_m_e 9.10938356e-31                        // Electron mass [kg]
 #define con_m_p 1.672621898e-27                       // Proton mass [kg]
 #define con_epsilon_0 8.854187817620389e-12           // Vacuum permittivity [F / m]
-#define con_eps (con_h * con_c / PIx4)                // h * c / (4 * PI)
+#define con_eps con_h * con_c / (4.0 * PI)            // (h * c / (4 * PI))
 
-#if BENCHMARK == CAMPS
-    // Part to perform Camps et. al (2015) benchmark (adjust definition below, if
-    // necessary!!!)
-    #define WL_MIN 1e-9
-    #define WL_MAX 1e-2
-    #define WL_STEPS 1201
-#elif BENCHMARK == TRUST
-    // TRUST benchmark with the BASIC wavelength grid; see Gordon et al. (2017)
-    #define WL_MIN 0.1e-6
-    #define WL_MAX 1000e-6
-    #define WL_STEPS 45
-#elif BENCHMARK == PINTE
-    // TRUST benchmark with the BASIC wavelength grid; see Gordon et al. (2017)
-    #define WL_MIN 0.1e-6
-    #define WL_MAX 3000e-6
-    #define WL_STEPS 100
+#ifdef CAMPS_BENCHMARK
+// Part to perform Camps et. al (2015) benchmark (adjust definition below, if
+// necessary!!!)
+#define WL_MIN 1e-9
+#define WL_MAX 1e-2
+#define WL_STEPS 1201
 #else
-    // Default parameters of the global wavelength grid
-    #define WL_MIN 0.1e-6
-    #define WL_MAX 2000e-6
-    #define WL_STEPS 200
+// Default parameters of the global wavelength grid
+#define WL_MIN 0.1e-6
+#define WL_MAX 2000.0e-6
+#define WL_STEPS 100
 #endif
 
 // Parameter for numerical limitations
 #define MAX_LVG_ITERATIONS 200
-#define MAX_INTERACTION_RADFIELD 1e7
-#define MAX_INTERACTION_DUST_MC 20
+#define MAX_INTERACTION 1500000
 #define MAX_RT_RAYS 1e7
-#define MIN_LEN_STEP 1e4
-#define ACC_SELECT_LEVEL 1e-6
-#define DIFF_GAMMA 7.0
-#define PERCENTAGE_STEP 0.01
+#define MIN_LEN_STEP 1e-6
+#define ACC_SELECT_LEVEL 1.0e-6
+#define DIFF_GAMMA 7.00
+#define PERCENTAGE_STEP 0.001
 
 // Limits of the Runge-Kutta-Fehlberg raytracing method
-#define REL_ERROR 1e-6
-#define ABS_ERROR 1e-30
-#define MAX_SOLVER_STEPS 15000000
-
-// Limits for the Monte-Carlo level population calculation
-#define MC_LVL_POP_DIFF_LIMIT 1e-6
-#define MC_LVL_POP_LIMIT 1e-200
-#define MC_LVL_POP_MAX_LOCAL_ITER 1000
-#define MC_LVL_POP_MAX_GLOBAL_ITER 100
-
-// Define the fits file extension
-// ".fits" normal fits file
-// ".fits.gz" compressed fits file
-#define FITS_COMPRESS_EXT ".fits.gz"
+#define rel_err 1.0e-6
+#define abs_err 1.0e-30
+#define MAX_SOLVER_STEPS 1500000
 
 // Number of quantities in dust component file (C_{x,abs}, C_{x,ext}, C_{x,sca}, ...)
 #define NR_OF_EFF 8
@@ -127,10 +87,9 @@ using namespace std;
 #define NR_OF_SIZE_DIST_PARAM 14
 
 // Number of entries for different detectors
-#define NR_OF_MC_DET 12
-#define NR_OF_RAY_DET 15
+#define NR_OF_MC_DET 10
+#define NR_OF_RAY_DET 14
 #define NR_OF_LINE_DET 17
-#define NR_OF_OPIATE_DET 17
 
 // Number of entries for different sources
 #define NR_OF_POINT_SOURCES 8
@@ -148,17 +107,6 @@ using namespace std;
 #define DET_SPHER 2
 #define DET_SLICE 3
 
-// source ids
-#define SRC_BASIC 0
-#define SRC_POINT 1
-#define SRC_SFIELD 2
-#define SRC_BACKGROUND 3
-#define SRC_ISRF 4
-#define SRC_DUST 5
-#define SRC_GAS_LVL 6
-#define SRC_LASER 7
-#define SRC_AGN 8
-
 // phase functions
 #define PH_ISO 0
 #define PH_HG 1
@@ -172,6 +120,10 @@ using namespace std;
 #define ALIG_RAT 8
 #define ALIG_GOLD 16
 #define ALIG_KRAT 32
+
+
+// Disruption mechanisms
+#define RATD 64
 
 #define SUPERTHERMAL_LIMIT 3
 #define MACH_LIMIT 1
@@ -188,6 +140,10 @@ using namespace std;
 #define CMD_FORCE 7
 #define CMD_OPIATE 8
 #define CMD_SYNCHROTRON 9
+
+#define CMD_TEMP_DISR 10
+#define CMD_TEMP_RAT_DISR 11
+#define CMD_DISR 12
 
 // PDA IDs
 #define PDA_TEMP 0
@@ -235,14 +191,20 @@ using namespace std;
 #define GRIDavg_th 34
 #define GRIDavg_dir 35
 
+#define GRIDadisr 36
+#define GRIDparam_modif 37
+#define GRIDadisr_max 38
+#define GRIDabar_low_lower 39
+#define GRIDabar_low_upper 40
+#define GRIDabar_high_lower 41
+#define GRIDabar_high_upper 42
+#define GRIDabs_ini 43
+
 #define minGRID GRIDgas_dens
 #define maxGRID GRIDavg_dir
 
 #define MAX_UINT uint(-1)
 #define MAX_DOUBLE double(uint(-1))
-
-#define EPS_DOUBLE numeric_limits<double>::epsilon()
-#define EPS_FLOAT numeric_limits<float>::epsilon()
 
 // grid types
 #define GRID_ID_OCT 20
@@ -250,11 +212,9 @@ using namespace std;
 #define GRID_ID_CYL 40
 #define GRID_ID_VOR 50
 
-#define POP_MC 0
 #define POP_LTE 1
 #define POP_FEP 2
 #define POP_LVG 3
-#define POP_DEGUCHI_LVG 4
 
 #define COL_H2_FULL 1
 #define COL_H2_PARA 2
@@ -268,21 +228,14 @@ using namespace std;
 #define TEMP_STOCH 3
 #define TEMP_FULL 4
 
-// Dust emission components
-#define DUST_EMI_FULL 0
-#define DUST_EMI_SCAT 1
-#define DUST_EMI_TEMP 2
-#define DUST_EMI_STOCH 3
-
 // Cross-sections IDs
 #define CROSS_ABS 1
 #define CROSS_SCA 2
 
 // Extrapolation/Interpolation IDs
 #define CONST 0
-#define LOGLINEAR 1
-#define LINEAR 2
-#define SPLINE 3
+#define LINEAR 1
+#define SPLINE 2
 
 // Radiation types on detector
 // direct starlight
@@ -309,27 +262,12 @@ using namespace std;
 #define HEALPIX_CENTER 2
 
 // Mie-scattering calculation
-// Nr of grain sizes, Nr of size bins will be MIE_NR_DUST_SIZE - 1
-#define MIE_NR_DUST_SIZE 100
-#define MAX_MIE_ITERATIONS 20000000
+#define MIE_SIZE_STEPS 100
+// Number of angles for scattering between 0° and 90°
+#define NANG 91
+#define MAX_MIE_ITERATIONS 1000000
 #define MIN_MIE_SIZE_PARAM 1e-6
-#define MIE_ACCURACY 1e-15
-
-#if BENCHMARK == PINTE
-    // Minimum number of scattering angles between 0° and 90°
-    // Actual number might be larger due to adaptive refinement
-    #define NANG 181
-    // limit for adaptive refinement of scat angles
-    // if >= 1 -> no refinement
-    #define MAX_MIE_SCA_REL_DIFF 1
-#else
-    // Minimum number of scattering angles between 0° and 90°
-    // Actual number might be larger due to adaptive refinement
-    #define NANG 91
-    // limit for adaptive refinement of scat angles
-    // if >= 1 -> no refinement
-    #define MAX_MIE_SCA_REL_DIFF 1e-2
-#endif
+#define MIE_ACCURACY 1e-20
 
 // Projections for midplane files
 #define PROJ_XY 1

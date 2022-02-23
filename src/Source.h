@@ -1,17 +1,9 @@
 #pragma once
-#include <math.h>
-#include <vector>
-
 #include "Dust.h"
+#include "Grid.h"
 #include "Vector.h"
-#include "MathFunctions.h"
-#include "Matrix2D.h"
-#include "Parameters.h"
-#include "Stokes.h"
-#include "Typedefs.h"
-
-class CGridBasic;
-class photon_package;
+#include "chelper.h"
+#include "typedefs.h"
 
 #ifndef CSOURCE
 #define CSOURCE
@@ -35,7 +27,7 @@ class CSourceBasic
         dust = 0;
         grid = 0;
 
-        source_id = SRC_BASIC;
+        StringID = "Basic radiation source";
     }
 
     virtual ~CSourceBasic(void)
@@ -106,7 +98,7 @@ class CSourceBasic
         dust = _dust;
     }
 
-    virtual bool initSource(uint id, uint max, bool use_energy_density = false)
+    virtual bool initSource(uint id, uint max, bool use_energy_density)
     {
         return true;
     }
@@ -119,9 +111,9 @@ class CSourceBasic
     virtual void clean()
     {}
 
-    uint getID()
+    string getStringID()
     {
-        return source_id;
+        return StringID;
     }
 
     void setNrOfPhotons(ullong val)
@@ -137,16 +129,10 @@ class CSourceBasic
     virtual void setSideLength(double val)
     {}
 
-    virtual void createNextRay(photon_package * pp, CRandomGenerator * rand_gen)
+    virtual void createNextRay(photon_package * pp, ullong i_pos)
     {}
 
-    virtual void createNextRayToCell(photon_package * pp,
-                                     CRandomGenerator * rand_gen,
-                                     ulong i_cell,
-                                     bool cell_as_border = false)
-    {}
-
-    virtual void createDirectRay(photon_package * pp, CRandomGenerator * rand_gen, Vector3D dir_obs = Vector3D())
+    virtual void createDirectRay(photon_package * pp, Vector3D dir_obs = Vector3D())
     {}
 
     virtual ullong getNrOfPhotons()
@@ -194,7 +180,7 @@ class CSourceBasic
 
     bool is_ext;
 
-    uint source_id;
+    string StringID;
 };
 
 class CSourceStar : public CSourceBasic
@@ -203,7 +189,7 @@ class CSourceStar : public CSourceBasic
     CSourceStar()
     {
         pos = 0;
-        source_id = SRC_POINT;
+        StringID = "point source";
     }
 
     ~CSourceStar()
@@ -211,44 +197,8 @@ class CSourceStar : public CSourceBasic
 
     bool initSource(uint id, uint max, bool use_energy_density);
 
-    void createNextRay(photon_package * pp, CRandomGenerator * rand_gen);
-    void createDirectRay(photon_package * pp, CRandomGenerator * rand_gen, Vector3D dir_obs);
-
-    bool setParameterFromFile(parameters & param, uint p);
-    void setParameter(parameters & param, uint p)
-    {
-        dlist values = param.getPointSources();
-
-        pos = Vector3D(values[p], values[p + 1], values[p + 2]);
-        R = values[p + 3];
-        T = values[p + 4];
-
-        q = values[p + 5];
-        u = values[p + 6];
-
-        nr_of_photons = (ullong)values[p + NR_OF_POINT_SOURCES - 1];
-
-        L = PIx4 * con_sigma * (R * R_sun) * (R * R_sun) * T * T * T * T;
-    }
-};
-
-
-class CSourceAGN : public CSourceBasic
-{
-  public:
-    CSourceAGN()
-    {
-        pos = 0;
-        source_id = SRC_AGN;
-    }
-
-    ~CSourceAGN()
-    {}
-
-    bool initSource(uint id, uint max, bool use_energy_density);
-
-    void createNextRay(photon_package * pp, CRandomGenerator * rand_gen);
-    void createDirectRay(photon_package * pp, CRandomGenerator * rand_gen, Vector3D dir_obs);
+    void createNextRay(photon_package * pp, ullong i_pos);
+    void createDirectRay(photon_package * pp, Vector3D dir_obs);
 
     bool setParameterFromFile(parameters & param, uint p);
     void setParameter(parameters & param, uint p)
@@ -275,7 +225,7 @@ class CSourceStarField : public CSourceBasic
     {
         pos = 0;
         var = 0;
-        source_id = SRC_SFIELD;
+        StringID = "diffuse source";
     }
 
     ~CSourceStarField(void)
@@ -283,8 +233,8 @@ class CSourceStarField : public CSourceBasic
 
     bool initSource(uint id, uint max, bool use_energy_density);
 
-    void createNextRay(photon_package * pp, CRandomGenerator * rand_gen);
-    void createDirectRay(photon_package * pp, CRandomGenerator * rand_gen, Vector3D dir_obs);
+    void createNextRay(photon_package * pp, ullong i_pos);
+    void createDirectRay(photon_package * pp, Vector3D dir_obs);
 
     bool setParameterFromFile(parameters & param, uint p);
     void setParameter(parameters & param, uint p)
@@ -341,7 +291,7 @@ class CSourceBackground : public CSourceBasic
         rot_angle1 = 0;
         rot_angle2 = 0;
 
-        source_id = SRC_BACKGROUND;
+        StringID = "background source";
     }
 
     ~CSourceBackground()
@@ -458,7 +408,7 @@ class CSourceISRF : public CSourceBasic
 
         L = 0;
 
-        source_id = SRC_ISRF;
+        StringID = "isrf source";
     }
 
     ~CSourceISRF()
@@ -494,8 +444,8 @@ class CSourceISRF : public CSourceBasic
         sp_ext.createSpline();
     }
 
-    void createNextRay(photon_package * pp, CRandomGenerator * rand_gen);
-    void createDirectRay(photon_package * pp, CRandomGenerator * rand_gen, Vector3D dir_obs);
+    void createNextRay(photon_package * pp, ullong i_pos);
+    void createDirectRay(photon_package * pp, Vector3D dir_obs);
 
   private:
     Vector3D e, l;
@@ -515,25 +465,21 @@ class CSourceDust : public CSourceBasic
         total_energy = 0;
         cell_prob = 0;
 
-        nr_of_photons_per_cell = 0;
-
-        source_id = SRC_DUST;
+        StringID = "dust source";
     }
 
     ~CSourceDust(void)
     {
         if(cell_prob != 0)
             delete[] cell_prob;
-        if(total_energy != 0)
-            delete[] total_energy;
     }
 
     bool initSource(uint w);
 
     bool initSource(uint id, uint max, bool use_energy_density);
 
-    void createNextRay(photon_package * pp, CRandomGenerator * rand_gen);
-    void createDirectRay(photon_package * pp, CRandomGenerator * rand_gen, Vector3D dir_obs);
+    void createNextRay(photon_package * pp, ullong i_pos);
+    void createDirectRay(photon_package * pp, Vector3D dir_obs);
 
     void setParameter(parameters & param, uint p)
     {
@@ -548,29 +494,6 @@ class CSourceDust : public CSourceBasic
   private:
     double * total_energy;
     prob_list * cell_prob;
-    ullong nr_of_photons_per_cell;
-};
-
-class CSourceGas : public CSourceBasic
-{
-  public:
-    CSourceGas(void)
-    {
-        source_id = SRC_GAS_LVL;
-    }
-
-    bool initSource(uint id, uint max, bool use_energy_density);
-    void createNextRayToCell(photon_package * pp, CRandomGenerator * rand_gen, ulong i_cell, bool cell_as_border);
-
-    void setParameter(parameters & param, uint p)
-    {
-        nr_of_photons = param.getMCLvlPopNrOfPhotons();
-    }
-
-    ullong getNrOfPhotons()
-    {
-        return nr_of_photons;
-    }
 };
 
 class CSourceLaser : public CSourceBasic
@@ -578,7 +501,7 @@ class CSourceLaser : public CSourceBasic
   public:
     CSourceLaser()
     {
-        source_id = SRC_LASER;
+        StringID = "laser source";
     }
 
     ~CSourceLaser()
@@ -586,8 +509,8 @@ class CSourceLaser : public CSourceBasic
 
     bool initSource(uint id, uint max, bool use_energy_density);
 
-    void createNextRay(photon_package * pp, CRandomGenerator * rand_gen);
-    void createDirectRay(photon_package * pp, CRandomGenerator * rand_gen, Vector3D dir_obs);
+    void createNextRay(photon_package * pp, ullong i_pos);
+    void createDirectRay(photon_package * pp, Vector3D dir_obs);
 
     void setParameter(parameters & param, uint p)
     {
