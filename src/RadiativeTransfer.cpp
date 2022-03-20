@@ -445,6 +445,7 @@ bool CRadiativeTransfer::doMRWStepBW(photon_package * pp)
 }
 
 bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
+ 													  parameters & param,
                                                       bool use_energy_density,
                                                       bool disable_reemission)
 {
@@ -638,7 +639,7 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
                         pp->adjustPosition(old_pos, len * end_tau / tmp_tau);
 
                         // Update data in grid like spectral length or radiation field
-                        updateRadiationField(pp);
+                        updateRadiationField(pp, param);
 
                         if(!doMRWStepBW(pp))
                         {
@@ -684,7 +685,7 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
                     else
                     {
                         // Update data in grid like spectral length or radiation field
-                        updateRadiationField(pp);
+                        updateRadiationField(pp, param);
 
                         // Remove the traveled distance from optical depth
                         end_tau -= tmp_tau;
@@ -2341,7 +2342,7 @@ bool CRadiativeTransfer::calcPolMapsViaRaytracing(parameters & param)
                 if(!tracer[i_det]->getRelPosition(i_pix, cx, cy))
                     continue;
 
-                getDustPixelIntensity(tmp_source, cx, cy, i_det, 0, i_pix);
+                getDustPixelIntensity(tmp_source, cx, cy, i_det, 0, i_pix, param);
 
                 // Increase counter used to show progress
                 per_counter++;
@@ -2396,7 +2397,8 @@ void CRadiativeTransfer::getDustPixelIntensity(CSourceBasic * tmp_source,
                                                double cy,
                                                uint i_det,
                                                uint subpixel_lvl,
-                                               int i_pix)
+                                               int i_pix,
+                                               parameters & param)
 {
     bool subpixel = false;
     photon_package * pp;
@@ -2417,7 +2419,7 @@ void CRadiativeTransfer::getDustPixelIntensity(CSourceBasic * tmp_source,
         tracer[i_det]->preparePhoton(pp, cx, cy);
 
         // Calculate continuum emission along one path
-        getDustIntensity(pp, tmp_source, cx, cy, i_det, subpixel_lvl);
+        getDustIntensity(pp, tmp_source, cx, cy, i_det, subpixel_lvl, param);
 
         tracer[i_det]->addToDetector(pp, i_pix);
 
@@ -2436,7 +2438,7 @@ void CRadiativeTransfer::getDustPixelIntensity(CSourceBasic * tmp_source,
                 tracer[i_det]->getSubPixelCoordinates(subpixel_lvl, cx, cy, i_sub_x, i_sub_y, tmp_cx, tmp_cy);
                 // Calculate radiative transfer of the current pixel
                 // and add it to the detector at the corresponding position
-                getDustPixelIntensity(tmp_source, tmp_cx, tmp_cy, i_det, (subpixel_lvl + 1), i_pix);
+                getDustPixelIntensity(tmp_source, tmp_cx, tmp_cy, i_det, (subpixel_lvl + 1), i_pix, param);
             }
         }
     }
@@ -2447,7 +2449,8 @@ void CRadiativeTransfer::getDustIntensity(photon_package * pp,
                                           double cx,
                                           double cy,
                                           uint i_det,
-                                          uint subpixel_lvl)
+                                          uint subpixel_lvl,
+                                          parameters & param)
 {
     // Set amount of radiation coming from this pixel
     double subpixel_fraction = pow(4.0, -double(subpixel_lvl));
@@ -2517,7 +2520,7 @@ void CRadiativeTransfer::getDustIntensity(photon_package * pp,
                     // Set wavelength index in photon package
                     pp->setWavelengthID(wID);
 
-                    StokesVector tmp_stokes = dust->calcEmissivitiesEmi(grid, pp);
+                    StokesVector tmp_stokes = dust->calcEmissivitiesEmi(grid, pp, param);
                     myfile << wavelength << TAB << corr_factor * wavelength * tmp_stokes.I() << TAB
                            << corr_factor * wavelength * tmp_stokes.Q() << TAB
                            << corr_factor * wavelength * (tmp_stokes.I() + tmp_stokes.Q()) << endl;
@@ -2537,10 +2540,10 @@ void CRadiativeTransfer::getDustIntensity(photon_package * pp,
                     // Set stokes vector with thermal emission of the dust grains and
                     // radiation scattered at dust grains
                     S_dust = dust->calcEmissivitiesEmi(
-                        grid, pp, stokes_dust_rad_field ? detector_wl_index[i_det] + wID : MAX_UINT);
+                        grid, pp, param, stokes_dust_rad_field ? detector_wl_index[i_det] + wID : MAX_UINT);
 
                     // Get the extinction matrix of the dust grains in the current cell
-                    alpha_dust = -1 * dust->calcEmissivitiesExt(grid, pp);
+                    alpha_dust = -1 * dust->calcEmissivitiesExt(grid, pp, param);
 
                     // Init a variable to sum up path lengths until cell is crossed
                     double cell_sum = 0.0;

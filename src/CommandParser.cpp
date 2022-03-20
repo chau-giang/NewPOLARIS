@@ -2677,6 +2677,16 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         return true;
     }
 
+
+    if(cmd.compare("<change_f_highJ>") == 0)
+    {
+    	// This option to vary f_high_J based on the magnetic properties of grains
+        if(atob(atoi(data.c_str())))
+            param->setChangeFHighJ(true);
+
+        return true;
+    }
+    
     if(cmd.compare("<wrong_g_zeta_low_J>") == 0)
     {
         param->setWrongInternalRATlowJ(atof(data.c_str()));
@@ -2808,6 +2818,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
 
         return true;
     }
+
 
     if(cmd.compare("<dust_offset min_gas_density = >") == 0)
     {

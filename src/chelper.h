@@ -507,6 +507,7 @@ class parameters
         scattering_to_raytracing = true;
         sublimate = false;
         individual_dust_fractions = false;
+        change_f_highJ = false;
 
         nr_ofISRFPhotons = 0;
         nr_ofDustPhotons = 0;
@@ -869,6 +870,11 @@ class parameters
     bool getDustTempMulti()
     {
         return full_dust_temp;
+    }
+    
+    bool getChangeFHighJ()
+    {
+        return change_f_highJ;
     }
 
     double getSizeMin(uint i)
@@ -1455,6 +1461,12 @@ class parameters
         larm_f = val;
     }
 
+
+    void setChangeFHighJ(bool val)
+    {
+        change_f_highJ = val;
+    }
+    
     void setNumberIronCluster(double val)
     {
         number_cluster = val;
@@ -2647,6 +2659,7 @@ class parameters
     bool full_dust_temp, save_radiation_field;
     bool scattering_to_raytracing;
     bool individual_dust_fractions;
+    bool change_f_highJ;
 
     strlist zeeman_catalog_path;
 

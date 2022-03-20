@@ -274,8 +274,9 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     }
 
     rad.calcMonteCarloRadiationField(param.getCommand(),
+    								 param,
                                      use_energy_density,
-                                     false); //(param.getCommand() == CMD_RAT));
+                                     false ); //(param.getCommand() == CMD_RAT));
 
     if(param.isTemperatureSimulation())
         rad.calcFinalTemperature(use_energy_density);
@@ -291,8 +292,9 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
 
         cout << "\n Second loop \n" << endl;
         rad.calcMonteCarloRadiationField(param.getCommand(),
+        								param,
                                         use_energy_density,
-                                       false); //(param.getCommand() == CMD_RAT));
+                                        false); //(param.getCommand() == CMD_RAT));
         rad.calcFinalTemperature(use_energy_density);
         rad.calcDisruptRadii();
         rad.calcMaxDisruptRadii();
@@ -300,6 +302,7 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
 
         cout << "\n Final temperature and alignment \n" << endl;
         rad.calcMonteCarloRadiationField(param.getCommand(),
+        								 param,
                                          use_energy_density,
                                          false); //(param.getCommand() == CMD_RAT))
 
@@ -478,7 +481,7 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
     // Calculate radiation field before raytracing (if sources defined and no radiation
     // field in grid)
     if(!grid->getRadiationFieldAvailable() && dust->getScatteringToRay() && !sources_mc.empty())
-        rad.calcMonteCarloRadiationField(param.getCommand(), true, true);
+        rad.calcMonteCarloRadiationField(param.getCommand(), param, true, true);
 
     if(!rad.calcPolMapsViaRaytracing(param))
         return false;

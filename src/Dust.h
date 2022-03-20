@@ -118,6 +118,7 @@ class CDustComponent
         is_disr = false;
         is_mixture = false;
         individual_dust_fractions = false;
+        change_f_highJ = false;
 
         // Connection between mat_elem_counter and position in scattering matrix
         elements[0] = int(1);   // S11
@@ -1279,7 +1280,8 @@ class CDustComponent
                                               photon_package * pp,
                                               uint i_density,
                                               const Vector3D & en_dir,
-                                              double energy);
+                                              double energy,
+                                              parameters & param);
 
     double getScatteredFraction(uint a, uint w, double theta)
     {
@@ -2512,13 +2514,15 @@ class CDustComponent
                               uint i_density,
                               double & avg_Cext,
                               double & avg_Cpol,
-                              double & avg_Ccirc);
+                              double & avg_Ccirc,
+                              parameters & param);
     void calcCrossSections(CGridBasic * grid,
                            photon_package * pp,
                            uint i_density,
                            uint a,
                            double mag_field_theta,
-                           cross_sections & cs);
+                           cross_sections & cs,
+                           parameters & param);
     double calcGoldReductionFactor(Vector3D & v, Vector3D & B);
 
     StokesVector calcEmissivitiesHz(CGridBasic * grid, photon_package * pp, uint i_density);
@@ -2528,7 +2532,8 @@ class CDustComponent
                                      uint i_density,
                                      double phi,
                                      double energy,
-                                     Vector3D en_dir);
+                                     Vector3D en_dir,
+                                     parameters & param);
 
     double getCalorimetryA(uint a, uint f, uint i, spline & abs_rate_per_wl);
     long double * getStochasticProbability(uint a, spline & abs_rate_per_wl);
@@ -2621,6 +2626,7 @@ class CDustComponent
     bool is_disr;
     bool is_mixture;
     bool individual_dust_fractions;
+    bool change_f_highJ;
 
     int elements[16];
 
@@ -3785,7 +3791,7 @@ class CDustMixture
         return pl_abs;
     }
 
-    Matrix2D calcEmissivitiesExt(CGridBasic * grid, photon_package * pp)
+    Matrix2D calcEmissivitiesExt(CGridBasic * grid, photon_package * pp, parameters & param)
     {
         // Init variables
         double Cext = 0, Cpol = 0, Ccirc = 0;
@@ -3800,7 +3806,7 @@ class CDustMixture
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, pp);
-                mixed_component[i_mixture].calcExtCrossSections(grid, pp, 0, Cext, Cpol, Ccirc);
+                mixed_component[i_mixture].calcExtCrossSections(grid, pp, 0, Cext, Cpol, Ccirc, param);
                 double dens_dust = getNumberDensity(grid, pp, 0);
                 Cext *= dens_dust;
                 Cpol *= dens_dust;
@@ -3813,7 +3819,7 @@ class CDustMixture
                     double tmpCext, tmpCpol, tmpCcirc;
                     double dens_dust = getNumberDensity(grid, pp, i_mixture);
                     mixed_component[i_mixture].calcExtCrossSections(
-                        grid, pp, i_mixture, tmpCext, tmpCpol, tmpCcirc);
+                        grid, pp, i_mixture, tmpCext, tmpCpol, tmpCcirc, param);
                     Cext += tmpCext * dens_dust;
                     Cpol += tmpCpol * dens_dust;
                     Ccirc += tmpCcirc * dens_dust;
@@ -3844,7 +3850,7 @@ class CDustMixture
         return dust_matrix;
     }
 
-    StokesVector calcEmissivitiesEmi(CGridBasic * grid, photon_package * pp, uint i_offset = MAX_UINT)
+    StokesVector calcEmissivitiesEmi(CGridBasic * grid, photon_package * pp, parameters & param, uint i_offset = MAX_UINT)
     {
         // Init variables
         double energy = 0;
@@ -3876,12 +3882,12 @@ class CDustMixture
             {
                 uint i_mixture = getMixtureID(grid, pp);
                 tmp_stokes +=
-                    mixed_component[i_mixture].calcEmissivitiesEmi(grid, pp, 0, phi, energy, en_dir);
+                    mixed_component[i_mixture].calcEmissivitiesEmi(grid, pp, 0, phi, energy, en_dir, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
                     tmp_stokes += mixed_component[i_mixture].calcEmissivitiesEmi(
-                        grid, pp, i_mixture, phi, energy, en_dir);
+                        grid, pp, i_mixture, phi, energy, en_dir, param);
         }
         return tmp_stokes;
     }
@@ -3889,7 +3895,8 @@ class CDustMixture
     StokesVector getRadFieldScatteredFraction(CGridBasic * grid,
                                               photon_package * pp,
                                               const Vector3D & en_dir,
-                                              double energy)
+                                              double energy,
+                                              parameters & param)
     {
         StokesVector tmp_stokes;
 
@@ -3899,12 +3906,12 @@ class CDustMixture
             {
                 uint i_mixture = getMixtureID(grid, pp);
                 tmp_stokes =
-                    mixed_component[i_mixture].getRadFieldScatteredFraction(grid, pp, 0, en_dir, energy);
+                    mixed_component[i_mixture].getRadFieldScatteredFraction(grid, pp, 0, en_dir, energy, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
                     tmp_stokes += mixed_component[i_mixture].getRadFieldScatteredFraction(
-                        grid, pp, i_mixture, en_dir, energy);
+                        grid, pp, i_mixture, en_dir, energy, param);
         }
         return tmp_stokes;
     }

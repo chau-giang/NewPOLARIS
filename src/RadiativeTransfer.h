@@ -152,7 +152,7 @@ class CRadiativeTransfer
     }
 
     // Temperature calculation and RATs
-    bool calcMonteCarloRadiationField(uint command, bool use_energy_density, bool disable_reemission = false);
+    bool calcMonteCarloRadiationField(uint command, parameters & param, bool use_energy_density, bool disable_reemission = false);
     // Set temperature (old!)
     bool setTemperatureDistribution();
 
@@ -166,13 +166,15 @@ class CRadiativeTransfer
                                double cy,
                                uint i_det,
                                uint subpixel_lvl,
-                               int pos_id);
+                               int pos_id,
+                               parameters & param);
     void getDustIntensity(photon_package * pp,
                           CSourceBasic * tmp_source,
                           double cx,
                           double cy,
                           uint i_det,
-                          uint subpixel_lvl);
+                          uint subpixel_lvl,
+                          parameters & param);
     void calcStellarEmission(uint i_det);
 
     // Synchrontron emission
@@ -213,7 +215,7 @@ class CRadiativeTransfer
     // Calc radiation pressure
     // bool calcRadiativePressure(parameter & param);
 
-    void updateRadiationField(photon_package * pp)
+    void updateRadiationField(photon_package * pp, parameters & param)
     {
         double energy = pp->getTmpPathLength() * pp->getStokesVector().I();
 
@@ -241,7 +243,7 @@ class CRadiativeTransfer
                         grid->updateSpecLength(
                             pp,
                             detector_wl_index[i_det] + i_wave,
-                            dust->getRadFieldScatteredFraction(grid, &dir_pp, rad_field_dir, energy));
+                            dust->getRadFieldScatteredFraction(grid, &dir_pp, rad_field_dir, energy, param));
                     }
                 }
             }

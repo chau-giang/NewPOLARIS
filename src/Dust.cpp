@@ -3140,7 +3140,8 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
                                        uint i_density,
                                        uint a,
                                        double mag_field_theta,
-                                       cross_sections & cs)
+                                       cross_sections & cs,
+                                       parameters & param)
 {
     // Get wavelength index
     uint w = pp->getWavelengthID();
@@ -3166,10 +3167,11 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     double Rrat_low_J = 0, Rrat_high_J = 0;
     double delta = 1;
     double a_alig = 1;
-    double abar_lowJ_lower = 1;
-    double abar_lowJ_upper = 1;
-    double abar_highJ_lower = 1;
-    double abar_highJ_upper = 1;
+    double abar_lowJ_lower = 1, abar_lowJ_upper = 1;
+    double abar_highJ_lower = 1, abar_highJ_upper = 1;
+    double adg_lower = 1, adg_upper = 1;
+    double adg_10_lower = 1, adg_10_upper = 1;
+   
 
     // Get dust temperature from grid
     double Td;
@@ -3207,6 +3209,9 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     
     // Init cross-sections
     double Cext, Cpol, Cabs, Cpabs, Csca, Ccirc;
+
+
+
 
     // Calculate the parameters for radiative torque alignment
     if((alignment & ALIG_RAT) == ALIG_RAT)
@@ -3255,6 +3260,20 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             		Rrat_high_J = 1;
             	}
             	
+            	// To check if f_highJ varies with tau_mag
+            	if (param.getChangeFHighJ())
+            	{
+            		adg_lower = grid->getDGLowerRadius(pp, i_density);
+            		adg_upper = grid->getDGUpperRadius(pp, i_density);
+            		adg_10_lower = grid->getDG10LowerRadius(pp, i_density);
+            		adg_10_upper = grid->getDG10UpperRadius(pp, i_density);
+            		if (a_eff[a] >= adg_lower && a_eff[a] <= adg_upper)
+            		{
+            			if (a_eff[a] >= adg_10_lower && a_eff[a] <= adg_10_upper)
+            				f_highJ = 1;
+            			f_highJ = 0.5;
+            		}	
+            	}
             	// Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor		
             	Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
             }
@@ -6005,7 +6024,8 @@ StokesVector CDustComponent::getRadFieldScatteredFraction(CGridBasic * grid,
                                                           photon_package * pp,
                                                           uint i_density,
                                                           const Vector3D & en_dir,
-                                                          double energy)
+                                                          double energy, 
+                                                          parameters & param)
 {
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, pp);
@@ -6037,7 +6057,7 @@ StokesVector CDustComponent::getRadFieldScatteredFraction(CGridBasic * grid,
         if(sizeIndexUsed(a, a_min, a_max))
         {
             // Get cross sections and relative weight of the current dust grain size
-            calcCrossSections(grid, pp, i_density, a, mag_field_theta, cs);
+            calcCrossSections(grid, pp, i_density, a, mag_field_theta, cs, param);
 
             // Multiply energy with scattered fraction in the theta angle and the
             // scattering cross-section
@@ -6087,7 +6107,8 @@ StokesVector CDustComponent::calcEmissivitiesEmi(CGridBasic * grid,
                                                  uint i_density,
                                                  double phi,
                                                  double energy,
-                                                 Vector3D en_dir)
+                                                 Vector3D en_dir, 
+                                                 parameters & param)
 {
     // Init variables to calculate the emission/extinction
     double temp_dust = 0;
@@ -6132,7 +6153,7 @@ StokesVector CDustComponent::calcEmissivitiesEmi(CGridBasic * grid,
         if(sizeIndexUsed(a, a_min, a_max))
         {
             // Get cross sections and relative weight of the current dust grain size
-            calcCrossSections(grid, pp, i_density, a, mag_field_theta, cs);
+            calcCrossSections(grid, pp, i_density, a, mag_field_theta, cs, param);
 
             // Calculate emission/extinction according to the information inside of the
             // grid
@@ -6241,7 +6262,8 @@ void CDustComponent::calcExtCrossSections(CGridBasic * grid,
                                           uint i_density,
                                           double & avg_Cext,
                                           double & avg_Cpol,
-                                          double & avg_Ccirc)
+                                          double & avg_Ccirc,
+                                          parameters & param)
 {
     // Init  and calculate the cross-sections
     cross_sections cs;
@@ -6266,7 +6288,7 @@ void CDustComponent::calcExtCrossSections(CGridBasic * grid,
         if(sizeIndexUsed(a, a_min, a_max))
         {
             // Get cross sections and relative weight of the current dust grain size
-            calcCrossSections(grid, pp, i_density, a, mag_field_theta, cs);
+            calcCrossSections(grid, pp, i_density, a, mag_field_theta, cs, param);
 
             // Add relative cross-sections for integration
             Cext[a] = cs.Cext * rel_weight[a];
