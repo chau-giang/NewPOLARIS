@@ -1593,6 +1593,101 @@ void CRadiativeTransfer::calcBarnetHighJRadii()
 }
 
 
+void CRadiativeTransfer::calcDGRadii()
+{
+    ulong max_cells = grid->getMaxDataCells();
+
+    ullong per_counter = 0;
+    float last_percentage = 0;
+
+    cout << CLR_LINE;
+    cout << " -> Calc. the range at which tau_mag < tau_gas: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+
+#pragma omp parallel for schedule(dynamic)
+    for(long c_i = 0; c_i < long(max_cells); c_i++)
+    {
+        cell_basic * cell = grid->getCellFromIndex(c_i);
+        dust->calcDGRadii(grid, cell);
+
+        per_counter++;
+        float percentage = 100.0 * float(per_counter) / float(max_cells);
+
+        // Show only new percentage number if it changed
+        if((percentage - last_percentage) > PERCENTAGE_STEP)
+        {
+#pragma omp critical
+            {
+                cout << " -> Calc. lower limit of tau_mag = tau_gas: " << 100.0 * float(per_counter) / float(max_cells)
+                     << " [%] (min: " << dust->getMinDGLowerRadius()
+                     << " [m]; max: " << dust->getMaxDGLowerRadius() << " [m])"
+                     << "          \r";
+                     
+               cout << " -> Calc. upper limit of tau_mag = tau_gas: " << 100.0 * float(per_counter) / float(max_cells)
+                     << " [%] (min: " << dust->getMinDGUpperRadius()
+                     << " [m]; max: " << dust->getMaxDGUpperRadius() << " [m])"
+                     << "          \r";
+                   
+               last_percentage = percentage;
+            }
+        }
+    }
+
+    cout << CLR_LINE;
+    cout << "- Calculation of the range at which tau_mag < tau_gas    : done" << endl;
+    cout << "  lower limit [" << float(dust->getMinDGLowerRadius()) << ", "
+         << float(dust->getMaxDGLowerRadius()) << "] [m]" << endl;
+    cout << "  upper limit [" << float(dust->getMinDGUpperRadius()) << ", "
+         << float(dust->getMaxDGUpperRadius()) << "] [m]" << endl;
+}
+
+void CRadiativeTransfer::calcDG10Radii()
+{
+    ulong max_cells = grid->getMaxDataCells();
+
+    ullong per_counter = 0;
+    float last_percentage = 0;
+
+    cout << CLR_LINE;
+    cout << " -> Calc. the range at which tau_mag < tau_gas/10: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+
+#pragma omp parallel for schedule(dynamic)
+    for(long c_i = 0; c_i < long(max_cells); c_i++)
+    {
+        cell_basic * cell = grid->getCellFromIndex(c_i);
+        dust->calcDG10Radii(grid, cell);
+
+        per_counter++;
+        float percentage = 100.0 * float(per_counter) / float(max_cells);
+
+        // Show only new percentage number if it changed
+        if((percentage - last_percentage) > PERCENTAGE_STEP)
+        {
+#pragma omp critical
+            {
+                cout << " -> Calc. lower limit of tau_mag = tau_gas/10: " << 100.0 * float(per_counter) / float(max_cells)
+                     << " [%] (min: " << dust->getMinDG10LowerRadius()
+                     << " [m]; max: " << dust->getMaxDG10LowerRadius() << " [m])"
+                     << "          \r";
+                     
+               cout << " -> Calc. upper limit of tau_mag = tau_gas/10: " << 100.0 * float(per_counter) / float(max_cells)
+                     << " [%] (min: " << dust->getMinDG10UpperRadius()
+                     << " [m]; max: " << dust->getMaxDG10UpperRadius() << " [m])"
+                     << "          \r";
+                   
+               last_percentage = percentage;
+            }
+        }
+    }
+
+    cout << CLR_LINE;
+    cout << "- Calculation of the range at which tau_mag < tau_gas/10    : done" << endl;
+    cout << "  lower limit [" << float(dust->getMinDG10LowerRadius()) << ", "
+         << float(dust->getMaxDG10LowerRadius()) << "] [m]" << endl;
+    cout << "  upper limit [" << float(dust->getMinDG10UpperRadius()) << ", "
+         << float(dust->getMaxDG10UpperRadius()) << "] [m]" << endl;
+}
+
+
 void CRadiativeTransfer::calcFinalTemperature(bool use_energy_density)
 {
     ullong per_counter = 0;

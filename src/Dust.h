@@ -88,10 +88,21 @@ class CDustComponent
         max_a_bar_low_J_lower = 0;
         min_a_bar_low_J_upper = 1.e200;
         max_a_bar_low_J_upper = 0; 
+        
         min_a_bar_high_J_lower = 1.e200;
         max_a_bar_high_J_lower = 0;
         min_a_bar_high_J_upper = 1.e200;
         max_a_bar_high_J_upper = 0;
+        
+        min_a_dg_lower = 1.e200;
+        max_a_dg_lower = 0;
+        min_a_dg_upper = 1.e200;
+        max_a_dg_upper = 0;
+        
+        min_a_dg_10_lower = 1.e200;
+        max_a_dg_10_lower = 0;
+        min_a_dg_10_upper = 1.e200;
+        max_a_dg_10_upper = 0;
     
         f_highJ = 0.25;
         f_cor = 0;
@@ -1093,6 +1104,7 @@ class CDustComponent
         return max_temp;
     }
 
+//*************************************
     double getMinAlignedRadius()
     {
         return min_a_alig;
@@ -1103,6 +1115,8 @@ class CDustComponent
         return max_a_alig;
     }
 
+
+//*************************************
     double getMinDisruptRadius()
     {
         return min_a_disr;
@@ -1113,6 +1127,8 @@ class CDustComponent
         return max_a_disr;
     }
 
+
+//*************************************
     double getMinMaxDisruptRadius()
     {
         return min_a_disr_max;
@@ -1123,6 +1139,7 @@ class CDustComponent
         return max_a_disr_max;
     }
 
+//*************************************
     double getMinSizeParamModify()
     {
         return min_size_param_modify;
@@ -1133,6 +1150,8 @@ class CDustComponent
         return max_size_param_modify;
     }
     
+    
+//*************************************
     double getMinBarnetLowLowerRadius()
     {
         return min_a_bar_low_J_lower;
@@ -1143,6 +1162,7 @@ class CDustComponent
         return max_a_bar_low_J_lower;
     }
     
+//*************************************
     double getMinBarnetLowUpperRadius()
     {
         return min_a_bar_low_J_upper;
@@ -1153,7 +1173,7 @@ class CDustComponent
         return max_a_bar_low_J_upper;
     }
  
-     
+//*************************************     
     double getMinBarnetHighLowerRadius()
     {
         return min_a_bar_high_J_lower;
@@ -1164,6 +1184,7 @@ class CDustComponent
         return max_a_bar_high_J_lower;
     }
     
+//*************************************    
     double getMinBarnetHighUpperRadius()
     {
         return min_a_bar_high_J_upper;
@@ -1172,6 +1193,50 @@ class CDustComponent
     double getMaxBarnetHighUpperRadius()
     {
         return max_a_bar_high_J_upper;
+    }
+    
+//*************************************    
+    double getMinDGLowerRadius()
+    {
+        return min_a_dg_lower;
+    }
+
+    double getMaxDGLowerRadius()
+    {
+        return max_a_dg_lower;
+    }
+
+//*************************************    
+    double getMinDGUpperRadius()
+    {
+        return min_a_dg_upper;
+    }
+
+    double getMaxDGUpperRadius()
+    {
+        return max_a_dg_upper;
+    }
+   
+//************************************* 
+    double getMinDG10LowerRadius()
+    {
+        return min_a_dg_10_lower;
+    }
+
+    double getMaxDG10LowerRadius()
+    {
+        return max_a_dg_10_lower;
+    }
+ 
+//*************************************   
+    double getMinDG10UpperRadius()
+    {
+        return min_a_dg_10_upper;
+    }
+
+    double getMaxDG10UpperRadius()
+    {
+        return max_a_dg_10_upper;
     }
     
     double getScatteringMatrixElement(uint a, uint w, uint incID, uint sphID, uint sthID, uint i_mat, uint j_mat)
@@ -2419,6 +2484,8 @@ class CDustComponent
     void calcSizeParamModify(CGridBasic * grid, cell_basic * cell, uint i_density);
 	void calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
 	void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+	void calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+	void calcDG10Radii(CGridBasic * grid, cell_basic * cell, uint i_density);
 
 
     void initDustProperties();
@@ -2525,7 +2592,10 @@ class CDustComponent
     double min_a_bar_low_J_upper, max_a_bar_low_J_upper;  
     double min_a_bar_high_J_lower, max_a_bar_high_J_lower;
     double min_a_bar_high_J_upper, max_a_bar_high_J_upper;
- 
+    double min_a_dg_lower, max_a_dg_lower;
+    double min_a_dg_upper, max_a_dg_upper;
+    double min_a_dg_10_lower, max_a_dg_10_lower;
+    double min_a_dg_10_upper, max_a_dg_10_upper;
     
     // alignment paramaters
     double f_highJ;
@@ -3030,6 +3100,37 @@ class CDustMixture
     }
  
     
+    void calcDGRadii(CGridBasic * grid, cell_basic * cell)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, cell);
+                mixed_component[i_mixture].calcDGRadii(grid, cell, 0);
+            }
+            else
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcDGRadii(grid, cell, i_mixture);
+        }
+    }
+    
+    
+    void calcDG10Radii(CGridBasic * grid, cell_basic * cell)
+    {
+        if(mixed_component != 0)
+        {
+            if(grid->useDustChoice())
+            {
+                uint i_mixture = getMixtureID(grid, cell);
+                mixed_component[i_mixture].calcDG10Radii(grid, cell, 0);
+            }
+            else
+                for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+                    mixed_component[i_mixture].calcDG10Radii(grid, cell, i_mixture);
+        }
+    }
+    
     void addToWavelengthGrid(double wavelength)
     {
         // Add wavelength to list
@@ -3393,6 +3494,122 @@ class CDustMixture
             }
         return max_a_bar_high_J_upper;
     }
+    
+
+//******************************************************************************
+
+    double getMinDGLowerRadius()
+    {
+        double min_a_dg_lower = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_dg_lower = mixed_component[i_mixture].getMinDGLowerRadius();
+                if(a_dg_lower < min_a_dg_lower)
+                    min_a_dg_lower = a_dg_lower;
+            }
+        return min_a_dg_lower;
+    }
+
+    double getMaxDGLowerRadius()
+    {
+        double max_a_dg_lower = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_dg_lower = mixed_component[i_mixture].getMaxDGLowerRadius();
+                if(a_dg_lower > max_a_dg_lower)
+                    max_a_dg_lower = a_dg_lower;
+            }
+        return max_a_dg_lower;
+    }
+
+    
+//******************************************************************************
+
+    double getMinDGUpperRadius()
+    {
+        double min_a_dg_upper = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_dg_upper = mixed_component[i_mixture].getMinDGUpperRadius();
+                if(a_dg_upper < min_a_dg_upper)
+                    min_a_dg_upper = a_dg_upper;
+            }
+        return min_a_dg_upper;
+    }
+
+    double getMaxDGUpperRadius()
+    {
+        double max_a_dg_upper = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_dg_upper = mixed_component[i_mixture].getMaxDGUpperRadius();
+                if(a_dg_upper > max_a_dg_upper)
+                    max_a_dg_upper = a_dg_upper;
+            }
+        return max_a_dg_upper;
+    }
+
+//******************************************************************************
+
+    double getMinDG10LowerRadius()
+    {
+        double min_a_dg_10_lower = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_dg_10_lower = mixed_component[i_mixture].getMinDG10LowerRadius();
+                if(a_dg_10_lower < min_a_dg_10_lower)
+                    min_a_dg_10_lower = a_dg_10_lower;
+            }
+        return min_a_dg_10_lower;
+    }
+
+    double getMaxDG10LowerRadius()
+    {
+        double max_a_dg_10_lower = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_dg_10_lower = mixed_component[i_mixture].getMaxDG10LowerRadius();
+                if(a_dg_10_lower > max_a_dg_10_lower)
+                    max_a_dg_10_lower = a_dg_10_lower;
+            }
+        return max_a_dg_10_lower;
+    }
+
+    
+//******************************************************************************
+
+    double getMinDG10UpperRadius()
+    {
+        double min_a_dg_10_upper = 1e200;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_dg_10_upper = mixed_component[i_mixture].getMinDG10UpperRadius();
+                if(a_dg_10_upper < min_a_dg_10_upper)
+                    min_a_dg_10_upper = a_dg_10_upper;
+            }
+        return min_a_dg_10_upper;
+    }
+
+    double getMaxDG10UpperRadius()
+    {
+        double max_a_dg_10_upper = 0;
+        if(mixed_component != 0)
+            for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
+            {
+                double a_dg_10_upper = mixed_component[i_mixture].getMaxDG10UpperRadius();
+                if(a_dg_10_upper > max_a_dg_10_upper)
+                    max_a_dg_10_upper = a_dg_10_upper;
+            }
+        return max_a_dg_10_upper;
+    }
+
 
 
 //******************************************************************************

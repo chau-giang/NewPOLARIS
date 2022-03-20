@@ -3837,13 +3837,13 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
         if(sizeIndexUsed(a, a_min, a_max))
         {
             // Get dust temperature from grid
-            //double T_dust;
-            //if(grid->getTemperatureFieldInformation() == TEMP_FULL ||
-            //   (grid->getTemperatureFieldInformation() == TEMP_STOCH &&
-            //    a_eff[a] <= getStochasticHeatingMaxSize()))
-            //    T_dust = grid->getDustTemperature(cell, i_density, a);
-            //else
-            //    T_dust = grid->getDustTemperature(cell, i_density);
+            double T_dust;
+            if(grid->getTemperatureFieldInformation() == TEMP_FULL ||
+               (grid->getTemperatureFieldInformation() == TEMP_STOCH &&
+                a_eff[a] <= getStochasticHeatingMaxSize()))
+                T_dust = grid->getDustTemperature(cell, i_density, a);
+            else
+                T_dust = grid->getDustTemperature(cell, i_density);
 
             // Minor and major axis
             double a_minor = a_eff[a] * pow(s, 2. / 3.);
@@ -3926,10 +3926,11 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
             // double FIR = CMathFunctions::integ(wavelength_list, dFIR, 0,
             // nr_of_wavelength - 1);
             double omega_frac = CMathFunctions::integ(wavelength_list, arr_product, 0, nr_of_wavelength - 1);
-
             double tau_drag = tau_gas / (1. + FIR);
+ 
             omega_frac *= tau_drag / J_th;
-
+      	
+        	
             // Delete pointer array
             delete[] arr_product;
             delete[] du;
@@ -4199,7 +4200,7 @@ void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, u
             // Fraction of saturated and disrupted angular speed
             double omega_frac = omega_rat/omega_disr;
 
-            if(omega_frac > DISRUPTION_LIMIT)
+            if(omega_frac >= DISRUPTION_LIMIT)
             {
                 if (a < index_size_max)
                 {
@@ -4413,7 +4414,7 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
 			double me = 9.10938e-28;   // mass of electron [g]
 			double c = 2.99792e10;		  // speed of light [cm/s]
 			double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
-			double rho = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
+			double rho_cgs = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
 			double gamma_g = e / (me * c);
 			
 			// Minor and major axis
@@ -4421,13 +4422,13 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
             double a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
 			
 			// Moment of inertia along a_1 in CGS unit
-            double I_p_cgs = 8. * PI / 15. * rho * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
+            double I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
             
             // Thermal angular speed
-            double omega_rat_low_J = pow((kB_cgs * T_dust / (I_p_cgs * (h-1))), 0.5);  // at low J attractor point with J = Jth
+            double omega_rat_low_J = pow((kB_cgs * T_gas / (I_p_cgs)), 0.5);  // at low J attractor point with J = Jth
  
 			// Volume of grain size a
-			double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
+			double V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
  
 
 			// The imagine part of magnetic suscepbility of grain size a at frequency w 			
@@ -4542,7 +4543,7 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
 				double me = 9.10938e-28;   // mass of electron [g]
 				double c = 2.99792e10;		  // speed of light [cm/s]
 				double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
-				double rho = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
+				double rho_cgs = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
 				double gamma_g = e / (me * c);
 				
 				// Minor and major axis
@@ -4550,13 +4551,13 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
 		        double a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
 				
 				// Moment of inertia along a_1 in CGS unit
-		        double I_p_cgs = 8. * PI / 15. * rho * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
-		        
+		        double I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
+		   
             	// Thermal angular speed
-            	double omega_rat_low_J = pow((kB_cgs * T_dust / (I_p_cgs * (h-1))), 0.5);  // at low J attractor point with J = Jth
-
+            	double omega_rat_low_J = pow((kB_cgs * T_gas / (I_p_cgs)), 0.5);  // at low J attractor point with J = Jth
+ 
 				// Volume of grain size a
-				double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
+				double V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
 
 				// The imagine part of magnetic suscepbility of grain size a at frequency w 			
 				double K_w_low_J;
@@ -4584,13 +4585,13 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
 
 				
 				// if barnet timescale is larger than gas damping timescale
-		        if(t_compare_low_J < 1)
+		        if(t_compare_low_J <= 1)
 		        {
 		            // Find disruption size
 		            // linear interpolation
 		            if(a < index_size_max) //grain size > amin
 		            {
-		                double a1 = a_eff[a - 1]; //previous grain size
+		                double a1 = a_eff[a + 1]; //previous grain size
 		                double a2 = a_eff[a]; //calculated grain size
 
 		                double o1 = t_compare_old_low_J - 1;
@@ -4609,8 +4610,6 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
 		    }
 		}
     }
-	
-	
 	
 	
     // Check for lower limit of true internal alignment at low J attractor point
@@ -4748,7 +4747,7 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
 			double me = 9.10938e-28;   // mass of electron [g]
 			double c = 2.99792e10;		  // speed of light [cm/s]
 			double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
-			double rho = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
+			double rho_cgs = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
 			double gamma_g = e / (me * c);
 			
 			// Minor and major axis
@@ -4756,13 +4755,13 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
             double a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
 			
 			// Moment of inertia along a_1 in CGS unit
-            double I_p_cgs = 8. * PI / 15. * rho * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
+            double I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
             
 			// Saturated angular speed
             double omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
 
 			// Volume of grain size a
-			double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
+			double V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
 
 			// The imagine part of magnetic suscepbility of grain size a at frequency w 			
 			double K_w_high_J;
@@ -4877,7 +4876,7 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
 				double me = 9.10938e-28;   // mass of electron [g]
 				double c = 2.99792e10;		  // speed of light [cm/s]
 				double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
-				double rho = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
+				double rho_cgs = getMaterialDensity(a) * 1e-3;    //density of material [g cm-3]
 				double gamma_g = e / (me * c);
 				
 				// Minor and major axis
@@ -4885,13 +4884,13 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
 		        double a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
 				
 				// Moment of inertia along a_1 in CGS unit
-		        double I_p_cgs = 8. * PI / 15. * rho * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
+		        double I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
 		        
 				// Saturated angular speed
 		        double omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
 
 				// Volume of grain size a
-				double V = 4 * PI / 3 * s * pow(a_eff[a]*1e2, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
+				double V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
 
 				// The imagine part of magnetic suscepbility of grain size a at frequency w 			
 				double K_w_high_J;
@@ -4925,7 +4924,7 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
 		            // linear interpolation
 		            if(a < index_size_max) //grain size > amin
 		            {
-		                double a1 = a_eff[a - 1]; //previous grain size
+		                double a1 = a_eff[a + 1]; //previous grain size
 		                double a2 = a_eff[a]; //calculated grain size
 
 		                double o1 = t_compare_old_high_J - 1;
@@ -4975,6 +4974,709 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
     if(a_bar_high_J_upper > max_a_bar_high_J_upper)
         max_a_bar_high_J_upper = a_bar_high_J_upper;
 }
+
+
+void CDustComponent::calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
+{
+	// Output: the lower and upper limit at which tau_mag < tau_gas
+	// a_dg_lower and a_dg_upper: 
+ 
+    if(getNumberDensity(grid, cell, i_density) == 0)
+    {
+        grid->setDGLowerRadius(cell, i_density, a_eff[0]);
+        grid->setDGUpperRadius(cell, i_density, a_eff[0]);
+        return;
+    }
+
+    // Get local min and max grain sizes
+    double a_min = getSizeMin(grid, cell); //m
+    double a_max = getSizeMax(grid, cell); //m
+
+    // default value of the lower and upper limit for the range of tau_mag < tau_gas
+    double a_dg_lower = a_max; //m
+    double a_dg_upper = a_max; //m
+
+    // Aspect ratio of the grain
+    double s = getAspectRatio();
+   
+    // ratio h between the ineria moment of axis parallel  and perpendicular with the axis of maximum inertia moment ( symmetric axis)
+	double h = 2 / (1 + pow(s, 2));
+ 
+    // Get grid values
+    double T_gas = grid->getGasTemperature(cell); //K
+    double T_dust;
+    double n_g = grid->getGasNumberDensity(cell); //m-3
+    
+    // Get average molecular weight
+    double mu = grid->getMu();
+    
+    // alpha_1 ~ delta
+    double alpha_1 = 1; // getDeltaRat();
+	
+    // Get thermal velocity
+    double v_th = sqrt(2.0 * con_kB * T_gas / (mu * m_H)); // [m/s]
+    
+    // Fraction of iron in paramagnetic grains
+    double fp = getIronFraction();
+    double Ncl = getNumberIronCluster();
+	double phi_sp = getVolumeFillingFactor();
+	
+	//Magnetic field strength for calculate the magnetic relaxation	
+	Vector3D B = grid->getMagField(cell);
+	double Blen = B.length()*1e4;   // magnetic field strength in cgs unit [G]
+ 
+	// For calculate the Barnett and magnetic relaxation timescale (in cgs unit)
+	double e = 4.80325e-10;  // charge of electron [esu]
+	double me = 9.10938e-28;   // mass of electron [g]
+	double c = 2.99792e10;		  // speed of light [cm/s]
+	double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
+	double rho, rho_cgs;   //density of material [kg m-3] and [g cm-3]
+	double gamma_g = e / (me * c);
+	
+	// For variable
+	double a_minor, a_major;  //minor and major axis (in SI)
+	double a_minor_cgs, a_major_cgs;	//minor and major axis (in CGS)
+	double I_p, I_p_cgs, J_th, tau_gas; //inertia moment along minor axis (in SI and CGS), thermal angular momentum, gas damping timescale,
+	double omega_rat, V, K_w;			//suprathermal angular speed, volume, imaginary part of magnetic susceptibility
+	
+	// Loop over all considered grain sizes
+    double t_compare_old = 0;
+    
+    // To save omega_frac at a_eff[0]
+    double t_compare_save;
+    
+    //to scave current ratio between tau_mag and tau_gas
+    double t_compare;
+	
+	// Check the dust temperature choice in the calculation:
+	uint temp_info = grid->getTemperatureFieldInformation();
+ 
+	// Find the lower limit for true internal alignment at high J
+    for(uint a = 0; a < nr_of_dust_species ; a++)
+    {
+        if(sizeIndexUsed(a, a_min, a_max))
+        {   
+            //****************************************************************************************
+			//*
+			//*
+			//*		 PART TO CALCULATE THE GAS DAMPING TIMESCALE DUE TO GAS COLLISION
+			//*				calculation here is in SI unit
+			//*
+			//****************************************************************************************
+  
+  			// Density of material
+  			rho = getMaterialDensity(a); 
+  
+            // Minor and major axis
+            a_minor = a_eff[a] * pow(s, 2. / 3.);   //a_eff[a] [m]
+            a_major = a_eff[a] * pow(s, -1. / 3.);  //a_eff[a] [m]
+				
+            // Moment of inertia along a_1 (a_1: symmetric axis, axis of maximum inertia moment)
+            I_p = 8. * PI / 15. * getMaterialDensity(a) * a_minor * pow(a_major, 4); // SI unit
+
+            // Thermal angular momentum
+            J_th = sqrt(I_p * con_kB * T_gas); // SI unit
+           
+            // Drag by gas collision following evaporation of H2
+            tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4)); //[s]
+
+            
+			//*************************************************************************************************
+			//*
+			//*
+			//*			PART TO CALCULATE THE DAVID-GREENSTEIN TIMESCALE
+			//*				calculation here is in CGS unit
+			//*
+			//**************************************************************************************************
+            			
+			// Dust temperature of grain size a
+            if (temp_info == TEMP_FULL)
+            {
+            	T_dust = grid->getDustTemperature(cell, i_density, a_eff[a]); //[K]
+			}
+			else
+			{
+				T_dust = grid->getDustTemperature(cell, i_density); //[K]
+			}
+			
+			// From this part, calculation is in the cgs unit :))
+			// Density of material
+  			rho_cgs = getMaterialDensity(a)*1e-3; 
+  			
+			// Minor and major axis
+            a_minor_cgs = a_eff[a]*1e2 * pow(s, 2.  / 3.);   //a_eff[a] [cm]
+            a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
+			
+			// Moment of inertia along a_1 in CGS unit
+            I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
+            
+			// Saturated angular speed
+            omega_rat = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+         
+			// Volume of grain size a
+			V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
+			
+			if (fp != 0) // grain is paramagnetic grains
+ 			{
+				K_w = CMathFunctions::calc_K_w(T_dust, fp, omega_rat); //here is in CGS unit		
+			}
+			else // grain is superparamagnetic grains
+			{			
+				K_w = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat); //here is also in CGS unit
+			}
+            
+			// Barnet relaxation timescale [for	internal alignment]
+			double t_dg = I_p_cgs / (V * K_w * pow(Blen, 2));
+			
+			//****************************************************************************************************
+			//*
+			//*
+			//*				FIND THE LOWER LIMIT FOR TAU_MAG = TAU_GAS AND TAU_MAG = TAU_GAS/10
+			//*
+			//*
+			//*****************************************************************************************************
+			t_compare = t_dg / tau_gas;
+			
+			// Lower limit for tau_mag = tau_gas
+            if(t_compare <= 1)
+            {
+                // linear interpolation
+                if(a > 1) //grain size > amin
+                {
+                    double a1 = a_eff[a - 1]; //previous grain size
+                    double a2 = a_eff[a]; //calculated grain size
+
+                    double o1 = t_compare_old - 1;
+                    double o2 = t_compare - 1;
+
+                    a_dg_lower = a1 - o1 * (a2 - a1) / (o2 - o1);
+                }
+                else
+                {
+                    a_dg_lower = a_min;
+                    t_compare_save = t_compare;
+                }
+                break;
+            }
+                            
+		    // keep the prev. omega fraction for interpolation
+		    t_compare_old = t_compare;
+        }
+	}
+	
+	uint test = 0;
+	uint index_size_max;
+	
+	if (a_dg_lower == a_max)  // no grain size has tau_mag = tau_gas
+		a_dg_upper = a_max;
+	else
+	{	
+		for(uint a = nr_of_dust_species; a > 0 ; a--)
+		{
+		    if(sizeIndexUsed(a, a_min, a_max))
+		    {
+		    	//cout << a << endl;
+		    	if (test == 0)
+		    	{
+		    		index_size_max = a;
+		    		test +=1 ;
+		    	}   
+		        //****************************************************************************************
+				//*
+				//*
+				//*		 PART TO CALCULATE THE GAS DAMPING TIMESCALE DUE TO GAS COLLISION
+				//*				calculation here is in SI unit
+				//*
+				//****************************************************************************************
+	 			// Density of material
+	 			rho = getMaterialDensity(a); 
+	 
+		        // Minor and major axis
+		        a_minor = a_eff[a] * pow(s, 2. / 3.);   //a_eff[a] [m]
+		        a_major = a_eff[a] * pow(s, -1. / 3.);  //a_eff[a] [m]
+					
+		        // Moment of inertia along a_1 (a_1: symmetric axis, axis of maximum inertia moment)
+		        I_p = 8. * PI / 15. * rho * a_minor * pow(a_major, 4); // SI unit
+
+		        // Thermal angular momentum
+		        J_th = sqrt(I_p * con_kB * T_gas); // SI unit
+		       
+		        // Drag by gas collision following evaporation of H2
+		        tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4)); //[s]
+
+		        
+				//*************************************************************************************************
+				//*
+				//*
+				//*			PART TO CALCULATE THE DAVID-GREENSTEIN TIMESCALE
+				//*				calculation here is in CGS unit
+				//*
+				//**************************************************************************************************
+		        			
+				// Dust temperature of grain size a
+		        if (temp_info == TEMP_FULL)
+		        {
+		        	T_dust = grid->getDustTemperature(cell, i_density, a_eff[a]); //[K]
+				}
+				else
+				{
+					T_dust = grid->getDustTemperature(cell, i_density); //[K]
+				}
+				
+					// From this part, calculation is in the cgs unit :))
+				// Density of material
+	 			rho_cgs = getMaterialDensity(a)*1e-3; 
+	 			
+				// Minor and major axis
+		        a_minor_cgs = a_eff[a]*1e2 * pow(s, 2. / 3.);   //a_eff[a] [cm]
+		        a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
+				
+				// Moment of inertia along a_1 in CGS unit
+		        I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
+		        
+				// Saturated angular speed
+		        omega_rat = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+		         
+				// Volume of grain size a
+				V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
+				
+				if (fp != 0) // paramagnetic grains
+	 			{
+					K_w = CMathFunctions::calc_K_w(T_dust, fp, omega_rat); //here is in CGS unit		
+				}
+				else // superparamagnetic grains
+				{			
+					K_w = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat); //here is also in CGS unit
+				}
+		        
+				// Barnet relaxation timescale [for	internal alignment]
+				double t_dg = I_p_cgs / (V * K_w * pow(Blen, 2));
+				
+				//****************************************************************************************************
+				//*
+				//*
+				//*				FIND THE UPPER LIMIT OF TAU_MAG = TAU_GAS AND TAU_MAG = TAU_GAS/10
+				//*
+				//*
+				//*****************************************************************************************************
+				t_compare = t_dg / tau_gas;
+  
+				// Upper limit for tau_mag = tau_gas
+		        if(t_compare <= 1)
+		        {
+		            // linear interpolation
+		            if(a < index_size_max) //grain size > amin
+		            {
+		                double a1 = a_eff[a + 1]; //previous grain size
+		                double a2 = a_eff[a]; //calculated grain size
+
+		                double o1 = t_compare_old - 1;
+		                double o2 = t_compare - 1;
+
+		                a_dg_upper = a1 - o1 * (a2 - a1) / (o2 - o1);
+		            }
+		            else
+		                a_dg_upper = a_max;
+		            break;
+		        }	
+		        // keep the prev. omega fraction for interpolation
+		    	t_compare_old = t_compare;	     
+		    }
+		}
+		
+		if ((a_dg_upper == a_max) && (t_compare > 1))
+    	{
+    		double a1 = a_eff[0]; //previous grain size
+		    double a2 = a_eff[1]; //calculated grain size
+
+		    double o1 = t_compare_save - 1;
+		    double o2 = t_compare - 1;
+
+		    a_dg_upper = a1 - o1 * (a2 - a1) / (o2 - o1);
+    	}
+    }
+        
+    // Check lower limit where tau_mag = tau_gas
+    if(a_dg_lower < a_min)
+        a_dg_lower = a_min;
+
+    if(a_dg_lower > a_max)
+        a_dg_lower = a_max;
+        
+    // Check upper limir where tau_mag = tau_gas
+    if(a_dg_upper < a_min)
+        a_dg_upper = a_min;
+
+    if(a_dg_upper > a_max)
+        a_dg_upper = a_max;
+        
+    
+    // Set the range in which tau_mag < tau_gas
+    grid->setDGLowerRadius(cell, i_density, a_dg_lower);
+    grid->setDGUpperRadius(cell, i_density, a_dg_upper);
+ 
+    // Update the range of lower limit where tau_mag < tau_gas
+    if(a_dg_lower < min_a_dg_lower)
+        min_a_dg_lower = a_dg_lower;
+    if(a_dg_lower > max_a_dg_lower)
+        max_a_dg_lower = a_dg_lower;
+        
+    // Update the range of upper limit where tau_mag < tau_gas
+    if(a_dg_upper < min_a_dg_upper)
+        min_a_dg_upper = a_dg_upper;
+    if(a_dg_upper > max_a_dg_upper)
+        max_a_dg_upper = a_dg_upper;
+}
+
+void CDustComponent::calcDG10Radii(CGridBasic * grid, cell_basic * cell, uint i_density)
+{
+	// Output: the lower and upper limit at which tau_mag  < tau_gas / 10
+	// a_dg_lower and a_dg_upper: 
+ 
+    if(getNumberDensity(grid, cell, i_density) == 0)
+    {
+        grid->setDG10LowerRadius(cell, i_density, a_eff[0]);
+        grid->setDG10UpperRadius(cell, i_density, a_eff[0]);
+        return;
+    }
+
+    // Get local min and max grain sizes
+    double a_min = getSizeMin(grid, cell); //m
+    double a_max = getSizeMax(grid, cell); //m
+
+    // default value of the lower and upper limit for the range of tau_mag < tau_gas
+    double a_dg_10_lower = a_max; //m
+    double a_dg_10_upper = a_max; //m
+
+    // Aspect ratio of the grain
+    double s = getAspectRatio();
+   
+    // ratio h between the ineria moment of axis parallel  and perpendicular with the axis of maximum inertia moment ( symmetric axis)
+	double h = 2 / (1 + pow(s, 2));
+ 
+    // Get grid values
+    double T_gas = grid->getGasTemperature(cell); //K
+    double T_dust;
+    double n_g = grid->getGasNumberDensity(cell); //m-3
+    
+    // Get average molecular weight
+    double mu = grid->getMu();
+    
+    // alpha_1 ~ delta
+    double alpha_1 = 1; // getDeltaRat();
+	
+    // Get thermal velocity
+    double v_th = sqrt(2.0 * con_kB * T_gas / (mu * m_H)); // [m/s]
+    
+    // Fraction of iron in paramagnetic grains
+    double fp = getIronFraction();
+    double Ncl = getNumberIronCluster();
+	double phi_sp = getVolumeFillingFactor();
+	
+	//Magnetic field strength for calculate the magnetic relaxation	
+	Vector3D B = grid->getMagField(cell);
+	double Blen = B.length()*1e4;   // magnetic field strength in cgs unit [G]
+ 
+	// For calculate the Barnett and magnetic relaxation timescale (in cgs unit)
+	double e = 4.80325e-10;  // charge of electron [esu]
+	double me = 9.10938e-28;   // mass of electron [g]
+	double c = 2.99792e10;		  // speed of light [cm/s]
+	double kB_cgs = 1.38065e-16;   //Boltzman constant  [erg/K]
+	double rho, rho_cgs;   //density of material [kg m-3] and [g cm-3]
+	double gamma_g = e / (me * c);
+	
+	// For variable
+	double a_minor, a_major;  //minor and major axis (in SI)
+	double a_minor_cgs, a_major_cgs;	//minor and major axis (in CGS)
+	double I_p, I_p_cgs, J_th, tau_gas; //inertia moment along minor axis (in SI and CGS), thermal angular momentum, gas damping timescale,
+	double omega_rat, V, K_w;			//suprathermal angular speed, volume, imaginary part of magnetic susceptibility
+	
+	// Loop over all considered grain sizes
+    double t_compare_old = 0;
+    
+    // To save omega_frac at a_eff[0]
+    double t_compare_save;
+    
+    //to scave current ratio between tau_mag and tau_gas
+    double t_compare;
+	
+	// Check the dust temperature choice in the calculation:
+	uint temp_info = grid->getTemperatureFieldInformation();
+ 
+	// Find the lower limit for true internal alignment at high J
+    for(uint a = 0; a < nr_of_dust_species ; a++)
+    {
+        if(sizeIndexUsed(a, a_min, a_max))
+        {   
+            //****************************************************************************************
+			//*
+			//*
+			//*		 PART TO CALCULATE THE GAS DAMPING TIMESCALE DUE TO GAS COLLISION
+			//*				calculation here is in SI unit
+			//*
+			//****************************************************************************************
+  
+  			// Density of material
+  			rho = getMaterialDensity(a); 
+  
+            // Minor and major axis
+            a_minor = a_eff[a] * pow(s, 2. / 3.);   //a_eff[a] [m]
+            a_major = a_eff[a] * pow(s, -1. / 3.);  //a_eff[a] [m]
+				
+            // Moment of inertia along a_1 (a_1: symmetric axis, axis of maximum inertia moment)
+            I_p = 8. * PI / 15. * getMaterialDensity(a) * a_minor * pow(a_major, 4); // SI unit
+
+            // Thermal angular momentum
+            J_th = sqrt(I_p * con_kB * T_gas); // SI unit
+           
+            // Drag by gas collision following evaporation of H2
+            tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4)); //[s]
+
+            
+			//*************************************************************************************************
+			//*
+			//*
+			//*			PART TO CALCULATE THE DAVID-GREENSTEIN TIMESCALE
+			//*				calculation here is in CGS unit
+			//*
+			//**************************************************************************************************
+            			
+			// Dust temperature of grain size a
+            if (temp_info == TEMP_FULL)
+            {
+            	T_dust = grid->getDustTemperature(cell, i_density, a_eff[a]); //[K]
+			}
+			else
+			{
+				T_dust = grid->getDustTemperature(cell, i_density); //[K]
+			}
+			
+			// From this part, calculation is in the cgs unit :))
+			// Density of material
+  			rho_cgs = getMaterialDensity(a)*1e-3; 
+  			
+			// Minor and major axis
+            a_minor_cgs = a_eff[a]*1e2 * pow(s, 2.  / 3.);   //a_eff[a] [cm]
+            a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
+			
+			// Moment of inertia along a_1 in CGS unit
+            I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
+            
+			// Saturated angular speed
+            omega_rat = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+             
+			// Volume of grain size a
+			V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
+			
+			if (fp != 0) // grain is paramagnetic grains
+ 			{
+				K_w = CMathFunctions::calc_K_w(T_dust, fp, omega_rat); //here is in CGS unit		
+			}
+			else // grain is superparamagnetic grains
+			{			
+				K_w = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat); //here is also in CGS unit
+			}
+            
+			// Barnet relaxation timescale [for	internal alignment]
+			double t_dg = I_p_cgs / (V * K_w * pow(Blen, 2));
+			
+			//****************************************************************************************************
+			//*
+			//*
+			//*				FIND THE LOWER LIMIT FOR TAU_MAG = TAU_GAS AND TAU_MAG = TAU_GAS/10
+			//*
+			//*
+			//*****************************************************************************************************
+			t_compare = t_dg / tau_gas;
+			
+			// Lower limit for tau_mag = tau_gas/10
+            if(t_compare < 0.1)
+            {
+                // linear interpolation
+                if(a > 1) //grain size > amin
+                {
+                    double a1 = a_eff[a - 1]; //previous grain size
+                    double a2 = a_eff[a]; //calculated grain size
+
+                    double o1 = t_compare_old - 0.1;
+                    double o2 = t_compare - 0.1;
+
+                    a_dg_10_lower = a1 - o1 * (a2 - a1) / (o2 - o1);
+                }
+                else
+                {
+                	t_compare_save = t_compare;
+                    a_dg_10_lower = a_min;
+                }
+                break;
+            }
+         	// keep the prev. omega fraction for interpolation
+		    t_compare_old = t_compare;
+        }
+	}
+	
+	uint test = 0;
+	uint index_size_max;
+	
+	if (a_dg_10_lower == a_max)  // no grain size has tau_mag = tau_gas
+		a_dg_10_upper = a_max;
+	else
+	{	
+		for(uint a = nr_of_dust_species; a > 0 ; a--)
+		{
+		    if(sizeIndexUsed(a, a_min, a_max))
+		    {
+		    	if (test == 0)
+		    	{
+		    		index_size_max = a;
+		    		test +=1 ;
+		    	}   
+		        //****************************************************************************************
+				//*
+				//*
+				//*		 PART TO CALCULATE THE GAS DAMPING TIMESCALE DUE TO GAS COLLISION
+				//*				calculation here is in SI unit
+				//*
+				//****************************************************************************************
+	 			// Density of material
+	 			rho = getMaterialDensity(a); 
+	 
+		        // Minor and major axis
+		        a_minor = a_eff[a] * pow(s, 2. / 3.);   //a_eff[a] [m]
+		        a_major = a_eff[a] * pow(s, -1. / 3.);  //a_eff[a] [m]
+					
+		        // Moment of inertia along a_1 (a_1: symmetric axis, axis of maximum inertia moment)
+		        I_p = 8. * PI / 15. * rho * a_minor * pow(a_major, 4); // SI unit
+
+		        // Thermal angular momentum
+		        J_th = sqrt(I_p * con_kB * T_gas); // SI unit
+		       
+		        // Drag by gas collision following evaporation of H2
+		        tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4)); //[s]
+
+		        
+				//*************************************************************************************************
+				//*
+				//*
+				//*			PART TO CALCULATE THE DAVID-GREENSTEIN TIMESCALE
+				//*				calculation here is in CGS unit
+				//*
+				//**************************************************************************************************
+		        			
+				// Dust temperature of grain size a
+		        if (temp_info == TEMP_FULL)
+		        {
+		        	T_dust = grid->getDustTemperature(cell, i_density, a_eff[a]); //[K]
+				}
+				else
+				{
+					T_dust = grid->getDustTemperature(cell, i_density); //[K]
+				}
+				
+					// From this part, calculation is in the cgs unit :))
+				// Density of material
+	 			rho_cgs = getMaterialDensity(a)*1e-3; 
+	 			
+				// Minor and major axis
+		        a_minor_cgs = a_eff[a]*1e2 * pow(s, 2. / 3.);   //a_eff[a] [cm]
+		        a_major_cgs = a_eff[a]*1e2 * pow(s, -1. / 3.);  //a_eff[a] [cm]
+				
+				// Moment of inertia along a_1 in CGS unit
+		        I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
+		        
+				// Saturated angular speed
+		        omega_rat = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+		         
+				// Volume of grain size a
+				V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
+				
+				if (fp != 0) // grain is paramagnetic grains
+	 			{
+					K_w = CMathFunctions::calc_K_w(T_dust, fp, omega_rat); //here is in CGS unit		
+				}
+				else // grain is superparamagnetic grains
+				{			
+					K_w = CMathFunctions::calc_K_w_super(T_dust, Ncl, phi_sp, s, omega_rat); //here is also in CGS unit
+				}
+		        
+				// Barnet relaxation timescale [for	internal alignment]
+				double t_dg = I_p_cgs / (V * K_w * pow(Blen, 2));
+				
+				//****************************************************************************************************
+				//*
+				//*
+				//*				FIND THE UPPER LIMIT OF TAU_MAG = TAU_GAS AND TAU_MAG = TAU_GAS/10
+				//*
+				//*
+				//*****************************************************************************************************
+				t_compare = t_dg / tau_gas;
+				
+				// Upper limit for tau_mag = tau_gas/10
+		        if(t_compare < 0.1)
+		        {
+		            // linear interpolation
+		            if(a < index_size_max) //grain size > amin
+		            {
+		                double a1 = a_eff[a + 1]; //previous grain size
+		                double a2 = a_eff[a]; //calculated grain size
+
+		                double o1 = t_compare_old - 0.1;
+		                double o2 = t_compare - 0.1;
+
+		                a_dg_10_upper = a1 - o1 * (a2 - a1) / (o2 - o1);
+		            }
+		            else
+		                a_dg_10_upper = a_max;
+		            break;
+		        }	
+		     	// keep the prev. omega fraction for interpolation
+		    	t_compare_old = t_compare;	     
+		    }
+		}
+		if ((a_dg_10_upper == a_max) && (t_compare > 0.1))
+    	{
+    		double a1 = a_eff[0]; //previous grain size
+		    double a2 = a_eff[1]; //calculated grain size
+
+		    double o1 = t_compare_save - 0.1;
+		    double o2 = t_compare - 0.1;
+
+		    a_dg_10_upper = a1 - o1 * (a2 - a1) / (o2 - o1);
+    	}
+    }
+        
+    // Check lower limit where tau_mag = tau_gas/10
+    if(a_dg_10_lower < a_min)
+        a_dg_10_lower = a_min;
+
+    if(a_dg_10_lower > a_max)
+        a_dg_10_lower = a_max;
+        
+    // Check upper limir where tau_mag = tau_gas/10
+    if(a_dg_10_upper < a_min)
+        a_dg_10_upper = a_min;
+
+    if(a_dg_10_upper > a_max)
+        a_dg_10_upper = a_max;
+        
+    
+    // Set the range in which tau_mag < tau_gas/10
+    grid->setDG10LowerRadius(cell, i_density, a_dg_10_lower);
+    grid->setDG10UpperRadius(cell, i_density, a_dg_10_upper);
+ 
+    // Update the range of lower limit where tau_mag < tau_gas/10
+    if(a_dg_10_lower < min_a_dg_10_lower)
+        min_a_dg_10_lower = a_dg_10_lower;
+    if(a_dg_10_lower > max_a_dg_10_lower)
+        max_a_dg_10_lower = a_dg_10_lower;
+        
+    // Update the range of upper limit where tau_mag < tau_gas/10
+    if(a_dg_10_upper < min_a_dg_10_upper)
+        min_a_dg_10_upper = a_dg_10_upper;
+    if(a_dg_10_upper > max_a_dg_10_upper)
+        max_a_dg_10_upper = a_dg_10_upper;
+}
+
 double CDustComponent::calcGoldReductionFactor(Vector3D & v, Vector3D & B)
 {
     // Init variables

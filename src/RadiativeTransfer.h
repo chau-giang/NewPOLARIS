@@ -291,6 +291,8 @@ class CRadiativeTransfer
     void calcSizeParamModify();
     void calcBarnetLowJRadii();
     void calcBarnetHighJRadii();
+    void calcDGRadii();
+    void calcDG10Radii();
 
     bool isInvalid(double val)
     {

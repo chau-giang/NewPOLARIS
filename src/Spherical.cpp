@@ -433,7 +433,11 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     plt_barnet_low_upper = (!data_pos_barnet_low_J_upper_list.empty());     // 13
     plt_barnet_high_lower = (!data_pos_barnet_high_J_lower_list.empty());     // 14
     plt_barnet_high_upper = (!data_pos_barnet_high_J_upper_list.empty());     // 15
-    plt_abs_ini = (!data_pos_abs_ini_list.empty()); // 16
+    plt_dg_lower = (!data_pos_dg_lower_list.empty());     // 16
+    plt_dg_upper = (!data_pos_dg_upper_list.empty());     // 17
+    plt_dg_10_lower = (!data_pos_dg_10_lower_list.empty());     // 18
+    plt_dg_10_upper = (!data_pos_dg_10_upper_list.empty());     // 19
+    plt_abs_ini = (!data_pos_abs_ini_list.empty()); // 20
 
     plt_mag = (data_pos_mx != MAX_UINT); // 0
     plt_vel = (data_pos_vx != MAX_UINT); // 1
@@ -457,9 +461,11 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
         plt_barnet_low_upper = false;
         plt_barnet_high_lower = false;
         plt_barnet_high_upper = false;
+        plt_dg_lower = false;
+        plt_dg_upper = false;
+        plt_dg_10_lower = false;
+        plt_dg_10_upper = false;
         plt_abs_ini = false;
-  
-    
     }
     else
         nrOfGnuPoints = max_cells / nrOfGnuPoints;
@@ -498,11 +504,15 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     string barnet_low_upper_filename = path + "grid_barnet_low_upper.py";
     string barnet_high_lower_filename = path + "grid_barnet_high_lower.py";
     string barnet_high_upper_filename = path + "grid_barnet_high_upper.py";
+    string dg_lower_filename = path + "grid_dg_lower.py";
+    string dg_upper_filename = path + "grid_dg_upper.py";
+    string dg_10_lower_filename = path + "grid_dg_10_lower.py";
+    string dg_10_upper_filename = path + "grid_dg_10_upper.py";
     string mag_filename = path + "grid_mag.py";
     string vel_filename = path + "grid_vel.py";
 
 
-    ofstream point_fields[17];
+    ofstream point_fields[21];
 
     ofstream vec_fields[2];
 
@@ -679,12 +689,57 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
             return false;
         }
     }
-
-    if(plt_abs_ini)
+    
+    if(plt_dg_lower)
     {
-        point_fields[16].open(abs_ini_filename.c_str());
+        point_fields[16].open(dg_lower_filename.c_str());
 
         if(point_fields[16].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << dg_lower_filename << endl;
+            return false;
+        }
+    }
+    
+    if(plt_dg_upper)
+    {
+        point_fields[17].open(dg_upper_filename.c_str());
+
+        if(point_fields[17].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << dg_upper_filename << endl;
+            return false;
+        }
+    }
+    
+    if(plt_dg_10_lower)
+    {
+        point_fields[18].open(dg_10_lower_filename.c_str());
+
+        if(point_fields[18].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << dg_10_lower_filename << endl;
+            return false;
+        }
+    }
+    
+    if(plt_dg_10_upper)
+    {
+        point_fields[19].open(dg_10_upper_filename.c_str());
+
+        if(point_fields[19].fail())
+        {
+            cout << "\nERROR: Cannot write to:\n" << dg_10_upper_filename << endl;
+            return false;
+        }
+    }
+    
+    
+    if(plt_abs_ini)
+    {
+        point_fields[20].open(abs_ini_filename.c_str());
+
+        if(point_fields[20].fail())
         {
             cout << "\nERROR: Cannot write to:\n" << abs_ini_filename << endl;
             return false;
@@ -1037,7 +1092,7 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
 
-// 10 size_param_modify
+// 11 size_param_modify
     point_fields[11] << point_header.str();
     point_fields[11] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
@@ -1079,7 +1134,7 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     vec_header << "set nokey" << endl;
  
  
-// 11 abarnet_low_J_lower
+// 12 abarnet_low_J_lower
     point_fields[12] << point_header.str();
     point_fields[12] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
@@ -1120,7 +1175,7 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
 
-// 12 abarnet_high_J_upper
+// 13 abarnet_low_J_upper
     point_fields[13] << point_header.str();
     point_fields[13] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
@@ -1162,7 +1217,7 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     vec_header << "set nokey" << endl;
  
  
-// 13 abarnet_high_J_lower
+// 14 abarnet_high_J_lower
     point_fields[14] << point_header.str();
     point_fields[14] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
@@ -1203,7 +1258,7 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
 
-// 14 abarnet_high_J_upper
+// 15 abarnet_high_J_upper
     point_fields[15] << point_header.str();
     point_fields[15] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
@@ -1244,13 +1299,178 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     vec_header << "set grid" << endl;
     vec_header << "set nokey" << endl;
     
-    // 15 abs_ini: initial absorption rate of dust grains inside the grid
+// 16 adg_lower
     point_fields[16] << point_header.str();
     point_fields[16] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
 
-    point_fields[16] << "set title \'3D initial dust absorption rate (min: " << min_abs_ini
+    point_fields[16] << "set title \'3D threshold of the lower limit of tau_mag < tau_gas (min ID: " << adg_lower_min
+                    << "; max ID: " << adg_lower_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[16] << "set cblabel \'lower threshold of the lower limit of tau_mag < tau_gas ID\'" << endl;
+
+    if(adg_lower_min == adg_lower_max)
+        adg_lower_max = 1.01 * adg_lower_min;
+
+    point_fields[16] << "set cbrange[" << adg_lower_min << ":" << adg_lower_max << "]" << endl;
+
+    point_fields[16] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[16] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+
+// 17 adg_upper
+    point_fields[17] << point_header.str();
+    point_fields[17] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[17] << "set title \'3D threshold of the upper limit of tau_mag < tau_gas (min ID: " << adg_upper_min
+                    << "; max ID: " << adg_upper_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[17] << "set cblabel \'upper threshold of the upper limit of tau_mag < tau_gas ID\'" << endl;
+
+    if(adg_upper_min == adg_upper_max)
+        adg_upper_max = 1.01 * adg_upper_min;
+
+    point_fields[17] << "set cbrange[" << adg_upper_min << ":" << adg_upper_max << "]" << endl;
+
+    point_fields[17] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[17] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+    
+// 18 adg_10_lower
+    point_fields[18] << point_header.str();
+    point_fields[18] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[18] << "set title \'3D threshold of the lower limit of tau_mag < tau_gas/10 (min ID: " << adg_10_lower_min
+                    << "; max ID: " << adg_10_lower_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[18] << "set cblabel \'lower threshold of the lower limit of tau_mag < tau_gas/10 ID\'" << endl;
+
+    if(adg_10_lower_min == adg_10_lower_max)
+        adg_10_lower_max = 1.01 * adg_10_lower_min;
+
+    point_fields[18] << "set cbrange[" << adg_10_lower_min << ":" << adg_10_lower_max << "]" << endl;
+
+    point_fields[18] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[18] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+
+// 19 adg_10_upper
+    point_fields[19] << point_header.str();
+    point_fields[19] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[19] << "set title \'3D threshold of the upper limit of tau_mag < tau_gas/10 (min ID: " << adg_10_upper_min
+                    << "; max ID: " << adg_10_upper_max << ")\' font \'Arial,12\'" << endl;
+
+    point_fields[19] << "set cblabel \'upper threshold for f_highJ = 0.5 at low J ID\'" << endl;
+
+    if(adg_10_upper_min == adg_10_upper_max)
+        adg_10_upper_max = 1.01 * adg_10_upper_min;
+
+    point_fields[19] << "set cbrange[" << adg_10_upper_min << ":" << adg_10_upper_max << "]" << endl;
+
+    point_fields[19] << "set format cb \'%.03g\'" << endl;
+
+    point_fields[19] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+
+    vec_header.str("");
+    vec_header << "reset" << endl;
+    vec_header << "#set terminal postscript" << endl;
+    vec_header << "#set output \'\'" << endl;
+    vec_header << "set ticslevel 0" << endl;
+    vec_header << "set size ratio -1" << endl;
+    vec_header << "set view 45,45" << endl;
+
+    vec_header << "set xlabel \'x[m]\'" << endl;
+    vec_header << "set ylabel \'y[m]\'" << endl;
+    vec_header << "set zlabel \'z[m]\'" << endl;
+
+    vec_header << "set xrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set yrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+    vec_header << "set zrange[" << -1.01 * Rmax << ":" << 1.01 * Rmax << "]" << endl;
+
+    vec_header << "set style arrow 1 nohead ls 1 lw 1 lc rgb 0x0000cc" << endl;
+    vec_header << "set style arrow 2 nohead ls 1 lw 1 lc rgb 0x5500dd" << endl;
+    vec_header << "set style arrow 3 ls 1 lw 1 lc palette" << endl;
+
+    vec_header << "set grid" << endl;
+    vec_header << "set nokey" << endl;
+    
+    
+// 20 abs_ini: initial absorption rate of dust grains inside the grid
+    point_fields[20] << point_header.str();
+    point_fields[20] << "set palette defined (0 0.05 0 0, 0.4 1 0 0, 0.7 1 1 0, 1 1 1 0.5)" << endl;
+
+    point_fields[20] << "set title \'3D initial dust absorption rate (min: " << min_abs_ini
                     << "; max: " << max_abs_ini << ")\' font \'Arial,12\'" << endl;
-    point_fields[16] << "set cblabel \'absorption rate\'" << endl;
+    point_fields[20] << "set cblabel \'absorption rate\'" << endl;
 
     if(min_abs_ini == 0 && max_abs_ini == 0)
     {
@@ -1261,13 +1481,13 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
     if(min_abs_ini / max_abs_ini > 0.9)
         min_abs_ini = 0.9 * max_abs_ini;
 
-    point_fields[16] << "set cbrange[" << float(min_abs_ini) << ":" << float(max_abs_ini) << "]" << endl;
-    point_fields[16] << "set format cb \'%.03g\'" << endl;
+    point_fields[20] << "set cbrange[" << float(min_abs_ini) << ":" << float(max_abs_ini) << "]" << endl;
+    point_fields[20] << "set format cb \'%.03g\'" << endl;
 
-    point_fields[16] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
+    point_fields[20] << "splot  '-' w p ls 1,'-' with vectors as 2,'-' with vectors as 1" << endl;
     
     
-    // 0 mag
+// 0 mag
     vec_fields[0] << vec_header.str();
     vec_fields[0] << "set palette defined (0 1 0 0, 0.5 0.0 0.9 0,  0.75 0.0 0.9 1, 0.9 0 0.1 0.9)" << endl;
 
@@ -1289,7 +1509,7 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
                      "with vectors as 1"
                   << endl;
 
-    // 1 vel
+// 1 vel
     vec_fields[1] << vec_header.str();
     vec_fields[1] << "set palette defined (0 1 0 0, 0.5 0.0 0.9 0,  0.75 0.0 0.9 1, 0.9 0 0.1 0.9)" << endl;
 
@@ -1417,10 +1637,40 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
                                         << a_bar_high_upper << endl;
                     }
                     
+                    if(plt_dg_lower)
+                    {
+                        double a_dg_lower = getDGLowerRadius(tmp_cell_pos, 0);
+                        point_fields[16] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_dg_lower << endl;
+                    }
+               
+               		if(plt_dg_upper)
+                    {
+                        double a_dg_upper = getDGUpperRadius(tmp_cell_pos, 0);
+                        point_fields[17] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_dg_upper << endl;
+                    }
+                    
+                    
+                    if(plt_dg_10_lower)
+                    {
+                        double a_dg_10_lower = getDG10LowerRadius(tmp_cell_pos, 0);
+                        point_fields[18] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_dg_10_lower << endl;
+                    }
+               
+               		if(plt_dg_10_upper)
+                    {
+                        double a_dg_10_upper = getDG10UpperRadius(tmp_cell_pos, 0);
+                        point_fields[19] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                                        << a_dg_10_upper << endl;
+                    }
+                    
+                    
                     if(plt_abs_ini)
                     {
                         double abs_ini = getQBOffset(tmp_cell_pos);
-                        point_fields[16] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
+                        point_fields[20] << c.X() << " " << c.Y() << " " << c.Z() << " " << float(size) << " "
                                         << abs_ini << endl;
                     }
                 }
@@ -1508,7 +1758,23 @@ bool CGridSpherical::writeGNUPlotFiles(string path, parameters & param)
                       << basic_grid_l0.str() << "\ne\n"
                      << basic_grid_l1.str() << "\ne" << endl;
                      
-	point_fields[16] << "\ne\n" //GRIDabs_ini
+    point_fields[16] << "\ne\n" //GRIDadg_lower
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+	point_fields[17] << "\ne\n" //GRIDadg_upper
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+    point_fields[18] << "\ne\n" //GRIDadg_10_lower
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+	point_fields[19] << "\ne\n" //GRIDadg_10_upper
+                      << basic_grid_l0.str() << "\ne\n"
+                     << basic_grid_l1.str() << "\ne" << endl;
+                     
+	point_fields[20] << "\ne\n" //GRIDabs_ini
                       << basic_grid_l0.str() << "\ne\n"
                      << basic_grid_l1.str() << "\ne" << endl;
                      

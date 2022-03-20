@@ -314,6 +314,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     	rad.calcAlignedRadii();
         rad.calcBarnetLowJRadii();
         rad.calcBarnetHighJRadii();
+        rad.calcDGRadii();
+        rad.calcDG10Radii();
     }
     
     cout << SEP_LINE;
@@ -327,7 +329,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     if(!grid->writeAMIRAFiles(path_plot + "output_", param, param.getOutAMIRAPoints()))
         return false;
 
-    grid->writeSpecialLines(path_data);
+    grid->writePhysicalParameter(path_data);
+    grid->writeSizeParameter(path_data);
 
     if(param.getSaveRadiationField())
         grid->saveRadiationField();
