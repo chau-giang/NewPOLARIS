@@ -3171,6 +3171,7 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     double abar_highJ_lower = 1, abar_highJ_upper = 1;
     double adg_lower = 1, adg_upper = 1;
     double adg_10_lower = 1, adg_10_upper = 1;
+    double f_highJ;
    
 
     // Get dust temperature from grid
@@ -3267,13 +3268,20 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             		adg_upper = grid->getDGUpperRadius(pp, i_density);
             		adg_10_lower = grid->getDG10LowerRadius(pp, i_density);
             		adg_10_upper = grid->getDG10UpperRadius(pp, i_density);
-            		if (a_eff[a] >= adg_lower && a_eff[a] <= adg_upper)
+            		if (a_eff[a] > adg_lower && a_eff[a] < adg_upper)
             		{
-            			if (a_eff[a] >= adg_10_lower && a_eff[a] <= adg_10_upper)
+            			if (a_eff[a] > adg_10_lower && a_eff[a] < adg_10_upper)
             				f_highJ = 1;
-            			f_highJ = 0.5;
-            		}	
+            			else
+            				f_highJ = 0.5;
+            		}
+            		else
+            		{
+            			f_highJ = getFHighJ();
+            		}
+            			
             	}
+ 
             	// Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor		
             	Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
             }
