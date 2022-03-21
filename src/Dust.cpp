@@ -3261,7 +3261,10 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             		Rrat_high_J = 1;
             	}
             	
-            	// To check if f_highJ varies with tau_mag
+            	// Default value of f_highJ from <f_highJ>
+            	f_highJ = getFHighJ();
+            	
+            	// If <change_f_highJ> is turn on, change f_highJ as the magnetic properties of grains
             	if (param.getChangeFHighJ())
             	{
             		adg_lower = grid->getDGLowerRadius(pp, i_density);
@@ -3274,13 +3277,8 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             				f_highJ = 1;
             			else
             				f_highJ = 0.5;
-            		}
-            		else
-            		{
-            			f_highJ = getFHighJ();
-            		}
-            			
-            	}
+            		}	
+          	 	}
  
             	// Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor		
             	Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
