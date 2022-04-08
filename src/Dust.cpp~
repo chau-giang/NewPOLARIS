@@ -3261,9 +3261,10 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             		Rrat_high_J = 1;
             	}
             	
-            	// Default value of f_highJ from <f_highJ>
+ 
+            	// Default f_highJ from <f_highJ>
             	f_highJ = getFHighJ();
-            	
+ 
             	// If <change_f_highJ> is turn on, change f_highJ as the magnetic properties of grains
             	if (param.getChangeFHighJ())
             	{
@@ -3271,15 +3272,28 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             		adg_upper = grid->getDGUpperRadius(pp, i_density);
             		adg_10_lower = grid->getDG10LowerRadius(pp, i_density);
             		adg_10_upper = grid->getDG10UpperRadius(pp, i_density);
-            		if (a_eff[a] > adg_lower && a_eff[a] < adg_upper)
+            		
+            		cout << adg_lower << endl;
+            		if ((a_eff[a] < adg_upper) && (a_eff[a] > adg_lower))
             		{
-            			if (a_eff[a] > adg_10_lower && a_eff[a] < adg_10_upper)
+            			if ((a_eff[a] < adg_10_upper) && (a_eff[a] > adg_10_lower))
+            			{
+            				//cout << "full" << endl;
             				f_highJ = 1;
+            			}
             			else
-            				f_highJ = 0.5;
-            		}	
+            			{
+            				//cout << "partly" << endl;
+            				f_highJ  = 0.5;
+            			}
+            		}
+            		else
+					{	
+						//cout << "no" << endl;
+            			f_highJ = getFHighJ();
+            		}
           	 	}
- 
+          	 	//cout << f_highJ << endl;
             	// Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor		
             	Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
             }
