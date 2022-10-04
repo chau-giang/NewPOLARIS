@@ -2902,7 +2902,10 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         ullong nr_of_photons = ullong(atof(str.c_str()));
 
         if(nr_of_photons > 0)
+        {
+        	//cout << "enter here" << endl;
             param->setNrOfDustPhotons(long(nr_of_photons));
+        }
         else
         {
             cout << "\nERROR: Number of dust photons could not be recognized!" << endl;
@@ -3092,6 +3095,7 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         }
 
         param->set3dMidplane(plane, nr_of_slices, z_min, z_max);
+        cout << plane << endl;
         return true;
     }
 

@@ -540,8 +540,12 @@ bool CDustComponent::readDustParameterFile(parameters & param, uint dust_compone
     // Read the scattering matrix if MIE scattering should be used
     // With the same grid of wavelengths and grain sizes
     if(param.getPhaseFunctionID() == PH_MIE)
+    {
+        cout << "Mie scattering regism" << endl;
+        cout << "Start to read scattering matrices" << endl;
         if(!readScatteringMatrices(path, nr_of_wavelength_dustcat, wavelength_list_dustcat))
             return false;
+    }
 
     // Remove temporary pointer arrays
     delete[] eff_wl;
@@ -652,10 +656,10 @@ bool CDustComponent::readDustRefractiveIndexFile(parameters & param,
                 nr_of_wavelength_dustcat = (uint)values[0];
 
                 // The number of incident angles
-                nr_of_incident_angles = 1; // For non-spherical: (uint) values[1];
+                nr_of_incident_angles = (uint)values[1]; // For non-spherical: (uint) values[1];
 
                 // The aspect ratio between the longer and shorter axis
-                aspect_ratio = 1; // For non-spherical: values[2];
+                aspect_ratio = (uint) values[2]; // For non-spherical: values[2];
 
                 // The material density (only used if no one was set in the command file)
                 if(material_density == 0)
@@ -684,7 +688,7 @@ bool CDustComponent::readDustRefractiveIndexFile(parameters & param,
 
                 // Init splines for wavelength interpolation of the dust optical
                 // properties
-		refractive_index_real.resize(nr_of_wavelength_dustcat);
+		        refractive_index_real.resize(nr_of_wavelength_dustcat);
                 refractive_index_imag.resize(nr_of_wavelength_dustcat);
 
                 // Set size parameters
@@ -904,6 +908,7 @@ bool CDustComponent::readDustRefractiveIndexFile(parameters & param,
 
     // Set that the scattering matrix was successfully read
     scat_loaded = true;
+    cout << scat_loaded << endl;
 
     if(error)
     {
@@ -924,6 +929,7 @@ bool CDustComponent::readScatteringMatrices(string path,
     dlist values;
     string line;
 
+    cout << "I am here" << endl;
     // Erase the ".dat" from the path
     if(path.find(".dat") != string::npos)
     {
@@ -3167,6 +3173,7 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     double Rrat_low_J = 0, Rrat_high_J = 0;
     double delta = 1;
     double a_alig = 1;
+    double a_limit = 1;
     double abar_lowJ_lower = 1, abar_lowJ_upper = 1;
     double abar_highJ_lower = 1, abar_highJ_upper = 1;
     double adg_lower = 1, adg_upper = 1;
@@ -3190,13 +3197,13 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     double Ncl = getNumberIronCluster();
     
     // Calculate the maximum alignment grain constrained by larmor timescale and gas damping timescale
-    double a_limit;
+    //double a_limit = 1e-4;
     if (Ncl == 0) // if no Iron cluster is found, dust is paramagnetic grains
     {
     	double fp = getIronFraction();  
      	if (fp == 0) //if no iron fraction is used, use defaul calculation of amax,B from the original code
-    	{
-        	double larm_f = getLarmF();	
+        {
+          	double larm_f = getLarmF();	
      		a_limit = CMathFunctions::calc_larm_limit_default(Blen, Td, Tg, ng, aspect_ratio, larm_f);
     	}
     	else 		//if iron fraction is used, use new calculation of amax,B  
@@ -3208,16 +3215,16 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     	a_limit = CMathFunctions::calc_larm_limit_super(Blen, Td, Tg, ng, aspect_ratio, Ncl, phi_sp);
     }
     
+    
     // Init cross-sections
     double Cext, Cpol, Cabs, Cpabs, Csca, Ccirc;
-
-
 
 
     // Calculate the parameters for radiative torque alignment
     if((alignment & ALIG_RAT) == ALIG_RAT)
     {
         a_alig = grid->getAlignedRadius(pp, i_density);
+        //a_alig = 1e-8;
         if(a_eff[a] > a_alig)
         {
         	// If assume imperfect internal alignment
@@ -3226,7 +3233,8 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
          		//If account for right and wrong internal alignment at low J attractor
          		if(getWrongInternalRATlowJ() != 0)
          		{
-         			//cout << "R+W at low J attractor" << endl;
+
+         			cout << "slow internal relaxation at low-J" << endl;
          			// Internal alignment at low J attractor
          	    	abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
      				abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
@@ -3238,7 +3246,6 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             	}
             	else   // assume all dust grains have right internal alignment
             	{
-            		//cout << "just low J" << endl;
             		Rrat_low_J = getInternalRAT();
             		//Rrat_low_J = 0.4;
             	}
@@ -3246,7 +3253,7 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             	// if account for right and wrong internal alignment at high j attractor
             	if(getWrongInternalRAThighJ() != 0)
             	{
-            		//cout << "R+W at high J attractor" << endl;
+            		cout << "Slow internal relaxation at high-J" << endl;
             		// Internal alignment at high J attractor
             		abar_highJ_lower = grid->getBarnetHighLowerRadius(pp, i_density);
      				abar_highJ_upper = grid->getBarnetHighUpperRadius(pp, i_density);
@@ -3269,6 +3276,7 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             	// If <change_f_highJ> is turn on, change f_highJ as the magnetic properties of grains
             	if (param.getChangeFHighJ())
             	{
+                    cout << "change f_highJ" << endl;
             		adg_lower = grid->getDGLowerRadius(pp, i_density);
             		adg_upper = grid->getDGUpperRadius(pp, i_density);
             		adg_10_lower = grid->getDG10LowerRadius(pp, i_density);
@@ -3300,7 +3308,9 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
             
             // If assume perfect internal alignment
             else
+            {
                 Rrat = 1;
+            }
         }
     }
 
@@ -3835,17 +3845,20 @@ double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i
 
 void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
 {
-    // Calculate the aligned radii only for cells with a density not zero
-    if(getNumberDensity(grid, cell, i_density) == 0)
-    {
-        grid->setAlignedRadius(cell, i_density, a_eff[nr_of_dust_species - 1]);
-        return;
-    }
+ 
 
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, cell);
     double a_max = getSizeMax(grid, cell);
 
+    // Calculate the aligned radii only for cells with a density not zero
+    if(getNumberDensity(grid, cell, i_density) == 0)
+    {
+    	grid->setAlignedRadius(cell, i_density, a_max); 
+        //grid->setAlignedRadius(cell, i_density, a_eff[nr_of_dust_species - 1]);
+        return;
+    }
+    
     // default value of the alignment radius
     double a_alig = getSizeMax(grid, cell);
     double th = 0;
@@ -3855,7 +3868,7 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
     double s = getAspectRatio();
 
     // alpha_1 ~ delta
-    double alpha_1 = 1; // getDeltaRat();
+    double gamma_para = 0.8; // geometry factor for oblate spheroidal with s = 1/2
 
     // Get grid values
     double T_gas = grid->getGasTemperature(cell);
@@ -3901,7 +3914,7 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
             double * dth = new double[nr_of_wavelength];
 
             // Drag by gas
-            double tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * alpha_1 * pow(a_eff[a], 4));
+            double tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * gamma_para * pow(a_eff[a], 4));
 
             for(uint w = 0; w < nr_of_wavelength; w++)
             {
@@ -6968,6 +6981,7 @@ void CDustMixture::printParameter(parameters & param, CGridBasic * grid)
         cout << "- Number of wavelengths   : " << WL_STEPS << "  (" << WL_MIN << " [m] - " << WL_MAX
              << " [m])" << endl;
 
+    scattering_to_raytracing = param.getScatteringToRay();
     // Monte-Carlo scattering is only used for temp, rat and scatter maps
     if(param.isMonteCarloSimulation() || param.getCommand() == CMD_DUST_SCATTERING ||
        scattering_to_raytracing)
@@ -7058,6 +7072,8 @@ void CDustMixture::printParameter(parameters & param, CGridBasic * grid)
         }
 
         cout << "- Include scattered light : ";
+
+        scattering_to_raytracing = param.getScatteringToRay();
         if(grid->getRadiationFieldAvailable())
         {
             if(scattering_to_raytracing)

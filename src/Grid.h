@@ -500,7 +500,7 @@ class CGridBasic
         buffer_dust_amin = 0;
         buffer_dust_amax = 0;
         buffer_dust_size_param = 0;
-	buffer_rad_field = 0;
+		buffer_rad_field = 0;
         buffer_g_zero1 = 0;
         buffer_u_rad = 0;
         buffer_n_th = 0;
@@ -879,10 +879,10 @@ class CGridBasic
             double inv_vol = 1 / getVolume(cell);
             for(uint wID = 0; wID < WL_STEPS; wID++)
             {
-                cell->convertData(data_offset + 4 * wID + 0, inv_vol);
-                cell->convertData(data_offset + 4 * wID + 1, inv_vol);
-                cell->convertData(data_offset + 4 * wID + 2, inv_vol);
-                cell->convertData(data_offset + 4 * wID + 3, inv_vol);
+                cell->convertData(data_offset + 4 * wID + 0, inv_vol);     //urad: ID: 33
+                cell->convertData(data_offset + 4 * wID + 1, inv_vol);   //uradx: ID: 30
+                cell->convertData(data_offset + 4 * wID + 2, inv_vol);   //urady: ID: 31
+                cell->convertData(data_offset + 4 * wID + 3, inv_vol);	//uradz: ID: 32
             }
         }
 
@@ -894,6 +894,7 @@ class CGridBasic
             data_ids.push_back(GRIDradz);
         }
         data_offset += 4 * WL_STEPS;
+        //data_offset += 1 * WL_STEPS;
     }
 
     double getRadiationField(cell_basic * cell, uint wID)

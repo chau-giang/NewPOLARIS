@@ -214,35 +214,46 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     bool use_energy_density = false;
     if(param.getSaveRadiationField() || param.isRATDSimulation() || param.isRatSimulation() || param.getStochasticHeatingMaxSize() > 0)
 	use_energy_density = true;
+ 
     CGridBasic * grid = 0;
     CDustMixture * dust = new CDustMixture();
 
     if(!createOutputPaths(param.getPathOutput()))
         return false;
 
+
     if(!assignGridType(grid, param))
         return false;
-
+ 
+ 
+    grid->setSIConversionFactors(param);
+    
     if(!createWavelengthList(param, dust))
         return false;
-
+    	
     if(!assignDustMixture(param, dust, grid))
         return false;
-
-    grid->setSIConversionFactors(param);
-
+        
     grid->setSpecLengthAsVector(use_energy_density);
+
+
     if(!grid->loadGridFromBinrayFile(param, use_energy_density ? 4 * WL_STEPS : WL_STEPS))
         return false;
-
+ 
+    
     // Print helpfull information
     grid->createCellList();
+ 
     dust->printParameter(param, grid);
-    grid->printParameters();
 
+    	
+    grid->printParameters();
+	
+	
     if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(), true))
         return false;
-
+	
+	
     if(!grid->writeGNUPlotFiles(path_plot + "input_", param))
         return false;
 
@@ -256,12 +267,16 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         return false;
     }
 
+ 
+
     CRadiativeTransfer rad(param);
 
     rad.setGrid(grid);
     rad.setDust(dust);
     rad.setSourcesLists(sources_mc, sources_ray);
     rad.initiateRadFieldMC(param);
+
+ 
 
     omp_set_num_threads(param.getNrOfThreads());
 
@@ -272,6 +287,7 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         else if(param.getDustGasCoupling())
             rad.convertTempInQB(param.getOffsetMinGasDensity(), true);
     }
+
 
     rad.calcMonteCarloRadiationField(param.getCommand(),
     								 param,
@@ -284,13 +300,13 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         
     if(param.isRATDSimulation())
     {
-        cout << "\n DISRUPTION SIMULATION \n" << endl;
-        cout << "\n First loop\n" << endl;
+        //cout << "\n DISRUPTION SIMULATION \n" << endl;
+        //cout << "\n First loop\n" << endl;
         rad.calcDisruptRadii();
         rad.calcMaxDisruptRadii();
         rad.calcSizeParamModify();
 
-        cout << "\n Second loop \n" << endl;
+        //cout << "\n Second loop \n" << endl;
         rad.calcMonteCarloRadiationField(param.getCommand(),
         								param,
                                         use_energy_density,
@@ -300,7 +316,7 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         rad.calcMaxDisruptRadii();
         rad.calcSizeParamModify();
 
-        cout << "\n Final temperature and alignment \n" << endl;
+        //cout << "\n Final temperature and alignment \n" << endl;
         rad.calcMonteCarloRadiationField(param.getCommand(),
         								 param,
                                          use_energy_density,
@@ -341,9 +357,9 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         grid->saveBinaryGridFile(param.getPathOutput() + "grid_temp.dat");
     else if(param.getCommand() == CMD_RAT)
         grid->saveBinaryGridFile(param.getPathOutput() + "grid_rat.dat");
-
     else if(param.getCommand() == CMD_DISR)
         grid->saveBinaryGridFile(param.getPathOutput() + "grid_ratd.dat");
+    
     delete grid;
     delete dust;
     deleteSourceLists();
@@ -408,7 +424,7 @@ bool CPipeline::calcPolarizationMapsViaMC(parameters & param)
 
     omp_set_num_threads(param.getNrOfThreads());
 
-    rad.initiateDustMC(param);
+    rad.initiateDustMC(param); // define number of detector, check if b-forced and peel off technique is opened or not
     rad.calcPolMapsViaMC();
 
     cout << CLR_LINE;
@@ -431,17 +447,22 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
 
     if(!assignGridType(grid, param))
         return false;
-
+	
     if(!createWavelengthList(param, dust))
         return false;
+ 
 
     if(!assignDustMixture(param, dust, grid))
         return false;
+       
 
     grid->setSIConversionFactors(param);
 
+    cout << "enter here?" << endl;
     if(!grid->loadGridFromBinrayFile(param, getNrOffsetEntriesRay(param, dust, grid)))
         return false;
+
+    cout << "next step" << endl;
 
     // Print helpfull information
     grid->createCellList();
@@ -481,8 +502,10 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
     // Calculate radiation field before raytracing (if sources defined and no radiation
     // field in grid)
     if(!grid->getRadiationFieldAvailable() && dust->getScatteringToRay() && !sources_mc.empty())
+    {
         rad.calcMonteCarloRadiationField(param.getCommand(), param, true, true);
-
+	}
+	
     if(!rad.calcPolMapsViaRaytracing(param))
         return false;
 

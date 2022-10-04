@@ -2661,7 +2661,7 @@ class CDustMixture
         single_component = 0;
         mixed_component = 0;
 
-        scattering_to_raytracing = false;
+        //scattering_to_raytracing = true;
 
         extinction_magnitude = 0;
         extinction_magnitude_wavelength = 0;
@@ -3859,6 +3859,7 @@ class CDustMixture
         StokesVector tmp_stokes;
 
         // Check if radiation field is available and scattering should be included
+        scattering_to_raytracing = param.getScatteringToRay();
         if(scattering_to_raytracing)
         {
             // Get wavelength of photon package

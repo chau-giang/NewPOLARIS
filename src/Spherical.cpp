@@ -35,12 +35,12 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
     char_counter = 0;
     float last_percentage = 0;
 
-    bin_reader.read((char *)&tmpID, 2);
-    bin_reader.read((char *)&tmpOffset, 2);
+    bin_reader.read((char *)&tmpID, 2); // grid_ID
+    bin_reader.read((char *)&tmpOffset, 2); // number of parameter in grid
 
-    dataID = tmpID;
-    data_offset = (uint)tmpOffset;
-    data_len = _data_len + data_offset;
+    dataID = tmpID; // grid_ID
+    data_offset = (uint)tmpOffset; // number of parameter in grid
+    data_len = _data_len + data_offset; // Nparameter + parameter for use_energy_density?
 
     if(dataID == GRID_ID_SPH)
     {
@@ -67,7 +67,7 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
     if(tmp_data_offset == MAX_UINT)
         return false;
 
-    bin_reader.read((char *)&Rmin, 8);
+    bin_reader.read((char *)&Rmin, 8);  
     bin_reader.read((char *)&Rmax, 8);
     bin_reader.read((char *)&N_r, 2);
     bin_reader.read((char *)&N_ph, 2);
@@ -81,11 +81,11 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
     Rmin *= conv_length_in_SI;
     Rmax *= conv_length_in_SI;
 
-    total_volume = PIx4 * Rmax * Rmax * Rmax / 3.0;
+    total_volume = PIx4 * Rmax * Rmax * Rmax / 3.0; // volume of grid
 
-    listR = new double[N_r + 1];
-    listPh = new double[N_ph + 1];
-    listTh = new double[N_th + 1];
+    listR = new double[N_r + 1]; // array of cell point in radial direction
+    listPh = new double[N_ph + 1]; // array of cell point in polar direction
+    listTh = new double[N_th + 1]; // array of cell point in the azimuthal direction
 
     // --------------------------------------
     // ---------- Radial-direction ----------
@@ -207,18 +207,18 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
     // Init grid cells
     grid_cells = new cell_sp ***[N_r];
 
-    for(uint i_r = 0; i_r < N_r; i_r++)
+    for(uint i_r = 0; i_r < N_r; i_r++) // with each value of r_i
     {
         grid_cells[i_r] = new cell_sp **[N_ph];
 
         cout << "Allocating memory for spherical grid cells: " << float(100.0 * double(i_r) / double(N_r))
              << "      \r" << flush;
 
-        for(uint i_ph = 0; i_ph < N_ph; i_ph++)
+        for(uint i_ph = 0; i_ph < N_ph; i_ph++) // with each value of ph_i
         {
             grid_cells[i_r][i_ph] = new cell_sp *[N_th];
 
-            for(uint i_th = 0; i_th < N_th; i_th++)
+            for(uint i_th = 0; i_th < N_th; i_th++) // with each value of th_i
             {
                 grid_cells[i_r][i_ph][i_th] = 0;
             }

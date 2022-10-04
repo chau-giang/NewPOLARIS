@@ -1097,7 +1097,7 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
 
                                             // Add the photon package to the detector
                                             detector[d].addToMonteCarloDetector(
-                                                &tmp_pp, wID_det, SCATTERED_DUST);
+                                                &tmp_pp, wID_det, SCATTERED_DUST_2);
                                         }
                                     }
                                 }
@@ -1190,7 +1190,7 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
                                     else
                                     {
                                         // Add the photon package to the detector
-                                        detector[d].addToMonteCarloDetector(pp, wID_det, SCATTERED_DUST);
+                                        detector[d].addToMonteCarloDetector(pp, wID_det, SCATTERED_DUST_2);
                                     }
                                 }
                             }

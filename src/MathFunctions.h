@@ -1940,8 +1940,8 @@ class CMathFunctions
 
         if(den == 0)
             return 1;
-        double reduce = 10;
-    	double cons = 3.775e19 / reduce;
+        double reduced_factor = 10;
+    	double cons = 3.775e19 / reduced_factor;
 
         return cons * s * phi_sp * Ncl * B / den;
     }
@@ -1978,8 +1978,8 @@ class CMathFunctions
 
         if(den == 0)
             return 1;
-        double reduce = 10;
-    	double cons = 4.52e-10 / reduce ;
+        double reduced_factor = 10;
+    	double cons = 4.52e-10 / reduced_factor ;
 
         return cons * s * n * fp * B / den ;
     }

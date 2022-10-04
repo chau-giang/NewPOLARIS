@@ -63,6 +63,7 @@ using namespace std;
 // Default parameters of the global wavelength grid
 #define WL_MIN 0.1e-6
 #define WL_MAX 2000.0e-6
+//#define WL_STEPS 30
 #define WL_STEPS 100
 #endif
 
@@ -99,6 +100,7 @@ using namespace std;
 
 #define TEMP_MIN 2.728
 #define TEMP_MAX 3000
+//#define TEMP_STEP 500
 #define TEMP_STEP 1000
 
 // detector ids
