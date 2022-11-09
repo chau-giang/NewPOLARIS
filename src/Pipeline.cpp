@@ -288,11 +288,13 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
             rad.convertTempInQB(param.getOffsetMinGasDensity(), true);
     }
 
-
-    rad.calcMonteCarloRadiationField(param.getCommand(),
+    if (param.isMonteCarloSimulation())  
+    {
+        rad.calcMonteCarloRadiationField(param.getCommand(),
     								 param,
                                      use_energy_density,
                                      false ); //(param.getCommand() == CMD_RAT));
+    }
 
     if(param.isTemperatureSimulation())
         rad.calcFinalTemperature(use_energy_density);
@@ -300,49 +302,49 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         
     if(param.isRATDSimulation())
     {
-        //cout << "\n DISRUPTION SIMULATION \n" << endl;
         //cout << "\n First loop\n" << endl;
-        rad.calcDisruptRadii();
-        rad.calcMaxDisruptRadii();
+        rad.calcDisruptRadii(param);
+        rad.calcMaxDisruptRadii(param);
         rad.calcSizeParamModify();
 
         //cout << "\n Second loop \n" << endl;
-        rad.calcMonteCarloRadiationField(param.getCommand(),
-        								param,
-                                        use_energy_density,
-                                        false); //(param.getCommand() == CMD_RAT));
-        rad.calcFinalTemperature(use_energy_density);
-        rad.calcDisruptRadii();
-        rad.calcMaxDisruptRadii();
-        rad.calcSizeParamModify();
+       // rad.calcMonteCarloRadiationField(param.getCommand(),
+       // 								param,
+       //                                 use_energy_density,
+       //                                 false); //(param.getCommand() == CMD_RAT));
+       // rad.calcFinalTemperature(use_energy_density);
+       // rad.calcDisruptRadii(param);
+       // rad.calcMaxDisruptRadii(param);
+       // rad.calcSizeParamModify();
 
         //cout << "\n Final temperature and alignment \n" << endl;
-        rad.calcMonteCarloRadiationField(param.getCommand(),
-        								 param,
-                                         use_energy_density,
-                                         false); //(param.getCommand() == CMD_RAT))
+       // rad.calcMonteCarloRadiationField(param.getCommand(),
+       // 								 param,
+       //                                  use_energy_density,
+       //                                  false); //(param.getCommand() == CMD_RAT))
 
-        rad.calcFinalTemperature(use_energy_density);
-        rad.calcDisruptRadii();
-        rad.calcMaxDisruptRadii();
-        rad.calcSizeParamModify();
+       // rad.calcFinalTemperature(use_energy_density);
+       // rad.calcDisruptRadii(param);
+       //rad.calcMaxDisruptRadii(param);
+       // rad.calcSizeParamModify();
     }
         
     if(param.isRatSimulation())
     {
-    	rad.calcAlignedRadii();
-        if (param.getDetailGrainAlignment())
+    	rad.calcAlignedRadii(param);
+    	
+    	if (param.getAligMRAT())
         {
     	    rad.calcMaxAlignedRadii();
             rad.calcBarnetLowJRadii();
-            rad.calcBarnetHighJRadii();
-            rad.calcDGRadii();
-            rad.calcDG10Radii();
+            rad.calcBarnetHighJRadii(param);
+            rad.calcDGRadii(param);
+            rad.calcDG10Radii(param);
         }
-        if(param.getCalculatekRAT())
+    	if (param.getAligkRAT())
         {
-            rad.calckRATlowJRadii();
-            rad.calckRAThighJRadii();
+            rad.calckRATlowJRadii(param);
+            rad.calckRAThighJRadii(param);
         }
     }
     

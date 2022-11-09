@@ -228,7 +228,11 @@ class CPipeline
             if(param.getAligIDG())
                 cout << "- IDG (paramagnetic alignment)" << endl;
             if(param.getAligRAT())
-                cout << "- RAT (radiative torques); f_highJ: " << param.getFHighJ() << endl;
+                cout << "- RAT (B-radiative torques); f_highJ: " << param.getFHighJ() << endl;
+            if(param.getAligMRAT())
+            	cout << "- MRAT (magnetic radiative torques)" << endl;
+            if(param.getAligkRAT())
+            	cout << "- kRAT (k-radiative torques)" << endl;
             if(param.getIronFraction() != 0)
             	cout << "- Dust is paramagnetic grains" << endl;
             else

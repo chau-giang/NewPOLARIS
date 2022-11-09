@@ -1339,7 +1339,7 @@ void CRadiativeTransfer::convertTempInQB(double min_gas_density, bool use_gas_te
     // cout << "- Converting emissivities             : done" << endl;
 }
 
-void CRadiativeTransfer::calcAlignedRadii()
+void CRadiativeTransfer::calcAlignedRadii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1347,13 +1347,13 @@ void CRadiativeTransfer::calcAlignedRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. RAT dust alig. radius: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. a_align: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcAlignedRadii(grid, cell);
+        dust->calcAlignedRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1363,7 +1363,7 @@ void CRadiativeTransfer::calcAlignedRadii()
         {
 #pragma omp critical
             {
-                cout << " -> Calc. RAT dust alig. radius: " << 100.0 * float(per_counter) / float(max_cells)
+                cout << " -> Calc. a_align: " << 100.0 * float(per_counter) / float(max_cells)
                      << " [%] (min: " << dust->getMinAlignedRadius()
                      << " [m]; max: " << dust->getMaxAlignedRadius() << " [m])"
                      << "          \r";
@@ -1373,7 +1373,7 @@ void CRadiativeTransfer::calcAlignedRadii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calculation of minimum aligned radii      : done" << endl;
+    cout << "- Calc. RAT: a_align      : done" << endl;
     cout << "  align [" << float(dust->getMinAlignedRadius()) << ", "
          << float(dust->getMaxAlignedRadius()) << "] [m]" << endl;
 }
@@ -1387,7 +1387,7 @@ void CRadiativeTransfer::calcMaxAlignedRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. maximum aligned radius: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. amax_JB_Lar: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
@@ -1413,12 +1413,12 @@ void CRadiativeTransfer::calcMaxAlignedRadii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calculation of maximum aligned radii      : done" << endl;
+    cout << "- Calc. RAT: amaxJB_Lar     : done" << endl;
     cout << "  amaxJB_Lar [" << float(dust->getMinMaxAlignedRadius()) << ", "
          << float(dust->getMaxMaxAlignedRadius()) << "] [m]" << endl;
 }
 
-void CRadiativeTransfer::calcDisruptRadii()
+void CRadiativeTransfer::calcDisruptRadii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1426,13 +1426,13 @@ void CRadiativeTransfer::calcDisruptRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. RATD dust disr. radius: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. RATD a_disr: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcDisruptRadii(grid, cell);
+        dust->calcDisruptRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1458,7 +1458,7 @@ void CRadiativeTransfer::calcDisruptRadii()
 }
 
 
-void CRadiativeTransfer::calcMaxDisruptRadii()
+void CRadiativeTransfer::calcMaxDisruptRadii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1466,13 +1466,13 @@ void CRadiativeTransfer::calcMaxDisruptRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. maximum dust disr. radius: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. RATD: adisr_max: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcMaxDisruptRadii(grid, cell);
+        dust->calcMaxDisruptRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1492,7 +1492,7 @@ void CRadiativeTransfer::calcMaxDisruptRadii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calculation of maximum disruption radii      : done" << endl;
+    cout << "- Calc. RATD: adisr_max      : done" << endl;
     cout << "  adisr_max [" << float(dust->getMinMaxDisruptRadius()) << ", "
          << float(dust->getMaxMaxDisruptRadius()) << "] [m]" << endl;
 }
@@ -1522,7 +1522,7 @@ void CRadiativeTransfer::calcSizeParamModify()
         {
 #pragma omp critical
             {
-                cout << " -> Calc.size param modified by RATD: " << 100.0 * float(per_counter) / float(max_cells)
+                cout << " -> Calc. size param modified by RATD: " << 100.0 * float(per_counter) / float(max_cells)
                      << " [%] (min: " << dust->getMinSizeParamModify()
                      << "; max: " << dust->getMaxSizeParamModify()
                      << "          \r";
@@ -1532,7 +1532,7 @@ void CRadiativeTransfer::calcSizeParamModify()
     }
 
     cout << CLR_LINE;
-    cout << "- Calculation of size param modify      : done" << endl;
+    cout << "- Calc. size param modified by RATD      : done" << endl;
     cout << "    size param modify [" << float(dust->getMinSizeParamModify()) << ", "
          << float(dust->getMaxSizeParamModify()) << "] [m]" << endl;
 }
@@ -1545,7 +1545,7 @@ void CRadiativeTransfer::calcBarnetLowJRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. of the range of grains having fast internal relaxation at low-J: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. of [amin_aJ - amax_aJ][low-J]: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
@@ -1577,14 +1577,14 @@ void CRadiativeTransfer::calcBarnetLowJRadii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calc. of the range of grains having fast internal relaxation at low-J : done" << endl;
+    cout << "- Calc. of [amin_aJ - amax_aJ][low-J] : done" << endl;
     cout << "  amin_aJ_lowJ [" << float(dust->getMinBarnetLowLowerRadius()) << ", "
          << float(dust->getMaxBarnetLowLowerRadius()) << "] [m]" << endl;
     cout << "  amax_aJ_lowJ [" << float(dust->getMinBarnetLowUpperRadius()) << ", "
          << float(dust->getMaxBarnetLowUpperRadius()) << "] [m]" << endl;
 }
 
-void CRadiativeTransfer::calcBarnetHighJRadii()
+void CRadiativeTransfer::calcBarnetHighJRadii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1592,13 +1592,13 @@ void CRadiativeTransfer::calcBarnetHighJRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. of the range of grains having fast internal relaxation at high-J: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. of [amin_aJ - amax_aJ][high-J]: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcBarnetHighJRadii(grid, cell);
+        dust->calcBarnetHighJRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1624,7 +1624,7 @@ void CRadiativeTransfer::calcBarnetHighJRadii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calc. of the range of grains having fast internal relaxation at high-J: done" << endl;
+    cout << "- Calc. of [amin_aJ - amax_aJ][high-J]J: done" << endl;
     cout << "  amin_aJ_highJ [" << float(dust->getMinBarnetHighLowerRadius()) << ", "
          << float(dust->getMaxBarnetHighLowerRadius()) << "] [m]" << endl;
     cout << "  amax_aJ_highJ [" << float(dust->getMinBarnetHighUpperRadius()) << ", "
@@ -1634,7 +1634,7 @@ void CRadiativeTransfer::calcBarnetHighJRadii()
 }
 
 
-void CRadiativeTransfer::calcDGRadii()
+void CRadiativeTransfer::calcDGRadii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1642,13 +1642,13 @@ void CRadiativeTransfer::calcDGRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. of the range of grains having f_highJ = 0.5: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. of [amin_dg - amax_dg][0.5]: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcDGRadii(grid, cell);
+        dust->calcDGRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1674,14 +1674,14 @@ void CRadiativeTransfer::calcDGRadii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calculation of the range of grains having f_highJ = 0.5: done" << endl;
+    cout << "- Calc. of [amin_dg - amax_dg][0.5]:: done" << endl;
     cout << "  amin_JB_DG_0.5 [" << float(dust->getMinDGLowerRadius()) << ", "
          << float(dust->getMaxDGLowerRadius()) << "] [m]" << endl;
     cout << "  amax_JB_DG_0.5 [" << float(dust->getMinDGUpperRadius()) << ", "
          << float(dust->getMaxDGUpperRadius()) << "] [m]" << endl;
 }
 
-void CRadiativeTransfer::calcDG10Radii()
+void CRadiativeTransfer::calcDG10Radii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1689,13 +1689,13 @@ void CRadiativeTransfer::calcDG10Radii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. the range of grains having f_highJ = 1: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. of [amin_dg - amax_dg][1]:: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcDG10Radii(grid, cell);
+        dust->calcDG10Radii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1721,7 +1721,7 @@ void CRadiativeTransfer::calcDG10Radii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calculation of the range of grains having f_highJ = 1    : done" << endl;
+    cout << "- Calc. of [amin_dg - amax_dg][1]    : done" << endl;
     cout << "  amin_JB_DG_1 [" << float(dust->getMinDG10LowerRadius()) << ", "
          << float(dust->getMaxDG10LowerRadius()) << "] [m]" << endl;
     cout << "  amax_JB_DG_1 [" << float(dust->getMinDG10UpperRadius()) << ", "
@@ -1730,7 +1730,7 @@ void CRadiativeTransfer::calcDG10Radii()
 
 
 
-void CRadiativeTransfer::calckRATlowJRadii()
+void CRadiativeTransfer::calckRATlowJRadii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1738,13 +1738,13 @@ void CRadiativeTransfer::calckRATlowJRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. the minimum size for k-RAT at low-J: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. k-RAT, akrat_lowJ: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calckRATlowJRadii(grid, cell);
+        dust->calckRATlowJRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1765,13 +1765,13 @@ void CRadiativeTransfer::calckRATlowJRadii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calculation the minimum size for k-RAT at low-J   : done" << endl;
+    cout << "- Calc. of k-RAT, akrat_lowJ   : done" << endl;
     cout << "  akrat_lowJ [" << float(dust->getMinkRATlowJRadius()) << ", "
          << float(dust->getMaxkRATlowJRadius()) << "] [m]" << endl;
     
 }
 
-void CRadiativeTransfer::calckRAThighJRadii()
+void CRadiativeTransfer::calckRAThighJRadii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1779,13 +1779,13 @@ void CRadiativeTransfer::calckRAThighJRadii()
     float last_percentage = 0;
 
     cout << CLR_LINE;
-    cout << " -> Calc. the minimum size for k-RAT at high-J: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
+    cout << " -> Calc. k-RAT, akrat_highJ: 0.0 [%]  (min: 0 [m]; max: 0 [m])        \r" << flush;
 
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calckRAThighJRadii(grid, cell);
+        dust->calckRAThighJRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1806,7 +1806,7 @@ void CRadiativeTransfer::calckRAThighJRadii()
     }
 
     cout << CLR_LINE;
-    cout << "- Calculation the minimum size for k-RAT at high-J   : done" << endl;
+    cout << "- Calc. k-RAT, akrat_highJ  : done" << endl;
     cout << "  akrat_highJ [" << float(dust->getMinkRAThighJRadius()) << ", "
          << float(dust->getMaxkRAThighJRadius()) << "] [m]" << endl;
     

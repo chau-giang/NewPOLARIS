@@ -2405,6 +2405,17 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             return true;
         }
 
+        if(data.compare("ALIG_MRAT") == 0)
+        {
+            param->addAlignmentMechanism(ALIG_MRAT);
+            return true;
+        }
+
+        if(data.compare("ALIG_kRAT") == 0)
+        {
+            param->addAlignmentMechanism(ALIG_kRAT);
+            return true;
+        }
         if(data.compare("ALIG_GOLD") == 0)
         {
             param->addAlignmentMechanism(ALIG_GOLD);
@@ -2863,22 +2874,6 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
     {
         if(atob(atoi(data.c_str())))
             param->setSaveRadiationField(true);
-
-        return true;
-    }
-
-    if(cmd.compare("<detail_alignment_physics>") == 0)
-    {
-        if(atob(atoi(data.c_str())))
-            param->setDetailGrainAlignment(true);
-
-        return true;
-    }
-
-    if(cmd.compare("<krat>") == 0)
-    {
-        if(atob(atoi(data.c_str())))
-            param->setCalculatekRAT(true);
 
         return true;
     }

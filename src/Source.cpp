@@ -17,6 +17,7 @@ bool CSourceStar::initSource(uint id, uint max, bool use_energy_density)
     }
     else
     {
+        // read stellar radiation from file
         // Init variables
         dlist star_emi;
         double tmp_luminosity, diff_luminosity, max_flux = 0;
@@ -24,14 +25,17 @@ bool CSourceStar::initSource(uint id, uint max, bool use_energy_density)
 
         for(uint w = 0; w < getNrOfWavelength(); w++)
         {
-            double pl = CMathFunctions::planck(wavelength_list[w], T); //[W m^-2 m^-1 sr^-1]
+            double pl = CMathFunctions::planck(wavelength_list[w], T); //[W m^-2 m^-1 sr^-1] // Intensity
             double sp_energy;
 
             if(is_ext)
                 sp_energy = sp_ext.getValue(wavelength_list[w]);
             else
                 sp_energy =
-                    4.0 * PI * PI * (R * R_sun) * (R * R_sun) * pl; //[W m^-1] energy per second an wavelength
+                    4.0 * PI * PI * (R * R_sun) * (R * R_sun) * pl; 
+                    // F = pi I
+                    // L = 4 pi R**2 F = 4 pi**2 R**2 I
+                    //[W m^-1] energy per second an wavelength // Specific luminosity
 
             star_emi.push_back(sp_energy);
         }
@@ -162,18 +166,19 @@ void CSourceStar::createNextRay(photon_package * pp, ullong i_pos)
     if(pp->getWavelengthID() != MAX_UINT)
     {
         wID = pp->getWavelengthID();
-        if(is_ext)
+        if(is_ext) // read data from file
         {
             energy = sp_ext.getValue(wavelength_list[wID]) / nr_of_photons;
             double tmp_q = sp_ext_q.getValue(wavelength_list[wID]);
             double tmp_u = sp_ext_u.getValue(wavelength_list[wID]);
             tmp_stokes_vector = energy * StokesVector(1.0, tmp_q, tmp_u, 0);
         }
-        else
+        else // from planck function
         {
-            double pl = CMathFunctions::planck(wavelength_list[wID], T);
-            energy = PIx4 * PI * (R * R_sun) * (R * R_sun) * pl / nr_of_photons;
-            tmp_stokes_vector = energy * StokesVector(1.0, q, u, 0);
+            double pl = CMathFunctions::planck(wavelength_list[wID], T); // [W m-2 m-1 st-1] 
+            energy = PIx4 * PI * (R * R_sun) * (R * R_sun) * pl / nr_of_photons;   
+            // energy [W m-1] = 4 pi I pi R**2
+            tmp_stokes_vector = energy * StokesVector(1.0, q, u, 0); // specific luminosity / nr_photon?
         }
     }
     else

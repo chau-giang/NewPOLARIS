@@ -508,8 +508,6 @@ class parameters
         sublimate = false;
         individual_dust_fractions = false;
         change_f_highJ = false;
-        detail_Brat = false;
-        calculate_krat = false;
 
         nr_ofISRFPhotons = 0;
         nr_ofDustPhotons = 0;
@@ -675,7 +673,7 @@ class parameters
     
     bool isMonteCarloSimulation()
     {
-        if(getCommand() == CMD_TEMP || getCommand() == CMD_TEMP_RAT || getCommand() == CMD_RAT || getCommand() == CMD_DISR || getCommand() == CMD_TEMP_DISR || getCommand() == CMD_TEMP_RAT_DISR)
+        if(getCommand() == CMD_TEMP || getCommand() == CMD_TEMP_RAT || getCommand() == CMD_TEMP_DISR || getCommand() == CMD_TEMP_RAT_DISR)
             return true;
         return false;
     }
@@ -951,6 +949,16 @@ class parameters
         return (align & ALIG_RAT) == ALIG_RAT;
     }
 
+    bool getAligMRAT()
+    {
+        return (align & ALIG_MRAT) == ALIG_MRAT;
+    }
+    
+    bool getAligkRAT()
+    {
+        return (align & ALIG_kRAT) == ALIG_kRAT;
+    }
+    
     bool getDisrRATD()
     {
         return (adisr & RATD) == RATD;
@@ -994,16 +1002,6 @@ class parameters
     bool getSaveRadiationField()
     {
         return save_radiation_field;
-    }
-
-    bool getDetailGrainAlignment()
-    {
-        return detail_Brat;
-    }
-
-    bool getCalculatekRAT()
-    {
-        return calculate_krat;
     }
 
 
@@ -1670,15 +1668,6 @@ class parameters
         save_radiation_field = val;
     }
 
-    void setCalculatekRAT(bool val)
-    {
-        calculate_krat = val;
-    }
-
-    void setDetailGrainAlignment(bool val)
-    {
-        detail_Brat = val;
-    }
 
 
     void setScatteringToRay(bool val)
@@ -2686,7 +2675,6 @@ class parameters
 
     bool dust_offset, dust_gas_coupling;
     bool full_dust_temp, save_radiation_field;
-    bool detail_Brat, calculate_krat;
     bool scattering_to_raytracing;
     bool individual_dust_fractions;
     bool change_f_highJ;

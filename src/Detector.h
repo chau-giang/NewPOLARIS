@@ -2968,12 +2968,19 @@ class CDetector
                 alignment_string += ", ";
             alignment_string += "GOLD";
         }
-        if((alignment & ALIG_KRAT) == ALIG_KRAT)
+        if((alignment & ALIG_MRAT) == ALIG_MRAT)
         {
             if(alignment_string != "")
                 alignment_string += ", ";
-            alignment_string += "KRAT";
+            alignment_string += "MRAT";
         }
+        if((alignment & ALIG_kRAT) == ALIG_kRAT)
+        {
+            if(alignment_string != "")
+                alignment_string += ", ";
+            alignment_string += "kRAT";
+        }
+ 
         return alignment_string;
     }
 

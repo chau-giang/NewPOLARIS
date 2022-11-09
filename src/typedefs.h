@@ -121,11 +121,11 @@ using namespace std;
 #define ALIG_IDG 4
 #define ALIG_RAT 8
 #define ALIG_GOLD 16
-#define ALIG_KRAT 32
-
+#define ALIG_MRAT 32
+#define ALIG_kRAT 64
 
 // Disruption mechanisms
-#define RATD 64
+#define RATD 128
 
 #define SUPERTHERMAL_LIMIT 3
 #define MACH_LIMIT 1

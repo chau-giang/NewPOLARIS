@@ -837,9 +837,11 @@ class CGridBasic
 
     void updateSpecLength(photon_package * pp, double len)
     {
+        // len: energy [ updateRadiationField - RadiativeTransfer.h]
+        // len = 4 pi**2 I * R**2 
         cell_basic * cell = pp->getPositionCell();
         uint data_pos;
-        if(spec_length_as_vector)
+        if(spec_length_as_vector) // if spec_length_as_vector == True
         {
             data_pos = data_offset + 4 * pp->getWavelengthID();
             Vector3D e_dir = len * rotateToCenter(pp, pp->getDirection());
@@ -848,7 +850,7 @@ class CGridBasic
             cell->updateData(data_pos + 2, e_dir.Y());
             cell->updateData(data_pos + 3, e_dir.Z());
         }
-        else
+        else //if spec_length_as_vector == False, only take urad
         {
             data_pos = data_offset + pp->getWavelengthID();
             cell->updateData(data_pos, len);
@@ -872,12 +874,12 @@ class CGridBasic
         // To perform Camps et. al (2015) benchmark.
         double res = 0, wavelength = wl_list[wID], mult = 1.0e6;
         res = mult * CMathFunctions::mathis_isrf(wavelength);
-        // res = 2.99e-14 * CMathFunctions::planck(wl_list[wID], 9000.0);
-        return PIx4 * res * getVolume(cell);
+        // res = 2.99e-14 * CMathFunctions::planck(wl_list[wID], 9000.0); planck:  I
+        return PIx4 * res * getVolume(cell); // J = 4piI => J = 4piIV -> u = 4piJ/c = J/(cV)????
 #else
-        if(spec_length_as_vector)
+        if(spec_length_as_vector) // == True
             return cell->getData(data_offset + 4 * wID + 0);
-        else
+        else // == False
             return cell->getData(data_offset + wID);
 #endif
     }
@@ -892,10 +894,10 @@ class CGridBasic
     {
         uint data_pos = data_offset + 4 * wID;
 
-        us = cell->getData(data_pos + 0);
-        e_dir.setX(cell->getData(data_pos + 1));
-        e_dir.setY(cell->getData(data_pos + 2));
-        e_dir.setZ(cell->getData(data_pos + 3));
+        us = cell->getData(data_pos + 0); //what is the unit here? what is the quantity here? 4piVJ?
+        e_dir.setX(cell->getData(data_pos + 1)); //4piVJx?
+        e_dir.setY(cell->getData(data_pos + 2)); //4piVJy?
+        e_dir.setZ(cell->getData(data_pos + 3)); //4piVJz?
     }
 
     void saveRadiationField()
@@ -907,10 +909,10 @@ class CGridBasic
             double inv_vol = 1 / getVolume(cell);
             for(uint wID = 0; wID < WL_STEPS; wID++)
             {
-                cell->convertData(data_offset + 4 * wID + 0, inv_vol);     //urad: ID: 33
-                cell->convertData(data_offset + 4 * wID + 1, inv_vol);   //uradx: ID: 30
-                cell->convertData(data_offset + 4 * wID + 2, inv_vol);   //urady: ID: 31
-                cell->convertData(data_offset + 4 * wID + 3, inv_vol);	//uradz: ID: 32
+                cell->convertData(data_offset + 4 * wID + 0, inv_vol);     //urad: ID: 33, here is 4piJ?
+                cell->convertData(data_offset + 4 * wID + 1, inv_vol);   //uradx: ID: 30, 4piJx?
+                cell->convertData(data_offset + 4 * wID + 2, inv_vol);   //urady: ID: 31, 4piJy?
+                cell->convertData(data_offset + 4 * wID + 3, inv_vol);	//uradz: ID: 32, 4piJz?
             }
         }
 
@@ -930,14 +932,14 @@ class CGridBasic
 #ifdef CAMPS_BENCHMARK
         // To perform Camps et. al (2015) benchmark.
         double res = 0, wavelength = wl_list[wID], mult = 1e6;
-        res = mult * CMathFunctions::mathis_isrf(wavelength);
+        res = mult * CMathFunctions::mathis_isrf(wavelength); ///I
         // res = 2.99e-14 * CMathFunctions::planck(wl_list[wID], 9000.0);
-        return PIx4 * res;
+        return PIx4 * res; //J = 4piI?
 #else
         // If the radiation field is needed after temp calculation, use the SpecLength
         // instead
         if(data_pos_rf_list.empty())
-            return getSpecLength(cell, wID) / getVolume(cell);
+            return getSpecLength(cell, wID) / getVolume(cell);  
         return cell->getData(data_pos_rf_list[wID]);
 #endif
     }
@@ -1040,6 +1042,7 @@ class CGridBasic
         // Normalize the radiation field vector
         e_dir.normalize();
     }
+
 
     StokesVector getStokesFromRadiationField(photon_package * pp, uint i_offset)
     {
@@ -4255,20 +4258,20 @@ class CGridBasic
             tmp_data_offset++;
         }
 
-        if(getTemperatureFieldInformation() == TEMP_EMPTY)
-        {
-            cout << "\nERROR: Grid contains no dust temperature!" << endl;
-            cout << "       No RAT calculation possible." << endl;
-            return MAX_UINT;
-        }
-        else if(getTemperatureFieldInformation() == MAX_UINT)
-        {
-            cout << "\nERROR: The grid does not include the information for temperature "
-                    "calculations"
-                 << endl;
-            cout << "       No RAT calculation possible." << endl;
-            return MAX_UINT;
-        }
+        //if(getTemperatureFieldInformation() == TEMP_EMPTY)
+        //{
+        //    cout << "\nERROR: Grid contains no dust temperature!" << endl;
+        //    cout << "       No RAT calculation possible." << endl;
+        //    return MAX_UINT;
+        //}
+        //else if(getTemperatureFieldInformation() == MAX_UINT)
+        //{
+        //    cout << "\nERROR: The grid does not include the information for temperature "
+        //            "calculations"
+        //         << endl;
+        //    cout << "       No RAT calculation possible." << endl;
+        //    return MAX_UINT;
+        //}
 
         if(data_pos_tg == MAX_UINT)
         {
@@ -4341,20 +4344,20 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
             tmp_data_offset++;
         }
 
-        if(getTemperatureFieldInformation() == TEMP_EMPTY)
-        {
-            cout << "\nERROR: Grid contains no dust temperature!" << endl;
-            cout << "       No RATD calculation possible." << endl;
-            return MAX_UINT;
-        }
-        else if(getTemperatureFieldInformation() == MAX_UINT)
-        {
-            cout << "\nERROR: The grid does not include the information for temperature "
-                    "calculations"
-                 << endl;
-            cout << "       No RATD calculation possible." << endl;
-            return MAX_UINT;
-        }
+        //if(getTemperatureFieldInformation() == TEMP_EMPTY)
+        //{
+        //    cout << "\nERROR: Grid contains no dust temperature!" << endl;
+        //    cout << "       No RATD calculation possible." << endl;
+        //    return MAX_UINT;
+        //}
+        //else if(getTemperatureFieldInformation() == MAX_UINT)
+        //{
+        //    cout << "\nERROR: The grid does not include the information for temperature "
+        //            "calculations"
+        //         << endl;
+        //    cout << "       No RATD calculation possible." << endl;
+        //    return MAX_UINT;
+        //}
 
         if(data_pos_tg == MAX_UINT)
         {

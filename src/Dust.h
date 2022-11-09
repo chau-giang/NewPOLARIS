@@ -2552,19 +2552,19 @@ class CDustComponent
                                            uint i_density,
                                            dlist & wavelength_list_full);
 
-    void calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+    void calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param);
     void calcMaxAlignedRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
-   	void calckRATlowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
-    void calckRAThighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
-    double calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i_density, uint a);
-   	double calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density, uint Smax);
-    void calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
-    void calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
+    void calckRATlowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param);
+    void calckRAThighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param);
+    double calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i_density, uint a, parameters & param);
+   	double calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density, uint Smax, parameters & param);
+    void calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param);
+    void calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param);
     void calcSizeParamModify(CGridBasic * grid, cell_basic * cell, uint i_density);
 	void calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
-	void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
-	void calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_density);
-	void calcDG10Radii(CGridBasic * grid, cell_basic * cell, uint i_density);
+	void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param);
+	void calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param);
+	void calcDG10Radii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param);
 
 
     void initDustProperties();
@@ -3098,18 +3098,18 @@ class CDustMixture
         return false;
     }
 
-    void calcAlignedRadii(CGridBasic * grid, cell_basic * cell)
+    void calcAlignedRadii(CGridBasic * grid, cell_basic * cell, parameters & param)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                mixed_component[i_mixture].calcAlignedRadii(grid, cell, 0);
+                mixed_component[i_mixture].calcAlignedRadii(grid, cell, 0, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calcAlignedRadii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calcAlignedRadii(grid, cell, i_mixture, param);
         }
     }
     
@@ -3128,64 +3128,64 @@ class CDustMixture
         }
     }
 
-    void calckRATlowJRadii(CGridBasic * grid, cell_basic * cell)
+    void calckRATlowJRadii(CGridBasic * grid, cell_basic * cell, parameters & param)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                mixed_component[i_mixture].calckRATlowJRadii(grid, cell, 0);
+                mixed_component[i_mixture].calckRATlowJRadii(grid, cell, 0, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calckRATlowJRadii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calckRATlowJRadii(grid, cell, i_mixture, param);
         }
     }
 
 
-    void calckRAThighJRadii(CGridBasic * grid, cell_basic * cell)
+    void calckRAThighJRadii(CGridBasic * grid, cell_basic * cell, parameters & param)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                mixed_component[i_mixture].calckRAThighJRadii(grid, cell, 0);
+                mixed_component[i_mixture].calckRAThighJRadii(grid, cell, 0, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calckRAThighJRadii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calckRAThighJRadii(grid, cell, i_mixture, param);
         }
     }
 
-    void calcDisruptRadii(CGridBasic * grid, cell_basic * cell)
+    void calcDisruptRadii(CGridBasic * grid, cell_basic * cell, parameters & param)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                mixed_component[i_mixture].calcDisruptRadii(grid, cell, 0);
+                mixed_component[i_mixture].calcDisruptRadii(grid, cell, 0, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calcDisruptRadii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calcDisruptRadii(grid, cell, i_mixture, param);
         }
     }
 
-    void calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell)
+    void calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, parameters & param)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                mixed_component[i_mixture].calcMaxDisruptRadii(grid, cell, 0);
+                mixed_component[i_mixture].calcMaxDisruptRadii(grid, cell, 0, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calcMaxDisruptRadii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calcMaxDisruptRadii(grid, cell, i_mixture, param);
         }
     }
 
@@ -3219,50 +3219,50 @@ class CDustMixture
         }
     }
     
-    void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell)
+    void calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, parameters & param)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                mixed_component[i_mixture].calcBarnetHighJRadii(grid, cell, 0);
+                mixed_component[i_mixture].calcBarnetHighJRadii(grid, cell, 0, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calcBarnetHighJRadii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calcBarnetHighJRadii(grid, cell, i_mixture, param);
         }
     }
  
     
-    void calcDGRadii(CGridBasic * grid, cell_basic * cell)
+    void calcDGRadii(CGridBasic * grid, cell_basic * cell, parameters & param)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                mixed_component[i_mixture].calcDGRadii(grid, cell, 0);
+                mixed_component[i_mixture].calcDGRadii(grid, cell, 0, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calcDGRadii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calcDGRadii(grid, cell, i_mixture, param);
         }
     }
     
     
-    void calcDG10Radii(CGridBasic * grid, cell_basic * cell)
+    void calcDG10Radii(CGridBasic * grid, cell_basic * cell, parameters & param)
     {
         if(mixed_component != 0)
         {
             if(grid->useDustChoice())
             {
                 uint i_mixture = getMixtureID(grid, cell);
-                mixed_component[i_mixture].calcDG10Radii(grid, cell, 0);
+                mixed_component[i_mixture].calcDG10Radii(grid, cell, 0, param);
             }
             else
                 for(uint i_mixture = 0; i_mixture < getNrOfMixtures(); i_mixture++)
-                    mixed_component[i_mixture].calcDG10Radii(grid, cell, i_mixture);
+                    mixed_component[i_mixture].calcDG10Radii(grid, cell, i_mixture, param);
         }
     }
     

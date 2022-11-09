@@ -3717,7 +3717,7 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
         min_temp = avg_temp;
 }
 
-double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i_density, uint a)
+double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i_density, uint a, parameters & param)
 {
 	// ************************************************************************************************************
 	// *   a: grain size (um). This function is to calculate the maximum angular speed gained by RATs, neglecing
@@ -3757,12 +3757,47 @@ double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i
 
     for(uint w = 0; w < nr_of_wavelength; w++)
     {
-        // Init variables
-        Vector3D en_dir;
-        double arr_en_dens = 0;
 
-        // Get radiation field (4 * PI * vol * J)
-        grid->getSpecLength(cell, w, arr_en_dens, en_dir); // arr_en_dens = 4*pi*vol*J
+ 	Vector3D en_dir; // 3D vector of radiation field 
+	double arr_en_dens = 0; // len of radiation field strength
+	double theta;
+	double gamma;
+	
+        if (param.isMonteCarloSimulation())  
+        {
+            // Get radiation field (4 * PI * vol * J) currently save in the grid after MCRT simulation
+            grid->getSpecLength(cell, w, arr_en_dens, en_dir); // arr_en_dens = 4 * PI * vol * J
+                                                               // en_dir = 4 * PI * vol [Jx, Jy, Jz]
+
+            // Get angle between magnetic field and radiation field
+            theta = grid->getTheta(cell, en_dir);
+
+            // Anisotropy parameter
+            gamma = en_dir.length() / arr_en_dens;
+
+            // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
+            arr_en_dens /= double(vol * con_c);
+
+        }
+        else
+        {
+            //cout << "Take radiation field from grid_temp.dat file" << endl;
+            arr_en_dens = grid->getRadiationField(cell, w);   // arr_en_dens = 4 * PI *  J
+            en_dir.setX(grid->getRadiationFieldX(cell, w));   // en_dir = 4 * PI * [Jx, Jy, Jz]
+            en_dir.setY(grid->getRadiationFieldY(cell, w));
+            en_dir.setZ(grid->getRadiationFieldZ(cell, w));
+
+            // Get angle between magnetic field and radiation field
+            theta = grid->getTheta(cell, en_dir);
+
+            // Anisotropy parameter
+            gamma = en_dir.length() / arr_en_dens;
+
+            // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
+            arr_en_dens /= double(con_c);
+        }
+                
+ 
 
         // If the radiation field is zero -> set arrays to zero and move on
         if(arr_en_dens == 0)
@@ -3771,15 +3806,6 @@ double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i
             du[w] = 0;
             continue;
         }
-        
-		// Get angle between magnetic field and radiation field
-        double theta = grid->getTheta(cell, en_dir);
-                
-        // Anisotropy parameter
-        double gamma = en_dir.length() / arr_en_dens;
-
-        // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
-        arr_en_dens /= double(vol * con_c); //arr_en_dens = u_lambda = 4*pi*I/c
 
         du[w] = wavelength_list[w] * arr_en_dens;
                 
@@ -3813,16 +3839,16 @@ double CDustComponent::calcRATSpeed(CGridBasic * grid, cell_basic * cell, uint i
 	// total damping timescale due to gas collision and thermal emission
     double tau_damp = tau_gas / (1. + FIR); //t_damp
 
-	delete[] arr_product;
-	delete[] du;
+    delete[] arr_product;
+    delete[] du;
 	
     // Saturated angular speed
- 	return gamma_rat * tau_damp / I_p;   //w_RAT
+    return gamma_rat * tau_damp / I_p;   //w_RAT
 }
 
-void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
+void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param)
 {
- 
+
 
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, cell);
@@ -3896,11 +3922,44 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
             for(uint w = 0; w < nr_of_wavelength; w++)
             {
                 // Init variables
-                Vector3D en_dir;
-                double arr_en_dens = 0;
+                Vector3D en_dir; // 3D vector of radiation field 
+                double arr_en_dens = 0; // len of radiation field strength
+                double theta;
+                double gamma;
 
-                // Get radiation field (4 * PI * vol * J)
-                grid->getSpecLength(cell, w, arr_en_dens, en_dir);
+                if (param.isMonteCarloSimulation())  
+                {
+                    // Get radiation field (4 * PI * vol * J) currently save in the grid after MCRT simulation
+                    grid->getSpecLength(cell, w, arr_en_dens, en_dir); // arr_en_dens = 4 * PI * vol * J
+                                                                       // en_dir = 4 * PI * vol [Jx, Jy, Jz]
+
+                    // Get angle between magnetic field and radiation field
+                    theta = grid->getTheta(cell, en_dir);
+
+                    // Anisotropy parameter
+                    gamma = en_dir.length() / arr_en_dens;
+
+                    // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
+                    arr_en_dens /= double(vol * con_c);
+
+                }
+                else
+                {
+                    //cout << "Take radiation field from grid_temp.dat file" << endl;
+                    arr_en_dens = grid->getRadiationField(cell, w);   // arr_en_dens = 4 * PI *  J
+                    en_dir.setX(grid->getRadiationFieldX(cell, w));   // en_dir = 4 * PI * [Jx, Jy, Jz]
+                    en_dir.setY(grid->getRadiationFieldY(cell, w));
+                    en_dir.setZ(grid->getRadiationFieldZ(cell, w));
+
+                    // Get angle between magnetic field and radiation field
+                    theta = grid->getTheta(cell, en_dir);
+
+                    // Anisotropy parameter
+                    gamma = en_dir.length() / arr_en_dens;
+
+                    // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
+                    arr_en_dens /= double(con_c);
+                }
 
                 // If the radiation field is zero -> set arrays to zero and move on
                 if(arr_en_dens == 0)
@@ -3912,15 +3971,7 @@ void CDustComponent::calcAlignedRadii(CGridBasic * grid, cell_basic * cell, uint
                     continue;
                 }
 
-                // Get angle between magnetic field and radiation field
-                double theta = grid->getTheta(cell, en_dir);
-
-                // Anisotropy parameter
-                double gamma = en_dir.length() / arr_en_dens;
-
-                // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
-                arr_en_dens /= double(vol * con_c);
-
+                
                 du[w] = wavelength_list[w] * arr_en_dens;
 
                 // Radiative torque efficiency as a power-law
@@ -4043,7 +4094,7 @@ void CDustComponent::calcMaxAlignedRadii(CGridBasic * grid, cell_basic * cell, u
     if ((Ncl == 0) && (fp == 0))
     {
         //cout << "Dont calculate detail grain alignment physics" << endl;
-        return;
+        amaxJB_Lar = a_max;
     }
     else
     {
@@ -4058,14 +4109,12 @@ void CDustComponent::calcMaxAlignedRadii(CGridBasic * grid, cell_basic * cell, u
         
         if (fp != 0) // If no iron fraction is found, using the default calc_larm_limit function
         {
-            amaxJB_Lar = CMathFunctions::calc_larm_limit_para(Blen, T_dust, T_gas, nH, s, fp);
-            return;
+            amaxJB_Lar = CMathFunctions::calc_amaxJB_Lar_para(Blen, T_dust, T_gas, nH, s, fp);
         }
             
-        if (Ncl != 0) // is number of iron clusters is found, dust is the super paramagnetic grains
+        else // is number of iron clusters is found, dust is the super paramagnetic grains
         {
-            amaxJB_Lar = CMathFunctions::calc_larm_limit_super(Blen, T_dust, T_gas, nH, s, Ncl, phi_sp);
-            return;
+            amaxJB_Lar = CMathFunctions::calc_amaxJB_Lar_super(Blen, T_dust, T_gas, nH, s, Ncl, phi_sp);
         }
     }   
  
@@ -4087,7 +4136,7 @@ void CDustComponent::calcMaxAlignedRadii(CGridBasic * grid, cell_basic * cell, u
 }
 
             
-void CDustComponent::calckRATlowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
+void CDustComponent::calckRATlowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density, parameters & param)
 {
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, cell);
@@ -4160,25 +4209,51 @@ void CDustComponent::calckRATlowJRadii(CGridBasic * grid, cell_basic * cell, uin
             for(uint w = 0; w < nr_of_wavelength; w++)
             {
                 // Init variables
-                Vector3D en_dir;
-                double arr_en_dens = 0;
+                Vector3D en_dir; // 3D vector of radiation field 
+                double arr_en_dens = 0; // len of radiation field strength
+                double theta;
+                double gamma; 
 
-                // Get radiation field (4 * PI * vol * J)
-                grid->getSpecLength(cell, w, arr_en_dens, en_dir);
+                if (param.isMonteCarloSimulation())  
+                {
+                    // Get radiation field (4 * PI * vol * J) currently save in the grid after MCRT simulation
+                    grid->getSpecLength(cell, w, arr_en_dens, en_dir); // arr_en_dens = 4 * PI * vol * J
+                                                                       // en_dir = 4 * PI * vol [Jx, Jy, Jz]
 
+                    // Get angle between magnetic field and radiation field
+                    theta = grid->getTheta(cell, en_dir);
+
+                    // Anisotropy parameter
+                    gamma = en_dir.length() / arr_en_dens;
+
+                    // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
+                    arr_en_dens /= double(vol * con_c);
+
+                }
+                else
+                {
+                    //cout << "Take radiation field from grid_temp.dat file" << endl;
+                    arr_en_dens = grid->getRadiationField(cell, w);   // arr_en_dens = 4 * PI *  J
+                    en_dir.setX(grid->getRadiationFieldX(cell, w));   // en_dir = 4 * PI * [Jx, Jy, Jz]
+                    en_dir.setY(grid->getRadiationFieldY(cell, w));
+                    en_dir.setZ(grid->getRadiationFieldZ(cell, w));
+
+                    // Get angle between magnetic field and radiation field
+                    theta = grid->getTheta(cell, en_dir);
+
+                    // Anisotropy parameter
+                    gamma = en_dir.length() / arr_en_dens;
+
+                    // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
+                    arr_en_dens /= double(con_c);
+                }
+                
                 // If the radiation field is zero -> set arrays to zero and move on
                 if(arr_en_dens == 0)
                 {
                     arr_product[w] = 0;
                     continue;
                 }
-
-                // Anisotropy parameter
-                double gamma = en_dir.length() / arr_en_dens;
-
-                // arr_en_dens = u_lambda = 4 * PI * vol * J -> 4 * PI / c * J
-                arr_en_dens /= double(vol * con_c);
-
                 arr_product[w] =
                     arr_en_dens * (wavelength_list[w] / PI) * Qe3 * gamma * PI * pow(a_eff[a], 2);
             }
@@ -4251,7 +4326,7 @@ void CDustComponent::calckRATlowJRadii(CGridBasic * grid, cell_basic * cell, uin
         max_akrat_lowJ = akrat_lowJ;
 }
 
-void CDustComponent::calckRAThighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
+void CDustComponent::calckRAThighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density,  parameters & param)
 {
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, cell);
@@ -4320,24 +4395,51 @@ void CDustComponent::calckRAThighJRadii(CGridBasic * grid, cell_basic * cell, ui
             for(uint w = 0; w < nr_of_wavelength; w++)
             {
                 // Init variables
-                Vector3D en_dir;
-                double arr_en_dens = 0;
+                Vector3D en_dir; // 3D vector of radiation field 
+                double arr_en_dens = 0; // len of radiation field strength
+                double theta;
+                double gamma; 
 
-                // Get radiation field (4 * PI * vol * J)
-                grid->getSpecLength(cell, w, arr_en_dens, en_dir);
+                if (param.isMonteCarloSimulation())  
+                {
+                    // Get radiation field (4 * PI * vol * J) currently save in the grid after MCRT simulation
+                    grid->getSpecLength(cell, w, arr_en_dens, en_dir); // arr_en_dens = 4 * PI * vol * J
+                                                                       // en_dir = 4 * PI * vol [Jx, Jy, Jz]
 
+                    // Get angle between magnetic field and radiation field
+                    theta = grid->getTheta(cell, en_dir);
+
+                    // Anisotropy parameter
+                    gamma = en_dir.length() / arr_en_dens;
+
+                    // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
+                    arr_en_dens /= double(vol * con_c);
+
+                }
+                else
+                {
+                    //cout << "Take radiation field from grid_temp.dat file" << endl;
+                    arr_en_dens = grid->getRadiationField(cell, w);   // arr_en_dens = 4 * PI *  J
+                    en_dir.setX(grid->getRadiationFieldX(cell, w));   // en_dir = 4 * PI * [Jx, Jy, Jz]
+                    en_dir.setY(grid->getRadiationFieldY(cell, w));
+                    en_dir.setZ(grid->getRadiationFieldZ(cell, w));
+
+                    // Get angle between magnetic field and radiation field
+                    theta = grid->getTheta(cell, en_dir);
+
+                    // Anisotropy parameter
+                    gamma = en_dir.length() / arr_en_dens;
+
+                    // arr_en_dens = 4 * PI * vol * J -> 4 * PI / c * J
+                    arr_en_dens /= double(con_c);
+                }
+                
                 // If the radiation field is zero -> set arrays to zero and move on
                 if(arr_en_dens == 0)
                 {
                     arr_product[w] = 0;
                     continue;
                 }
-
-                // Anisotropy parameter
-                double gamma = en_dir.length() / arr_en_dens;
-
-                // arr_en_dens = u_lambda = 4 * PI * vol * J -> 4 * PI / c * J
-                arr_en_dens /= double(vol * con_c);
 
                 arr_product[w] =
                     arr_en_dens * (wavelength_list[w] / PI) * Qe3 * gamma * PI * pow(a_eff[a], 2);
@@ -4351,7 +4453,7 @@ void CDustComponent::calckRAThighJRadii(CGridBasic * grid, cell_basic * cell, ui
             // Inertia moment of the summetry axis a1
             double I_p = 8. * PI / 15. * getMaterialDensity(a) * a_minor * pow(a_major, 4);
             // Maximum angular speed wrat gained by RAT
-            double omega_rat = calcRATSpeed(grid, cell, i_density, a);
+            double omega_rat = calcRATSpeed(grid, cell, i_density, a, param);
             // Precession rate of J around radiation field
             double precession_rate = Gamma_RAT_e3 / (I_p * omega_rat);
             // Precession timescale of J around radiation field
@@ -4418,14 +4520,14 @@ void CDustComponent::calckRAThighJRadii(CGridBasic * grid, cell_basic * cell, ui
             
             
             
-double CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density, uint Smax)
+double CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density, uint Smax,  parameters & param)
 {
     // Get local min and max grain sizes
     double a_min = getSizeMin(grid, cell);
     double a_max = getSizeMax(grid, cell);
 
     // default value of the disruption radius
-    double a_disr = getSizeMax(grid, cell);
+    double a_disr = a_max;
     double DISRUPTION_LIMIT = 1;
 
     // Loop over all considered grain sizes
@@ -4436,7 +4538,7 @@ double CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, ui
         if(sizeIndexUsed(a, a_min, a_max))
         {
             // Saturated angular speed
-            double omega_rat = calcRATSpeed(grid, cell, i_density, a);
+            double omega_rat = calcRATSpeed(grid, cell, i_density, a,  param);
 
             // Disruption threshold
             double omega_disr = 2 / a_eff[a] * sqrt(Smax / getMaterialDensity(a));
@@ -4478,14 +4580,15 @@ double CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, ui
     return a_disr;
 }
 
-void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
+void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density,  parameters & param)
 {
     double a_min = getSizeMin(grid, cell);
+    double a_max = getSizeMax(grid, cell);
 
     // Calculate the disrupt radii only for cells with a density not zero
     if(getNumberDensity(grid, cell, i_density) == 0)
     {
-        grid->setDisruptRadius(cell, i_density, a_eff[nr_of_dust_species- 1]);
+        grid->setDisruptRadius(cell, i_density, a_max);
         return;
     }
 
@@ -4493,10 +4596,10 @@ void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint
 
     double S_max;
     S_max = 1e10;
-    double a_disr_compact = calcDisruptRadii(grid, cell, i_density, S_max);
+    double a_disr_compact = calcDisruptRadii(grid, cell, i_density, S_max, param);
 
     S_max = getTensileStrength();
-    double a_disr_porous = calcDisruptRadii(grid,  cell, i_density, S_max);
+    double a_disr_porous = calcDisruptRadii(grid,  cell, i_density, S_max, param);
 
     double a_disr;
 
@@ -4520,12 +4623,11 @@ void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint
         max_a_disr = a_disr;
 
 //*********************************************************************************************************
-	double a_alig = grid->getAlignedRadius(cell, i_density);
+	// If no calculation of anisotropic radiation field distribution and angle radiation-magnetic field
+        // dependence before, calculate it.
+    double a_alig = grid->getAlignedRadius(cell, i_density);
 	if (a_alig == 0)
-	{
-		// If no calculation of anisotropic radiation field distribution and angle radiation-magnetic field
-		// dependence before, calculate it?
-		
+	{	
 		// Calculate <Dir> and <Theta>
 		double th = 0;
 		double dir = 0;
@@ -4593,7 +4695,7 @@ void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint
 	}
 }
 
-void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
+void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, uint i_density,  parameters & param)
 {
     double a_min = getSizeMin(grid, cell);
     double a_max = getSizeMax(grid, cell);
@@ -4602,7 +4704,7 @@ void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, u
 
     if(a_disr == a_min)
     {
-        grid->setMaxDisruptRadius(cell, i_density, a_eff[nr_of_dust_species - 1]);
+        grid->setMaxDisruptRadius(cell, i_density, a_max);
     }
 
     // default value of the maximum disruption radius
@@ -4628,7 +4730,7 @@ void CDustComponent::calcMaxDisruptRadii(CGridBasic * grid, cell_basic * cell, u
 		    }   
 		    	
             // Saturated angular speed
-            double omega_rat = calcRATSpeed(grid, cell, i_density, a);
+            double omega_rat = calcRATSpeed(grid, cell, i_density, a, param);
 
             // Disruption threshold
             double omega_disr = 2 / a_eff[a] * sqrt(Smax / getMaterialDensity(a));
@@ -4718,7 +4820,7 @@ void CDustComponent::calcSizeParamModify(CGridBasic * grid, cell_basic * cell, u
         slope[i] = i*0.008;
         mass_later[i] = TotalMass(grid, cell, a_min, a_disr, slope[i]);
 
-         // Calculate QB integrated over all wavelengths
+         // matrix of [index, M', eta]
         dust_mass.setValue(i, mass_later[i], slope[i]);
     }
     // Create spline for interpolation
@@ -5094,7 +5196,7 @@ void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, u
 }
 
 
-void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
+void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, uint i_density,  parameters & param)
 {
 	// Output: threshold (grain size) for true internal alignment at high J attractor point (w = w_RAT)
  
@@ -5222,7 +5324,7 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
             I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
             
 			// Saturated angular speed
-            omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+            omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a, param); // at high J attractor point with J = JRAT
 
 			// Volume of grain size a
 			V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
@@ -5345,7 +5447,7 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
 		        I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
 		        
 				// Saturated angular speed
-		        omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+		        omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a, param); // at high J attractor point with J = JRAT
 
 				// Volume of grain size a
 				V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
@@ -5437,7 +5539,7 @@ void CDustComponent::calcBarnetHighJRadii(CGridBasic * grid, cell_basic * cell, 
 }
 
 
-void CDustComponent::calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
+void CDustComponent::calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_density,  parameters & param)
 {
 	// Output: the lower and upper limit at which tau_mag < tau_gas
 	// a_dg_lower and a_dg_upper: 
@@ -5572,7 +5674,7 @@ void CDustComponent::calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_de
             I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
             
 			// Saturated angular speed
-            omega_rat = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+            omega_rat = calcRATSpeed(grid, cell, i_density, a, param); // at high J attractor point with J = JRAT
          
 			// Volume of grain size a
 			V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
@@ -5696,7 +5798,7 @@ void CDustComponent::calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_de
 		        I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
 		        
 				// Saturated angular speed
-		        omega_rat = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+		        omega_rat = calcRATSpeed(grid, cell, i_density, a, param); // at high J attractor point with J = JRAT
 		         
 				// Volume of grain size a
 				V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
@@ -5789,7 +5891,7 @@ void CDustComponent::calcDGRadii(CGridBasic * grid, cell_basic * cell, uint i_de
         max_a_dg_upper = a_dg_upper;
 }
 
-void CDustComponent::calcDG10Radii(CGridBasic * grid, cell_basic * cell, uint i_density)
+void CDustComponent::calcDG10Radii(CGridBasic * grid, cell_basic * cell, uint i_density,  parameters & param)
 {
 	// Output: the lower and upper limit at which tau_mag  < tau_gas / 10
 	// a_dg_lower and a_dg_upper: 
@@ -5924,7 +6026,7 @@ void CDustComponent::calcDG10Radii(CGridBasic * grid, cell_basic * cell, uint i_
             I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
             
 			// Saturated angular speed
-            omega_rat = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+            omega_rat = calcRATSpeed(grid, cell, i_density, a, param); // at high J attractor point with J = JRAT
              
 			// Volume of grain size a
 			V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]
@@ -6046,7 +6148,7 @@ void CDustComponent::calcDG10Radii(CGridBasic * grid, cell_basic * cell, uint i_
 		        I_p_cgs = 8. * PI / 15. * rho_cgs * a_minor_cgs * pow(a_major_cgs, 4); // CGS unit
 		        
 				// Saturated angular speed
-		        omega_rat = calcRATSpeed(grid, cell, i_density, a); // at high J attractor point with J = JRAT
+		        omega_rat = calcRATSpeed(grid, cell, i_density, a, param); // at high J attractor point with J = JRAT
 		         
 				// Volume of grain size a
 				V = 4 * PI / 3 * s * pow(a_major_cgs, 3);  // calculated by CGS unit, a_eff[a] [m] -> [cm]

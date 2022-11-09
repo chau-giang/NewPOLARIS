@@ -217,7 +217,7 @@ class CRadiativeTransfer
 
     void updateRadiationField(photon_package * pp, parameters & param)
     {
-        double energy = pp->getTmpPathLength() * pp->getStokesVector().I();
+        double energy = pp->getTmpPathLength() * pp->getStokesVector().I();  //L(lambda) & delta_l?
 
         if(stokes_dust_rad_field)
         {
@@ -287,17 +287,17 @@ class CRadiativeTransfer
 
     void calcFinalTemperature(bool use_energy_density);
     void calcStochasticHeating();
-    void calcAlignedRadii();
+    void calcAlignedRadii(parameters & param);
     void calcMaxAlignedRadii();
-    void calcDisruptRadii();
-    void calcMaxDisruptRadii();
+    void calcDisruptRadii(parameters & param);
+    void calcMaxDisruptRadii(parameters & param);
     void calcSizeParamModify();
     void calcBarnetLowJRadii();
-    void calcBarnetHighJRadii();
-    void calcDGRadii();
-    void calcDG10Radii();
-    void calckRATlowJRadii();
-    void calckRAThighJRadii();
+    void calcBarnetHighJRadii(parameters & param);
+    void calcDGRadii(parameters & param);
+    void calcDG10Radii(parameters & param);
+    void calckRATlowJRadii(parameters & param);
+    void calckRAThighJRadii(parameters & param);
 
     bool isInvalid(double val)
     {
