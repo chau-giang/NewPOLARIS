@@ -126,25 +126,28 @@ void CPipeline::Run()
                 result = calcMonteCarloRadiationField(param);
                 break;
 
-            case CMD_TEMP_DISR:
-                result = calcMonteCarloRadiationField(param);
-                break;
-
             case CMD_TEMP_RAT:
                 result = calcMonteCarloRadiationField(param);
                 break;
 
+            case CMD_TEMP_DISR:
+                result = calcMonteCarloRadiationField(param);
+                break;
 
             case CMD_TEMP_RAT_DISR:
                 result = calcMonteCarloRadiationField(param);
                 break;
 
+
             case CMD_RAT:
                 result = calcMonteCarloRadiationField(param);
                 break;
 
-
             case CMD_DISR:
+                result = calcMonteCarloRadiationField(param);
+                break;
+
+            case CMD_RAT_DISR:
                 result = calcMonteCarloRadiationField(param);
                 break;
 
@@ -370,6 +373,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         grid->saveBinaryGridFile(param.getPathOutput() + "grid_rat.dat");
     else if(param.getCommand() == CMD_DISR)
         grid->saveBinaryGridFile(param.getPathOutput() + "grid_ratd.dat");
+    else if(param.getCommand() == CMD_RAT_DISR)
+        grid->saveBinaryGridFile(param.getPathOutput() + "grid_rat_ratd.dat");
     
     delete grid;
     delete dust;
@@ -1266,8 +1271,24 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printPlotParameters(param);
             break;
 
-       case CMD_TEMP_DISR:
-            cout << "- Command          : TEMPERATURE DISTRIBUTION and RATD DISRUPTION" << endl;
+        case CMD_TEMP_RAT:
+            cout << "- Command          : TEMPERATURE DISTRIBUTION and ALIGNMENT" << endl;
+            printPathParameters(param);
+            printSourceParameters(param);
+            printConversionParameters(param);
+            printPlotParameters(param);
+            break;
+
+        case CMD_TEMP_DISR:
+            cout << "- Command          : TEMPERATURE DISTRIBUTION and DISRUPTION" << endl;
+            printPathParameters(param);
+            printSourceParameters(param);
+            printConversionParameters(param);
+            printPlotParameters(param);
+            break;
+
+        case CMD_TEMP_RAT_DISR:
+            cout << "- Command          : TEMPERATURE DISTRIBUTION, ALIGNMENT and DISRUPTION" << endl;
             printPathParameters(param);
             printSourceParameters(param);
             printConversionParameters(param);
@@ -1282,24 +1303,9 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             printPlotParameters(param);
             break;
 
-        case CMD_TEMP_RAT:
-            cout << "- Command          : TEMPERATURE DISTRIBUTION and RAT ALIGNMENT" << endl;
-            printPathParameters(param);
-            printSourceParameters(param);
-            printConversionParameters(param);
-            printPlotParameters(param);
-            break;
-
-        case CMD_TEMP_RAT_DISR:
-            cout << "- Command          : TEMPERATURE DISTRIBUTION, RAT ALIGNMENT, and RATD DISRUPTION" << endl;
-            printPathParameters(param);
-            printSourceParameters(param);
-            printConversionParameters(param);
-            printPlotParameters(param);
-            break;
-
+ 
         case CMD_RAT:
-            cout << "- Command          : RAT ALIGNMENT" << endl;
+            cout << "- Command          : ALIGNMENT" << endl;
             printPathParameters(param);
             printSourceParameters(param, true);
             printConversionParameters(param);
@@ -1307,7 +1313,15 @@ void CPipeline::printParameters(parameters & param, uint max_id)
             break;
 
         case CMD_DISR:
-            cout << "- Command          : RATD DISRUPTION" << endl;
+            cout << "- Command          : DISRUPTION" << endl;
+            printPathParameters(param);
+            printSourceParameters(param, true);
+            printConversionParameters(param);
+            printPlotParameters(param);
+            break;
+
+        case CMD_RAT_DISR:
+            cout << "- Command          : ALIGNMENT and DISRUPTION" << endl;
             printPathParameters(param);
             printSourceParameters(param, true);
             printConversionParameters(param);
@@ -1373,11 +1387,12 @@ bool CPipeline::createWavelengthList(parameters & param, CDustMixture * dust, CG
     switch(param.getCommand())
     {
         case CMD_TEMP:
-        case CMD_TEMP_DISR:
         case CMD_TEMP_RAT:
+        case CMD_TEMP_DISR:
         case CMD_TEMP_RAT_DISR:
         case CMD_RAT:
         case CMD_DISR:
+        case CMD_RAT_DISR:
 	    dust->addToWavelengthGrid(WL_MIN, WL_MAX, WL_STEPS);
             break;
 

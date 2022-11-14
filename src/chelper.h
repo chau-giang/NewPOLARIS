@@ -659,14 +659,14 @@ class parameters
 
     bool isRatSimulation()
     {
-        if(getCommand() == CMD_RAT || getCommand() == CMD_TEMP_RAT || getCommand() == CMD_TEMP_RAT_DISR)
+        if(getCommand() == CMD_RAT || getCommand() == CMD_TEMP_RAT ||  getCommand() == CMD_RAT_DISR || getCommand() == CMD_TEMP_RAT_DISR)
             return true;
         return false;
     }
 
     bool isRATDSimulation()
     {
-        if(getCommand() == CMD_TEMP_DISR || getCommand() == CMD_DISR || getCommand() == CMD_TEMP_RAT_DISR)
+        if(getCommand() == CMD_DISR || getCommand() == CMD_TEMP_DISR || getCommand() == CMD_RAT_DISR || getCommand() == CMD_TEMP_RAT_DISR)
 	    return true;
 	return false;
     }

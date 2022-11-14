@@ -146,6 +146,7 @@ using namespace std;
 #define CMD_TEMP_DISR 10
 #define CMD_TEMP_RAT_DISR 11
 #define CMD_DISR 12
+#define CMD_RAT_DISR 13
 
 // PDA IDs
 #define PDA_TEMP 0

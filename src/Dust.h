@@ -432,18 +432,21 @@ class CDustComponent
         // Return precalculated value if available
         double a_disr = grid->getDisruptRadius(pp, i_density);
         double a_disr_max = grid->getMaxDisruptRadius(pp, i_density);
-        if((a_disr == 0) && (a_disr_max == 0) && (tCext1 != 0)) // No RATD Simulation
+        if((a_disr == 0) && (a_disr_max == 0) && (tCext1 != 0)) // if no RATD Simulation
         {
             return tCext1[w];
         }
 
+        // if in CMD_DISR mode:
         // Get integration over the dust size distribution
         double * rel_weight = getRelWeight(grid, pp, i_density);
 
         for(uint a = 0; a < nr_of_dust_species; a++)
             rel_weight[a] *= a_eff_2[a] * getQext1(a, w);
         double res =
-            PI * CMathFunctions::integ_dust_size(a_eff, rel_weight, nr_of_dust_species, a_min, a_max);
+            PI * CMathFunctions::integ_dust_size(a_eff, rel_weight, nr_of_dust_species, a_min, a_max); 
+            // hat{Cext1} = int_{amin}^{amax} Cext1(lambda, a) * PI * a**2 * n(a) * da
+            
         delete[] rel_weight;
         return res;
     }

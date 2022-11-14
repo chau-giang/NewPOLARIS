@@ -716,22 +716,22 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             return true;
         }
 
-	if(data.compare("CMD_TEMP_DISR") == 0)
-	{
-	    param->setCommand(CMD_TEMP_DISR);
-	    return true;
-	}
+    	if(data.compare("CMD_TEMP_DISR") == 0)
+    	{
+    	    param->setCommand(CMD_TEMP_DISR);
+    	    return true;
+    	}
         if(data.compare("CMD_TEMP_RAT") == 0)
         {
             param->setCommand(CMD_TEMP_RAT);
             return true;
         }
 
-	if(data.compare("CMD_TEMP_RAT_DISR") == 0)
-	{
-	    param->setCommand(CMD_TEMP_RAT_DISR);
-	    return true;
-	}
+    	if(data.compare("CMD_TEMP_RAT_DISR") == 0)
+    	{
+    	    param->setCommand(CMD_TEMP_RAT_DISR);
+    	    return true;
+    	}
         /*if(data.compare("CMD_PLOT") == 0)
         {
             param->setCommand(CMD_PLOT);
@@ -744,11 +744,18 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
             return true;
         }
         
-	if(data.compare("CMD_DISR") == 0)
+    	if(data.compare("CMD_DISR") == 0)
         {
             param->setCommand(CMD_DISR);
             return true;
-	}
+    	}
+
+        if(data.compare("CMD_RAT_DISR") == 0)
+        {
+            param->setCommand(CMD_RAT_DISR);
+            return true;
+        }
+
         if(data.compare("CMD_DUST_SCATTERING") == 0)
         {
             param->setCommand(CMD_DUST_SCATTERING);

@@ -634,18 +634,10 @@ uint CGridBasic::validateDataPositions(parameters & param)
                 return MAX_UINT;
             break;
 
+        // ---------------------------------------------------
         case CMD_TEMP:
             if(CheckTemp(param, tmp_data_offset) == MAX_UINT)
                 return MAX_UINT;
-            break;
-
-        case CMD_TEMP_DISR:
-            if(CheckTemp(param, tmp_data_offset) == MAX_UINT)
-                return MAX_UINT;
-
-            if(CheckRATD(param, tmp_data_offset) == MAX_UINT)
-                return MAX_UINT;
-
             break;
 
         case CMD_TEMP_RAT:
@@ -656,14 +648,13 @@ uint CGridBasic::validateDataPositions(parameters & param)
                 return MAX_UINT;
             break;
 
-        case CMD_RAT:
-            if(CheckRat(param, tmp_data_offset) == MAX_UINT)
+        case CMD_TEMP_DISR:
+            if(CheckTemp(param, tmp_data_offset) == MAX_UINT)
                 return MAX_UINT;
-            break;
 
-        case CMD_DISR:
             if(CheckRATD(param, tmp_data_offset) == MAX_UINT)
                 return MAX_UINT;
+
             break;
 
         case CMD_TEMP_RAT_DISR:
@@ -677,6 +668,26 @@ uint CGridBasic::validateDataPositions(parameters & param)
                 return MAX_UINT;
             break;
 
+        // ---------------------------------------------------
+        case CMD_RAT:
+            if(CheckRat(param, tmp_data_offset) == MAX_UINT)
+                return MAX_UINT;
+            break;
+
+        case CMD_DISR:
+            if(CheckRATD(param, tmp_data_offset) == MAX_UINT)
+                return MAX_UINT;
+            break;
+
+        case CMD_RAT_DISR:
+            if(CheckRat(param, tmp_data_offset) == MAX_UINT)
+                return MAX_UINT;
+
+            if(CheckRATD(param, tmp_data_offset) == MAX_UINT)
+                return MAX_UINT;
+            break;
+
+        // ---------------------------------------------------
         case CMD_DUST_EMISSION:
             if(CheckDustEmission(param) == MAX_UINT)
                 return MAX_UINT;
@@ -1955,7 +1966,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         plt_g_max = (data_pos_g_max != MAX_UINT) && param.isInPlotList(GRIDg_max);
         plt_p = (data_pos_p != MAX_UINT) && param.isInPlotList(GRIDp);
  
-        if(cmd != CMD_RAT && cmd != CMD_TEMP_RAT && cmd != CMD_TEMP_RAT_DISR)
+        if(cmd != CMD_RAT && cmd != CMD_TEMP_RAT && cmd != CMD_TEMP_RAT_DISR && cmd != CMD_RAT_DISR)
         {
             plt_rat = (!data_pos_aalg_list.empty()) && param.isInPlotList(GRIDa_alg);
             plt_avg_th = (data_pos_avg_th != MAX_UINT) && param.isInPlotList(GRIDavg_th);
@@ -1973,14 +1984,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             plt_akrat_highJ = (!data_pos_akrat_highJ_list.empty()) && param.isInPlotList(GRIDakrat_highJ);
         }
 
-        if(cmd != CMD_TEMP_RAT_DISR)
-        {
-            plt_disr = (!data_pos_adisr_list.empty()) && param.isInPlotList(GRIDadisr);
-            plt_max_disr = (!data_pos_max_adisr_list.empty()) && param.isInPlotList(GRIDadisr_max);
-            plt_param_modif = (!data_pos_param_modif_list.empty()) && param.isInPlotList(GRIDparam_modif);
-        }
-
-        if(cmd != CMD_TEMP_DISR || cmd != CMD_DISR)
+        if(cmd != CMD_DISR && cmd != CMD_TEMP_DISR && cmd != CMD_TEMP_RAT_DISR && CMD_RAT_DISR)
         {
             plt_disr = (!data_pos_adisr_list.empty()) && param.isInPlotList(GRIDadisr);
             plt_max_disr = (!data_pos_max_adisr_list.empty()) && param.isInPlotList(GRIDadisr_max);
@@ -1989,11 +1993,20 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             plt_avg_dir = (data_pos_avg_dir != MAX_UINT) && param.isInPlotList(GRIDavg_dir);
         }
 
+        //if(cmd != CMD_TEMP_DISR || cmd != CMD_DISR)
+        //{
+        //    plt_disr = (!data_pos_adisr_list.empty()) && param.isInPlotList(GRIDadisr);
+        //    plt_max_disr = (!data_pos_max_adisr_list.empty()) && param.isInPlotList(GRIDadisr_max);
+        //    plt_param_modif = (!data_pos_param_modif_list.empty()) && param.isInPlotList(GRIDparam_modif);
+        //    plt_avg_th = (data_pos_avg_th != MAX_UINT) && param.isInPlotList(GRIDavg_th);
+        //    plt_avg_dir = (data_pos_avg_dir != MAX_UINT) && param.isInPlotList(GRIDavg_dir);
+        //}
+
         if(cmd != CMD_TEMP && cmd != CMD_TEMP_RAT && CMD_TEMP_DISR && CMD_TEMP_RAT_DISR)
-	{
+	    {
             plt_dust_temp = (!data_pos_dt_list.empty()) && param.isInPlotList(GRIDdust_temp);
             plt_abs_ini = (!data_pos_abs_ini_list.empty()) && param.isInPlotList(GRIDabs_ini);
- 	}
+ 	    }
         // if(getRadiationFieldAvailable())
         {
             switch(param.getWriteRadiationField())
@@ -2004,7 +2017,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                     break;
 
                 case 1:
-                    plt_u_rad = (cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_TEMP_RAT_DISR);
+                    plt_u_rad = (cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_RAT_DISR || cmd == CMD_TEMP_RAT_DISR);
                     plt_rad_field1 = false;
                     break;
 
@@ -2070,7 +2083,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         plt_akrat_highJ = false;
 
 
-        if(cmd == CMD_TEMP || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_TEMP_RAT_DISR)
+        if(cmd == CMD_TEMP || cmd == CMD_TEMP_RAT || cmd == CMD_TEMP_DISR || cmd == CMD_TEMP_RAT_DISR)
         {
             if(param.getAdjTgas() > 0)
                 plt_gas_temp = param.isInPlotList(GRIDgas_temp);
@@ -2078,7 +2091,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             plt_dust_temp = param.isInPlotList(GRIDdust_temp);
             plt_abs_ini = param.isInPlotList(GRIDabs_ini);
         }
-        if(cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_TEMP_RAT_DISR)
+        if(cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_RAT_DISR || cmd == CMD_TEMP_RAT_DISR)
         {
             plt_rat = param.isInPlotList(GRIDa_alg);
             plt_avg_th = param.isInPlotList(GRIDavg_th);
@@ -2096,14 +2109,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             plt_akrat_highJ  = param.isInPlotList(GRIDakrat_highJ);
         }
 
-        if(cmd == CMD_TEMP_RAT_DISR)
-        {
-            plt_disr = param.isInPlotList(GRIDadisr);
-            plt_max_disr = param.isInPlotList(GRIDadisr_max);
-            plt_param_modif = param.isInPlotList(GRIDparam_modif);
-        }
-
-        if(cmd == CMD_TEMP_DISR || cmd == CMD_DISR)
+        if(cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_RAT_DISR || cmd == CMD_TEMP_RAT_DISR)
         {
             plt_disr = param.isInPlotList(GRIDadisr);
             plt_max_disr = param.isInPlotList(GRIDadisr_max);
@@ -2111,6 +2117,15 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             plt_avg_th = param.isInPlotList(GRIDavg_th);
             plt_avg_dir = param.isInPlotList(GRIDavg_dir);
         }
+
+        //if(cmd == CMD_TEMP_DISR || cmd == CMD_DISR)
+        //{
+        //    plt_disr = param.isInPlotList(GRIDadisr);
+        //    plt_max_disr = param.isInPlotList(GRIDadisr_max);
+        //    plt_param_modif = param.isInPlotList(GRIDparam_modif);
+        //    plt_avg_th = param.isInPlotList(GRIDavg_th);
+        //    plt_avg_dir = param.isInPlotList(GRIDavg_dir);
+        //}
 
         switch(param.getWriteRadiationField())
         {
@@ -2120,7 +2135,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                 break;
 
             case 1:
-                plt_u_rad = (cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_TEMP_RAT_DISR);
+                plt_u_rad = (cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_RAT_DISR ||  cmd == CMD_TEMP_RAT_DISR);
                 plt_rad_field1 = false;
                 break;
 

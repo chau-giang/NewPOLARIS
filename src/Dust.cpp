@@ -3172,12 +3172,12 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     double Rrat = 0, Rgold = 0, Ridg = 0, Rent = 1;
     double Rrat_low_J = 0, Rrat_high_J = 0;
     double delta = 1;
-    double a_alig = 1;
-    double amaxJB_Lar = 1;
-    double abar_lowJ_lower = 1, abar_lowJ_upper = 1;
-    double abar_highJ_lower = 1, abar_highJ_upper = 1;
-    double adg_lower = 1, adg_upper = 1;
-    double adg_10_lower = 1, adg_10_upper = 1;
+    double a_alig;
+    double amaxJB_Lar;
+    double abar_lowJ_lower, abar_lowJ_upper;
+    double abar_highJ_lower, abar_highJ_upper;
+    double adg_lower, adg_upper;
+    double adg_10_lower, adg_10_upper;
     double f_highJ;
    
 
@@ -3204,90 +3204,75 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
         a_alig = grid->getAlignedRadius(pp, i_density);
         if(a_eff[a] > a_alig)
         {
-        	// If assume imperfect internal alignment
-            if((alignment & ALIG_INTERNAL) == ALIG_INTERNAL)
-         	{
-         		//If account for right and wrong internal alignment at low J attractor
-         		if(getWrongInternalRATlowJ() != 0)
-         		{
-
-         			//cout << "slow internal relaxation at low-J" << endl;
-         			// Internal alignment at low J attractor
-         	    	abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
-     				abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
-     				
-            		if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
-            			Rrat_low_J = getInternalRAT();
-            		else
- 						Rrat_low_J = getWrongInternalRATlowJ();
-            	}
-            	else   // assume all dust grains have right internal alignment
-            	{
-            		Rrat_low_J = getInternalRAT();
-            	}
-            		
-            	// if account for right and wrong internal alignment at high j attractor
-            	if(getWrongInternalRAThighJ() != 0)
-            	{
-            		//cout << "Slow internal relaxation at high-J" << endl;
-            		// Internal alignment at high J attractor
-            		abar_highJ_lower = grid->getBarnetHighLowerRadius(pp, i_density);
-     				abar_highJ_upper = grid->getBarnetHighUpperRadius(pp, i_density);
-     				
-            		if (a_eff[a] > abar_highJ_lower && a_eff[a] < abar_highJ_upper) 
-            			Rrat_high_J = 1;
-            		else
- 						Rrat_high_J = getWrongInternalRAThighJ();
-            	}
-            	else
-            	{
-            		//cout << "just high J" << endl;
-            		Rrat_high_J = 1;
-            	}
-            	
- 
-            	// Default f_highJ from <f_highJ>
-            	f_highJ = getFHighJ();
- 
-            	// If <change_f_highJ> is turn on, change f_highJ as the magnetic properties of grains
-            	if (param.getChangeFHighJ())
-            	{
-                    //cout << "change f_highJ" << endl;
-            		adg_lower = grid->getDGLowerRadius(pp, i_density);
-            		adg_upper = grid->getDGUpperRadius(pp, i_density);
-            		adg_10_lower = grid->getDG10LowerRadius(pp, i_density);
-            		adg_10_upper = grid->getDG10UpperRadius(pp, i_density);
-            		
-            		if ((a_eff[a] < adg_upper) && (a_eff[a] > adg_lower))
-            		{
-            			if ((a_eff[a] < adg_10_upper) && (a_eff[a] > adg_10_lower))
-            			{
-            				//cout << "full" << endl;
-            				f_highJ = 1;
-            			}
-            			else
-            			{
-            				//cout << "partly" << endl;
-            				f_highJ  = 0.5;
-            			}
-            		}
-            		else
-					{	
-						//cout << "no" << endl;
-            			f_highJ = getFHighJ();
-            		}
-          	 	}
-          	 	//cout << f_highJ << endl;
-            	// Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor		
-            	Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
-            }
+        	Rrat_low_J = getInternalRAT();         // Qx_lowJ
+        	Rrat_high_J = 1;                       // Qx_highJ
+            f_highJ = getFHighJ();
             
-            // If assume perfect internal alignment
-            else
+            // Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor      
+            Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
+        }
+    }
+
+    if((alignment & ALIG_MRAT) == ALIG_MRAT)
+    {
+        a_alig = grid->getAlignedRadius(pp, i_density);
+        if(a_eff[a] > a_alig)
+        {
+            // Qx at low-J attractors
+            if(getWrongInternalRATlowJ() != 0)
             {
-                Rrat = 1;
+                abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
+                abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
+                
+                if (a_eff[a] > abar_lowJ_lower && a_eff[a] < abar_lowJ_upper) 
+                    Rrat_low_J = getInternalRAT();
+                else
+                    Rrat_low_J = getWrongInternalRATlowJ();
+            }
+            else    
+                Rrat_low_J = getInternalRAT();
+                    
+            // Qx at high-J attractors
+            if(getWrongInternalRAThighJ() != 0)
+            {
+                //cout << "Slow internal relaxation at high-J" << endl;
+                // Internal alignment at high J attractor
+                abar_highJ_lower = grid->getBarnetHighLowerRadius(pp, i_density);
+                abar_highJ_upper = grid->getBarnetHighUpperRadius(pp, i_density);
+                
+                if (a_eff[a] > abar_highJ_lower && a_eff[a] < abar_highJ_upper) 
+                    Rrat_high_J = 1;
+                else
+                    Rrat_high_J = getWrongInternalRAThighJ();
+            }
+            else
+                Rrat_high_J = 1;
+                
+            // Default f_highJ from <f_highJ>
+            f_highJ = getFHighJ();
+
+            // If <change_f_highJ> is turn on, change f_highJ as the magnetic properties of grains
+            if (param.getChangeFHighJ())
+            {
+                //cout << "change f_highJ" << endl;
+                adg_lower = grid->getDGLowerRadius(pp, i_density);
+                adg_upper = grid->getDGUpperRadius(pp, i_density);
+                adg_10_lower = grid->getDG10LowerRadius(pp, i_density);
+                adg_10_upper = grid->getDG10UpperRadius(pp, i_density);
+                
+                if ((a_eff[a] < adg_upper) && (a_eff[a] > adg_lower))
+                {
+                    if ((a_eff[a] < adg_10_upper) && (a_eff[a] > adg_10_lower))
+                        f_highJ = 1;
+                    else
+                        f_highJ  = 0.5;
+                }
+                else 
+                    f_highJ = getFHighJ();
             }
         }
+            // Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor      
+        Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
     }
 
     // Calculate the parameters for GOLD mechanical alignment
@@ -3332,7 +3317,10 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     }
 
     amaxJB_Lar = grid->getMaxAlignedRadius(pp, i_density);
-    if(a_eff[a] < amaxJB_Lar)
+    if (amaxJB_Lar == 0)  // if dont perform MRAT calculation
+        amaxJB_Lar = getSizeMax(grid, pp);
+
+    if(a_eff[a] <= amaxJB_Lar)
         Rent = combinedRFactor(Ridg, Rrat, Rgold);
     else
         Rent = Ridg;
