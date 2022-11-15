@@ -4495,7 +4495,25 @@ uint CheckRATD(parameters & param, uint & tmp_data_offset)
                 cout << "        No dust emission with RAT alignment possible." << endl;
                 return MAX_UINT;
             }
-            
+        }
+
+        if(param.getAligMRAT())
+        {
+            if(data_pos_aalg_list.empty())
+            {
+                cout << "\nERROR: Grid contains no minimum alignment radius for RATs!" << endl;
+                cout << "        No dust emission with RAT alignment possible." << endl;
+                return MAX_UINT;
+            }
+            else if(data_pos_aalg_list.size() != 1 && data_pos_aalg_list.size() != nr_densities)
+            {
+                cout << "\nERROR: Grid contains not the correct amount of minimum alignment radii for "
+                        "RATs!"
+                     << endl;
+                cout << "        No dust emission with RAT alignment possible." << endl;
+                return MAX_UINT;
+            }
+
             if(data_pos_amaxJB_Lar_list.empty())
             {
                 cout << "\nERROR: Grid contains no maximum alignment radius for RATs!" << endl;

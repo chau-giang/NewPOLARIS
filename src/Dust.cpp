@@ -6728,7 +6728,7 @@ StokesVector CDustComponent::calcEmissivitiesEmi(CGridBasic * grid,
 
 #ifdef CAMPS_BENCHMARK
                 // To perform Camps et. al (2015) benchmark.
-                tmp_stokes[a].addQ(cs.Cabs * pl;
+                tmp_stokes[a].addQ(cs.Cabs * pl);
 #else
                 // Add relative emissivity from this temperature
                 tmp_stokes[a].addI(cs.Cabs * pl);
