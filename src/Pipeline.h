@@ -379,9 +379,11 @@ class CPipeline
     uint getNrOffsetEntriesRay(parameters & param, CDustMixture * dust, CGridBasic * grid)
     {
         uint nr_of_offset_entries = 0;
-        if(param.getStochasticHeatingMaxSize() > 0)
+        if(param.getStochasticHeatingMaxSize() > 0) // if calculate the stochastic heating of small grains
         {
-            // Add fields to store the stochastic heating propabilities for each cell
+            // Add fields to store the stochastic heating propabilities for each cell, including sum_{i = nr_mixture} Na[i] * NT[i] / cell.
+            // Na[i]: number of stoschatic heating size of mixture [i]
+            // NT[i]: number of temperature per each grain size a of mixture [i]
             for(uint i_mixture = 0; i_mixture < dust->getNrOfMixtures(); i_mixture++)
                 nr_of_offset_entries +=
                     dust->getNrOfStochasticSizes(i_mixture) * dust->getNrOfCalorimetryTemperatures(i_mixture);
@@ -423,6 +425,12 @@ class CPipeline
             {
                 nr_of_offset_entries += 4 * dust->getNrOfWavelength();
             }
+        }
+        else if (param.getMCRTloop() > 1)
+        {
+        // Add fields to store the the mean <Cext> and <Csca> in each cell
+            for(uint i_mixture = 0; i_mixture < dust->getNrOfMixtures(); i_mixture++)
+                nr_of_offset_entries += dust->getNrOfWavelength(i_mixture);
         }
 
         return nr_of_offset_entries;

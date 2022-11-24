@@ -152,7 +152,7 @@ class CRadiativeTransfer
     }
 
     // Temperature calculation and RATs
-    bool calcMonteCarloRadiationField(uint command, parameters & param, bool use_energy_density, bool disable_reemission = false);
+    bool calcMonteCarloRadiationField(uint command, parameters & param, bool use_energy_density, bool disable_reemission = false, uint loop = 1);
     // Set temperature (old!)
     bool setTemperatureDistribution();
 
@@ -292,6 +292,7 @@ class CRadiativeTransfer
     void calcDisruptRadii(parameters & param);
     void calcMaxDisruptRadii(parameters & param);
     void calcSizeParamModify();
+    void calcNewMeanEfficiency();
     void calcBarnetLowJRadii();
     void calcBarnetHighJRadii(parameters & param);
     void calcDGRadii(parameters & param);

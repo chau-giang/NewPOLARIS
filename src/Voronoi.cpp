@@ -396,17 +396,7 @@ bool CGridVoronoi::writeGNUPlotFiles(string path, parameters & param)
             return false;
         }
     }
-
-    //if(plt_larm)
-    //{
-    //    point_fields[7].open(larm_filename.c_str());
-
-    //    if(point_fields[7].fail())
-    //    {
-    //        cout << "\nERROR: Cannot write to:\n " << larm_filename << "          \n";
-    //        return false;
-    //    }
-    //}
+ 
     
  
 

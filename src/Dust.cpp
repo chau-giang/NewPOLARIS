@@ -3316,8 +3316,9 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
         }
     }
 
-    amaxJB_Lar = grid->getMaxAlignedRadius(pp, i_density);
-    if (amaxJB_Lar == 0)  // if dont perform MRAT calculation
+    if((alignment & ALIG_MRAT) == ALIG_MRAT)
+        amaxJB_Lar = grid->getMaxAlignedRadius(pp, i_density);
+    if((alignment & ALIG_RAT) == ALIG_RAT)
         amaxJB_Lar = getSizeMax(grid, pp);
 
     if(a_eff[a] <= amaxJB_Lar)
@@ -3562,7 +3563,7 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
                 // Get radiation field and calculate absorbed energy for each wavelength
                 for(uint w = 0; w < WL_STEPS; w++)
                 {
-                    double abs_rate_wl_tmp = grid->getRadiationField(cell, w) * getCabsMean(a, w);
+                    double abs_rate_wl_tmp = grid->getRadiationField(cell, w) * getCabsMean(a, w); // u(w) * Cabs(w)
                     abs_rate_per_wl.setValue(w, wavelength_list[w], abs_rate_wl_tmp);
                 }
 
@@ -3570,7 +3571,7 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
                 abs_rate_per_wl.createSpline();
 
                 // Get pointer array of the temperature propabilities
-                long double * temp_probability = getStochasticProbability(a, abs_rate_per_wl);
+                long double * temp_probability = getStochasticProbability(a, abs_rate_per_wl); // dP/dT
 
                 // Reset absorpion rate
                 abs_rate[a] = 0;
@@ -3579,7 +3580,7 @@ void CDustComponent::calcTemperature(CGridBasic * grid,
                 for(uint t = 0; t < getNrOfCalorimetryTemperatures(); t++)
                 {
                     uint tID = findTemperatureID(calorimetry_temperatures[t]);
-                    abs_rate[a] += temp_probability[t] * getQB(a, tID);
+                    abs_rate[a] += temp_probability[t] * getQB(a, tID); // 
                 }
 
                 // Delete pointer array
@@ -4834,6 +4835,31 @@ void CDustComponent::calcSizeParamModify(CGridBasic * grid, cell_basic * cell, u
     if(new_size_param > max_size_param_modify)
         max_size_param_modify = new_size_param;
 }
+
+void CDustComponent::calcNewMeanEfficiency(CGridBasic * grid, cell_basic * cell, uint i_density)
+{
+     // This function is to calculate the term <Cext> = Cext(w,a) * PI * a**2 * dn/da * da
+    for(uint wID = 0; wID < nr_of_wavelength; wID++)
+    {	
+    	double dens  = getNumberDensity(grid, cell, i_density);
+    
+	
+        // Get local min and max grain sizes
+        double a_min = getSizeMin(grid, cell);
+        double a_max = getSizeMax(grid, cell);
+                
+    	double Cext  = getCextMean(grid, cell, i_density, wID);
+    	double mean_Cext = dens * Cext;
+    	
+    	//double Csca = getCscaMean(grid, cell, i_density, wID);
+    	//double mean_Csca = dens * Csca;
+ 
+    	// Set new slope from a_min to a_disr in the grid
+    	grid->setNewMeanCext(cell, i_density, wID, mean_Cext);
+    	//grid->setNewMeanCsca(cell, i_density, wID, mean_Csca);
+    }
+}
+
 
 void CDustComponent::calcBarnetLowJRadii(CGridBasic * grid, cell_basic * cell, uint i_density)
 {

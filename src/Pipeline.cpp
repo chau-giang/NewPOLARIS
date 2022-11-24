@@ -222,40 +222,53 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     CDustMixture * dust = new CDustMixture();
 
     if(!createOutputPaths(param.getPathOutput()))
+    {
+    	cout << "ERROR: cannot create output path" << endl;
         return false;
+    }
 
 
     if(!assignGridType(grid, param))
+    {
+        cout << "ERROR: cannot assign grid type" << endl;
         return false;
- 
+    }
  
     grid->setSIConversionFactors(param);
     
     if(!createWavelengthList(param, dust))
+    {
+        cout << "ERROR: cannot create wavelength list" << endl;
         return false;
-    	
+    }
+    
     if(!assignDustMixture(param, dust, grid))
+    {
+    	cout << "ERROR: cannot assign dust mixture" << endl; 
         return false;
-        
+    }
     grid->setSpecLengthAsVector(use_energy_density);
 
 
     if(!grid->loadGridFromBinrayFile(param, use_energy_density ? 4 * WL_STEPS : WL_STEPS))
+    {
+        cout << "ERROR: cannot load input binary file" << endl;
         return false;
- 
+    }
     
     // Print helpfull information
     grid->createCellList();
  
     dust->printParameter(param, grid);
-
-    	
+    
     grid->printParameters();
 	
 	
     if(!grid->writeMidplaneFits(path_data + "input_", param, param.getInpMidDataPoints(), true))
+    {
+        cout << "ERROR: cannot write input fits file" << endl;
         return false;
-	
+    }
 	
     if(!grid->writeGNUPlotFiles(path_plot + "input_", param))
         return false;
@@ -290,48 +303,96 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         else if(param.getDustGasCoupling())
             rad.convertTempInQB(param.getOffsetMinGasDensity(), true);
     }
+    
+    //********************************************************************************************************************************
+    //********************************************************************************************************************************  
+    // To check input parameter
+    //********************************************************************************************************************************
+    //********************************************************************************************************************************  
 
     if (param.isMonteCarloSimulation())  
     {
-        rad.calcMonteCarloRadiationField(param.getCommand(),
-    								 param,
-                                     use_energy_density,
-                                     false ); //(param.getCommand() == CMD_RAT));
+    	uint mcrt_loop = param.getMCRTloop();
+    	if (mcrt_loop > 1)
+    	{
+    	    if (param.getCommand() != CMD_TEMP_DISR)
+	    {
+	    	cout << "\nERROR: Cannot calculate disruption size" << endl;
+	    	cout << "\nSOLVED: More than one MCRT calculation should only be done when taking into account the change of grain size" << endl;
+	    	cout << "	distribution by RATD. If you dont take into account this effect, put <MCRT_loop> 1. Otherwise, change " << endl;
+	    	cout << "	to <cmd> CMD_TEMP_DISR" << endl;
+	 	return false;   		 
+	    }	
+	    
+	    if (param.getTensileStrength() == 0)
+            {
+            	cout << "\nERROR: No tensile strength for calculate disruption size by RATD!" << endl;
+                cout << "\nSOLVE: Define <tensile_strength> in the cmd file" << endl; 
+        	return false;
+            }
+        }
     }
 
+    if(param.isRatSimulation())
+    {
+        if (param.getAligMRAT())
+	{
+	    if ((param.getIronFraction() == 0) && (param.getNumberIronCluster() == 0) && (param.getVolumeFillingFactor() == 0))
+	    {
+	        cout << "\nERROR: No input magnetic properties to start the MRAT calculation" << endl;
+	        cout << "\nSOLVE: Define <iron_fraction> [for PM grains], or <number_cluster> and <volume_filling_cluster> [for SPM grains]" << 	endl;
+		return false;
+	    }
+	}
+    }
+    
+    
+    if(param.isRATDSimulation())
+    {
+        if (param.getTensileStrength() == 0)
+        {
+        	cout << "\nERROR: No tensile strength for calculate disruption size by RATD!" << endl;
+        	cout << "\nSOLVE: Define <tensile_strength> in the cmd file" << endl; 
+		return false;
+        }
+     }        
+
+    //********************************************************************************************************************************
+    //********************************************************************************************************************************    
+    // Main calculation part
+    //********************************************************************************************************************************
+    //********************************************************************************************************************************  
+    
+    if (param.isMonteCarloSimulation())  
+    {
+    	uint mcrt_loop = param.getMCRTloop();
+        cout << "\n Number of MCRT calculation: " << mcrt_loop << endl;
+    	if (mcrt_loop == 1)
+    	    rad.calcMonteCarloRadiationField(param.getCommand(),
+    						param,
+                                     		use_energy_density,
+                                     		false, mcrt_loop); //(param.getCommand() == CMD_RAT));
+	else
+	{
+	    for(uint loop = 1; loop <= mcrt_loop; loop++)
+	    {
+	     	cout << "\n Order of loop: " << loop << endl;
+	     	rad.calcMonteCarloRadiationField(param.getCommand(),
+    						param,
+                                     		use_energy_density,
+                                     		false, loop); //(param.getCommand() == CMD_RAT));
+            	rad.calcFinalTemperature(use_energy_density);  
+        	rad.calcDisruptRadii(param);
+        	rad.calcMaxDisruptRadii(param);
+        	rad.calcSizeParamModify();
+            	rad.calcNewMeanEfficiency();
+	    }	
+	}
+    }
+    
     if(param.isTemperatureSimulation())
         rad.calcFinalTemperature(use_energy_density);
 
-        
-    if(param.isRATDSimulation())
-    {
-        //cout << "\n First loop\n" << endl;
-        rad.calcDisruptRadii(param);
-        rad.calcMaxDisruptRadii(param);
-        rad.calcSizeParamModify();
-
-        //cout << "\n Second loop \n" << endl;
-       // rad.calcMonteCarloRadiationField(param.getCommand(),
-       // 								param,
-       //                                 use_energy_density,
-       //                                 false); //(param.getCommand() == CMD_RAT));
-       // rad.calcFinalTemperature(use_energy_density);
-       // rad.calcDisruptRadii(param);
-       // rad.calcMaxDisruptRadii(param);
-       // rad.calcSizeParamModify();
-
-        //cout << "\n Final temperature and alignment \n" << endl;
-       // rad.calcMonteCarloRadiationField(param.getCommand(),
-       // 								 param,
-       //                                  use_energy_density,
-       //                                  false); //(param.getCommand() == CMD_RAT))
-
-       // rad.calcFinalTemperature(use_energy_density);
-       // rad.calcDisruptRadii(param);
-       //rad.calcMaxDisruptRadii(param);
-       // rad.calcSizeParamModify();
-    }
-        
     if(param.isRatSimulation())
     {
     	rad.calcAlignedRadii(param);
@@ -351,6 +412,40 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         }
     }
     
+        
+    if(param.isRATDSimulation())
+    {       
+        //if (param.getMCRTloop() == 1)
+        //{
+        cout << "enter here" << endl;
+        rad.calcDisruptRadii(param);
+        rad.calcMaxDisruptRadii(param);
+        rad.calcSizeParamModify();
+            //rad.calcNewExtinctionEfficiency();
+	//}
+        //cout << "\n Second loop \n" << endl;
+        //rad.calcMonteCarloRadiationField(param.getCommand(),
+        //								param,
+        //                                use_energy_density,
+        //                               false); //(param.getCommand() == CMD_RAT));
+        //rad.calcFinalTemperature(use_energy_density);
+        //rad.calcDisruptRadii(param);
+        //rad.calcMaxDisruptRadii(param);
+        //rad.calcSizeParamModify();
+
+        //cout << "\n Final temperature and alignment \n" << endl;
+        //rad.calcMonteCarloRadiationField(param.getCommand(),
+        // 								 param,
+        //                                  use_energy_density,
+        //                                  false); //(param.getCommand() == CMD_RAT))
+
+       //rad.calcFinalTemperature(use_energy_density);
+       //rad.calcDisruptRadii(param);
+       //rad.calcMaxDisruptRadii(param);
+       //rad.calcSizeParamModify();
+    }
+        
+
     cout << SEP_LINE;
 
     if(!grid->writeMidplaneFits(path_data + "output_", param, param.getOutMidDataPoints()))
@@ -362,8 +457,8 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     if(!grid->writeAMIRAFiles(path_plot + "output_", param, param.getOutAMIRAPoints()))
         return false;
 
-    grid->writePhysicalParameter(path_data);
-    grid->writeSizeParameter(path_data);
+    grid->writePhysicalParameter(path_data); // oupput file physical_parameter.dat in /data
+    grid->writeSizeParameter(path_data);     // output file grain_size.dat in /data
 
     if(param.getSaveRadiationField())
         grid->saveRadiationField();
@@ -389,22 +484,38 @@ bool CPipeline::calcPolarizationMapsViaMC(parameters & param)
     CDustMixture * dust = new CDustMixture();
 
     if(!createOutputPaths(param.getPathOutput()))
+    {
+    	cout << "ERROR: cannot create output path" << endl;
         return false;
+    }
+
 
     if(!assignGridType(grid, param))
+    {
+        cout << "ERROR: cannot assign grid type" << endl;
         return false;
-
+    }
+    
     if(!createWavelengthList(param, dust))
+    {
+        cout << "ERROR: cannot create wavelength list" << endl;
         return false;
-
+    }
+    
     if(!assignDustMixture(param, dust, grid))
+    {
+    	cout << "ERROR: cannot assign dust mixture" << endl; 
         return false;
-
+    }
     grid->setSIConversionFactors(param);
 
-    if(!grid->loadGridFromBinrayFile(param, 0))
-        return false;
 
+    if(!grid->loadGridFromBinrayFile(param, 0))
+    {
+        cout << "ERROR: cannot load input binary file" << endl;
+        return false;
+    }
+     
     // Print helpfull information
     grid->createCellList();
     dust->printParameter(param, grid);
@@ -459,27 +570,38 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
     CDustMixture * dust = new CDustMixture();
 
     if(!createOutputPaths(param.getPathOutput()))
+    {
+    	cout << "ERROR: cannot create output path" << endl;
         return false;
+    }
+
 
     if(!assignGridType(grid, param))
+    {
+        cout << "ERROR: cannot assign grid type" << endl;
         return false;
-	
+    }
+    
     if(!createWavelengthList(param, dust))
+    {
+        cout << "ERROR: cannot create wavelength list" << endl;
         return false;
- 
-
+    }
+    
     if(!assignDustMixture(param, dust, grid))
+    {
+    	cout << "ERROR: cannot assign dust mixture" << endl; 
         return false;
-       
-
+    }
     grid->setSIConversionFactors(param);
 
-    cout << "enter here?" << endl;
+
     if(!grid->loadGridFromBinrayFile(param, getNrOffsetEntriesRay(param, dust, grid)))
+    {
+        cout << "ERROR: cannot load input binary file" << endl;
         return false;
-
-    cout << "next step" << endl;
-
+    }
+    
     // Print helpfull information
     grid->createCellList();
     dust->printParameter(param, grid);
@@ -519,8 +641,8 @@ bool CPipeline::calcPolarizationMapsViaRayTracing(parameters & param)
     // field in grid)
     if(!grid->getRadiationFieldAvailable() && dust->getScatteringToRay() && !sources_mc.empty())
     {
-        rad.calcMonteCarloRadiationField(param.getCommand(), param, true, true);
-	}
+        rad.calcMonteCarloRadiationField(param.getCommand(), param, true, true, 1);
+    }
 	
     if(!rad.calcPolMapsViaRaytracing(param))
         return false;

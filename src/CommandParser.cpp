@@ -785,6 +785,13 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         param->setLarmF(val);
     }
 
+
+    if(cmd.compare("<MCRT_loop>") == 0)
+    {
+	double val = atof(data.c_str());
+	param->setMCRTloop(val);
+    }
+	
     if(cmd.compare("<number_cluster>") == 0)
     {
 		double val = atof(data.c_str());

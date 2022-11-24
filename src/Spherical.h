@@ -40,8 +40,7 @@ class CGridSpherical : public CGridBasic
         min_dust_temp = 0;
         max_dust_temp = 0;
         
-        min_abs_ini = 0;
-        max_abs_ini = 0;
+  
 
         min_gas_dens = 0;
         max_gas_dens = 0;
@@ -51,53 +50,7 @@ class CGridSpherical : public CGridBasic
 
         aalg_min = 1e300;
         aalg_max = 0;
-
-        adisr_min = 1e300;
-        adisr_max = 0;
-
-        max_adisr_min = 1e300;
-        max_adisr_max = 0;
-
-        size_param_modif_min = 1e300;
-        size_param_modif_max = -4;
-        
-
-        abar_low_lower_min = 1e300;
-        abar_low_lower_max = 0;
-        
-        
-        abar_low_upper_min = 1e300;
-        abar_low_upper_max = 0;
-
-
-        abar_high_lower_min = 1e300;
-        abar_high_lower_max = 0;
-        
-        
-        abar_high_upper_min = 1e300;
-        abar_high_upper_max = 0;
-        
-        
-        adg_lower_min = 1e300;
-        adg_lower_max = 0;
-        
-        
-        adg_upper_min = 1e300;
-        adg_upper_max = 0;
  
-        
-        adg_10_lower_min = 1e300;
-        adg_10_lower_max = 0;
-        
-        
-        adg_10_upper_min = 1e300;
-        adg_10_upper_max = 0;
-        
-        //min_larm_limit = 0;
-        //max_larm_limit = 0;
-		min_amaxJB_Lar = 1e300;
-		max_amaxJB_Lar = 0;
-
         min_pres = 0;
         max_pres = 0;
 
@@ -178,19 +131,7 @@ class CGridSpherical : public CGridBasic
         //plt_larm = false;
         plt_mach = false;
         plt_dust_id = false;
-        plt_disr = false;
-        plt_max_disr = false;
-        plt_param_modif = false;
-        plt_barnet_low_lower = false;
-        plt_barnet_low_upper = false;
-        plt_barnet_high_lower = false;
-        plt_barnet_high_upper = false;
-        plt_dg_lower = false;
-        plt_dg_upper = false;
-        plt_dg_10_lower = false;
-        plt_dg_10_upper = false;
-        plt_abs_ini = false;
-        plt_amaxJB_Lar = false;
+ 
         
         total_volume = 0;
         cell_volume = 0;
