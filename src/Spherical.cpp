@@ -7,6 +7,7 @@
 bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
 {
     // _data_len: urad, ux, uy, uz [ if using save_energy], or only urad [ if dont save energy]
+    cout << "_data_len" << _data_len << endl;
     ushort tmpID, tmpOffset;
     string filename = param.getPathGrid();
 

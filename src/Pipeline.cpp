@@ -249,8 +249,16 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     }
     grid->setSpecLengthAsVector(use_energy_density);
 
+    uint _data_len;
+    if (use_energy_density)
+    	_data_len = 4 * WL_STEPS;
+    else
+    	_data_len = WL_STEPS;
+    	
+    if (param.getMCRTloop() > 1)
+    	_data_len += 3 * WL_STEPS;
 
-    if(!grid->loadGridFromBinrayFile(param, use_energy_density ? 4 * WL_STEPS : WL_STEPS))
+    if(!grid->loadGridFromBinrayFile(param, _data_len))
     {
         cout << "ERROR: cannot load input binary file" << endl;
         return false;
@@ -415,19 +423,19 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
         
     if(param.isRATDSimulation())
     {       
-        //if (param.getMCRTloop() == 1)
-        //{
-        cout << "enter here" << endl;
-        rad.calcDisruptRadii(param);
-        rad.calcMaxDisruptRadii(param);
-        rad.calcSizeParamModify();
-            //rad.calcNewExtinctionEfficiency();
-	//}
+        if (param.getMCRTloop() == 1)
+        {
+        	rad.calcDisruptRadii(param);
+       		rad.calcMaxDisruptRadii(param);
+        	rad.calcSizeParamModify();
+	}
+        
         //cout << "\n Second loop \n" << endl;
+        //uint mcrt_loop = param.getMCRTloop();
         //rad.calcMonteCarloRadiationField(param.getCommand(),
         //								param,
         //                                use_energy_density,
-        //                               false); //(param.getCommand() == CMD_RAT));
+        //                               false, mcrt_loop); //(param.getCommand() == CMD_RAT));
         //rad.calcFinalTemperature(use_energy_density);
         //rad.calcDisruptRadii(param);
         //rad.calcMaxDisruptRadii(param);
@@ -435,9 +443,9 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
 
         //cout << "\n Final temperature and alignment \n" << endl;
         //rad.calcMonteCarloRadiationField(param.getCommand(),
-        // 								 param,
-        //                                  use_energy_density,
-        //                                  false); //(param.getCommand() == CMD_RAT))
+       //  								 param,
+        //                                 use_energy_density,
+        //                                  false, mcrt_loop); //(param.getCommand() == CMD_RAT))
 
        //rad.calcFinalTemperature(use_energy_density);
        //rad.calcDisruptRadii(param);
