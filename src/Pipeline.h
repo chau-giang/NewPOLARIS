@@ -430,7 +430,7 @@ class CPipeline
         {
         // Add fields to store the the mean <Cext> and <Csca> in each cell
             for(uint i_mixture = 0; i_mixture < dust->getNrOfMixtures(); i_mixture++)
-                nr_of_offset_entries += dust->getNrOfWavelength(i_mixture);
+                nr_of_offset_entries += 3 * dust->getNrOfWavelength(i_mixture);
         }
 
         return nr_of_offset_entries;

@@ -40,7 +40,9 @@ class CGridSpherical : public CGridBasic
         min_dust_temp = 0;
         max_dust_temp = 0;
         
-  
+        
+        min_abs_ini = 0;
+        max_abs_ini = 0;
 
         min_gas_dens = 0;
         max_gas_dens = 0;

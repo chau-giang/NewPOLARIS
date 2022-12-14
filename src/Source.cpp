@@ -964,7 +964,7 @@ void CSourceISRF::createDirectRay(photon_package * pp, Vector3D dir_obs)
     pp->setStokesVector(tmp_stokes_vector);
 }
 
-bool CSourceDust::initSource(uint id, uint max, bool use_energy_density)
+bool CSourceDust::initSource(uint id, uint max, bool use_energy_density, parameters & param)
 {
     if(!use_energy_density)
     {
@@ -1022,7 +1022,7 @@ bool CSourceDust::initSource(uint id, uint max, bool use_energy_density)
             pp->setPositionCell(grid->getCellFromIndex(i_cell));
 
             // Get total energy of thermal emission
-            total_energy[w] += dust->getCellEmission(grid, pp);
+            total_energy[w] += dust->getCellEmission(grid, pp, param);
 
             // Add energy to probability distribution
             cell_prob[w].setValue(i_cell + 1, total_energy[w]);
@@ -1042,7 +1042,7 @@ bool CSourceDust::initSource(uint id, uint max, bool use_energy_density)
     return true;
 }
 
-bool CSourceDust::initSource(uint w)
+bool CSourceDust::initSource(uint w, parameters & param)
 {
     // Init variables
     ulong nr_of_cells = grid->getMaxDataCells();
@@ -1090,7 +1090,7 @@ bool CSourceDust::initSource(uint w)
         pp->setPositionCell(grid->getCellFromIndex(i_cell));
 
         // Get total energy of thermal emission
-        total_energy[w] += dust->getCellEmission(grid, pp);
+        total_energy[w] += dust->getCellEmission(grid, pp, param);
 
         // Add energy to probability distribution
         cell_prob[w].setValue(i_cell + 1, total_energy[w]);

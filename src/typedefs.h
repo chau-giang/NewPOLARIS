@@ -128,6 +128,7 @@ using namespace std;
 #define RATD 128
 
 #define SUPERTHERMAL_LIMIT 3
+#define DISRUPTION_LIMIT 1
 #define MACH_LIMIT 1
 #define MRW_LIMIT 7
 #define PDA_LIMIT 30

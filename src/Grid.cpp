@@ -892,7 +892,7 @@ bool CGridBasic::writeAMIRAFiles(string path, parameters & param, uint bins)
     // bool plt_dust_dens = param.getPlot(plIDnd) && (!data_pos_dd_list.empty()); //to
     // do if dust denity is possible
     bool plt_gas_temp = (data_pos_tg != MAX_UINT) && param.isInPlotList(GRIDgas_temp);
-    //bool plt_dust_temp = (!data_pos_dt_list.empty()) && param.isInPlotList(GRIDdust_temp);
+    bool plt_dust_temp = (!data_pos_dt_list.empty()) && param.isInPlotList(GRIDdust_temp);
     bool plt_abs_ini = (!data_pos_abs_ini_list.empty()) && param.isInPlotList(GRIDabs_ini);
     bool plt_mag = (data_pos_mx != MAX_UINT) && param.isInPlotList(GRIDgas_dens);
 
@@ -1997,9 +1997,9 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         if(cmd != CMD_TEMP && cmd != CMD_TEMP_RAT && CMD_TEMP_DISR && CMD_TEMP_RAT_DISR)
 	    {
             plt_dust_temp = (!data_pos_dt_list.empty()) && param.isInPlotList(GRIDdust_temp);
-            //plt_abs_ini = (!data_pos_abs_ini_list.empty()) && param.isInPlotList(GRIDabs_ini);
+            plt_abs_ini = (!data_pos_abs_ini_list.empty()) && param.isInPlotList(GRIDabs_ini);
  	    }
-        if(getRadiationFieldAvailable())
+        //if(getRadiationFieldAvailable())
         {
             switch(param.getWriteRadiationField())
             {
@@ -2069,7 +2069,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         plt_dg_upper = false;
         plt_dg_10_lower = false;
         plt_dg_10_upper = false;
-        //plt_abs_ini = false;
+        plt_abs_ini = false;
         plt_amaxJB_Lar = false;
         plt_akrat_lowJ = false;
         plt_akrat_highJ = false;
@@ -2081,7 +2081,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                 plt_gas_temp = param.isInPlotList(GRIDgas_temp);
 
             plt_dust_temp = param.isInPlotList(GRIDdust_temp);
-            //plt_abs_ini = param.isInPlotList(GRIDabs_ini);
+            plt_abs_ini = param.isInPlotList(GRIDabs_ini);
         }
         if(cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_RAT_DISR || cmd == CMD_TEMP_RAT_DISR)
         {
@@ -2168,7 +2168,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                          uint(plt_param_modif) + uint(plt_barnet_low_lower) + uint(plt_barnet_low_upper) + 
                          uint(plt_barnet_high_lower) + uint(plt_barnet_high_upper) + uint(plt_dg_lower) + 
                          uint(plt_dg_upper) + uint(plt_dg_10_lower) + uint(plt_dg_10_upper) + 
-                         uint(plt_akrat_lowJ) + uint(plt_akrat_highJ);
+                         uint(plt_abs_ini) + uint(plt_akrat_lowJ) + uint(plt_akrat_highJ);
 
     if(nr_parameters == 0)
         return res;
@@ -2182,9 +2182,9 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
     if(plt_dust_temp)
         if(nr_densities > 1 && data_pos_dt_list.size() >= nr_densities)
             nr_parameters += nr_densities;
-    //if(plt_abs_ini)
-    //    if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
-    //        nr_parameters += nr_densities;
+    if(plt_abs_ini)
+        if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+            nr_parameters += nr_densities;
  
 
     long naxis = 4;
@@ -2314,7 +2314,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
     valarray<double> array_dg_upper(nelements);
     valarray<double> array_dg_10_lower(nelements);
     valarray<double> array_dg_10_upper(nelements);
-    //valarray<double> array_abs_ini(nelements);
+    valarray<double> array_abs_ini(nelements);
     valarray<double> array_amaxJB_Lar(nelements);
     valarray<double> array_akrat_lowJ(nelements);
     valarray<double> array_akrat_highJ(nelements);
@@ -2527,19 +2527,19 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
     }
     
   
-    //if(plt_abs_ini)
-    //{
-    //    buffer_abs_ini = new double *[nelements];
-    //    for(int i_cell = 0; i_cell < nelements; i_cell++)
-    //    {
-    //        // +1 for the average/sum of the quantity, but only if multiple quantities are
-    //        // in the grid
-    //        if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
-    //            buffer_abs_ini[i_cell] = new double[nr_densities + 1];
-    //        else
-    //            buffer_abs_ini[i_cell] = new double[nr_densities];
-    //    }
-    //}
+    if(plt_abs_ini)
+    {
+        buffer_abs_ini = new double *[nelements];
+        for(int i_cell = 0; i_cell < nelements; i_cell++)
+        {
+            // +1 for the average/sum of the quantity, but only if multiple quantities are
+            // in the grid
+            if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+                buffer_abs_ini[i_cell] = new double[nr_densities + 1];
+            else
+                buffer_abs_ini[i_cell] = new double[nr_densities];
+        }
+    }
     
     if(plt_amaxJB_Lar)
     {
@@ -3019,24 +3019,24 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             }
             
             
-            //if(plt_abs_ini)
-            //{
-            //    for(int i_cell = 0; i_cell < nelements; i_cell++)
-            //        array_abs_ini[i_cell] = buffer_abs_ini[i_cell][0];
-            //    fpixel[3]++;
-            //    pFits->pHDU().write(fpixel, nelements, array_dust_temp);
+            if(plt_abs_ini)
+            {
+                for(int i_cell = 0; i_cell < nelements; i_cell++)
+                    array_abs_ini[i_cell] = buffer_abs_ini[i_cell][0];
+                fpixel[3]++;
+                pFits->pHDU().write(fpixel, nelements, array_dust_temp);
 
-            //    if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
-            //    {
-            //        for(uint i_density = 0; i_density < nr_densities; i_density++)
-            //        {
-            //            for(int i_cell = 0; i_cell < nelements; i_cell++)
-            //                array_abs_ini[i_cell] = buffer_abs_ini[i_cell][i_density + 1];
-            //            fpixel[3]++;
-            //            pFits->pHDU().write(fpixel, nelements, array_dust_temp);
-            //        }
-            // 	}
-            //}
+                if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+                {
+                    for(uint i_density = 0; i_density < nr_densities; i_density++)
+                    {
+                        for(int i_cell = 0; i_cell < nelements; i_cell++)
+                            array_abs_ini[i_cell] = buffer_abs_ini[i_cell][i_density + 1];
+                        fpixel[3]++;
+                        pFits->pHDU().write(fpixel, nelements, array_dust_temp);
+                    }
+             	}
+            }
             
             if(plt_amaxJB_Lar)
             {
@@ -3524,24 +3524,24 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
             }
             
                         
-            //if(plt_abs_ini)
-            //{
-            //    for(int i_cell = 0; i_cell < nelements; i_cell++)
-            //        array_abs_ini[i_cell] = buffer_abs_ini[i_cell][0];
-            //    fpixel[3]++;
-            //    pFits->pHDU().write(fpixel, nelements, array_abs_ini);
+            if(plt_abs_ini)
+            {
+                for(int i_cell = 0; i_cell < nelements; i_cell++)
+                    array_abs_ini[i_cell] = buffer_abs_ini[i_cell][0];
+                fpixel[3]++;
+                pFits->pHDU().write(fpixel, nelements, array_abs_ini);
 
-            //    if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
-            //    {
-            //        for(uint i_density = 0; i_density < nr_densities; i_density++)
-            //        {
-            //            for(int i_cell = 0; i_cell < nelements; i_cell++)
-            //                array_abs_ini[i_cell] = buffer_abs_ini[i_cell][i_density + 1];
-            //            fpixel[3]++;
-            //            pFits->pHDU().write(fpixel, nelements, array_abs_ini);
-            //        }
-            //    }
-            //}
+                if(nr_densities > 1 && data_pos_abs_ini_list.size() >= nr_densities)
+                {
+                    for(uint i_density = 0; i_density < nr_densities; i_density++)
+                    {
+                        for(int i_cell = 0; i_cell < nelements; i_cell++)
+                            array_abs_ini[i_cell] = buffer_abs_ini[i_cell][i_density + 1];
+                        fpixel[3]++;
+                        pFits->pHDU().write(fpixel, nelements, array_abs_ini);
+                    }
+                }
+            }
             
             if(plt_amaxJB_Lar)
             {
@@ -4140,24 +4140,24 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         }
     }
     
-    //if(plt_abs_ini)
-    //{
-    //    counter++;
-    //    updateMidplaneString(str_1, str_2, counter);
-    //    if(nr_densities > 1)
-    //    {
-    //        pFits->pHDU().addKey(str_1, "initial_absorption_rate", str_2);
-    //        for(uint i_density = 1; i_density <= nr_densities; i_density++)
-    //        {
-    //            counter++;
-    //            updateMidplaneString(str_1, str_2, counter);
-    //            string str_3 = getDensityString("initial_absorption_rate_%i", i_density);
-    //            pFits->pHDU().addKey(str_1, str_3, str_2);
-    //        }
-    //    }
-    //    else
-    //        pFits->pHDU().addKey(str_1, "initial_absorption_rate", str_2);
-    //}
+    if(plt_abs_ini)
+    {
+        counter++;
+        updateMidplaneString(str_1, str_2, counter);
+        if(nr_densities > 1)
+        {
+            pFits->pHDU().addKey(str_1, "initial_absorption_rate", str_2);
+            for(uint i_density = 1; i_density <= nr_densities; i_density++)
+            {
+                counter++;
+                updateMidplaneString(str_1, str_2, counter);
+                string str_3 = getDensityString("initial_absorption_rate_%i", i_density);
+                pFits->pHDU().addKey(str_1, str_3, str_2);
+            }
+        }
+        else
+            pFits->pHDU().addKey(str_1, "initial_absorption_rate", str_2);
+    }
     
     if(plt_amaxJB_Lar)
     {
@@ -4310,12 +4310,12 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
         delete[] buffer_dg_10_lower;
     if(plt_dg_10_upper)
         delete[] buffer_dg_10_upper;
-    //if(plt_abs_ini)
-    //{
-    //    for(long i_cell = 0; i_cell < nelements; i_cell++)
-    //        delete[] buffer_abs_ini[i_cell];
-    //    delete[] buffer_abs_ini;
-    //}
+    if(plt_abs_ini)
+    {
+        for(long i_cell = 0; i_cell < nelements; i_cell++)
+            delete[] buffer_abs_ini[i_cell];
+        delete[] buffer_abs_ini;
+    }
     if(plt_amaxJB_Lar)
         delete[] buffer_amaxJB_Lar;
     if(plt_akrat_lowJ)

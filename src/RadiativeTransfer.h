@@ -153,11 +153,13 @@ class CRadiativeTransfer
 
     // Temperature calculation and RATs
     bool calcMonteCarloRadiationField(uint command, parameters & param, bool use_energy_density, bool disable_reemission = false, uint loop = 1);
+    void resetRadiationField();
+    
     // Set temperature (old!)
-    bool setTemperatureDistribution();
+    bool setTemperatureDistribution(parameters & param);
 
     // Dust scattered light
-    bool calcPolMapsViaMC();
+    bool calcPolMapsViaMC(parameters & param);
 
     // Dust emission
     bool calcPolMapsViaRaytracing(parameters & param);
@@ -175,7 +177,7 @@ class CRadiativeTransfer
                           uint i_det,
                           uint subpixel_lvl,
                           parameters & param);
-    void calcStellarEmission(uint i_det);
+    void calcStellarEmission(uint i_det, parameters &  param);
 
     // Synchrontron emission
     bool calcSyncMapsViaRaytracing(parameters & param);
@@ -202,7 +204,8 @@ class CRadiativeTransfer
                                uint i_species,
                                uint i_line,
                                uint subpixel_lvl,
-                               int pos_id);
+                               int pos_id,
+                               parameters & param);
     void getLineIntensity(photon_package * pp,
                           CSourceBasic * tmp_source,
                           double cx,
@@ -210,7 +213,8 @@ class CRadiativeTransfer
                           uint i_det,
                           uint subpixel_lvl,
                           uint i_species,
-                          uint i_line);
+                          uint i_line,
+                          parameters & param);
 
     // Calc radiation pressure
     // bool calcRadiativePressure(parameter & param);
@@ -280,20 +284,20 @@ class CRadiativeTransfer
         detector = d;
     }
 
-    double getEscapeTauForced(photon_package * pp);
+    double getEscapeTauForced(photon_package * pp, parameters & param);
 
     bool doMRWStepBW(photon_package * pp);
     bool doMRWStepBWWithoutHeating(photon_package * pp);
 
-    void calcFinalTemperature(bool use_energy_density);
+    void calcFinalTemperature(bool use_energy_density, parameters & param);
     void calcStochasticHeating();
     void calcAlignedRadii(parameters & param);
     void calcMaxAlignedRadii();
     void calcDisruptRadii(parameters & param);
     void calcMaxDisruptRadii(parameters & param);
-    void calcSizeParamModify();
-    void calcNewMeanEfficiency();
-    void calcBarnetLowJRadii();
+    void calcSizeParamModify(parameters & param);
+    void calcNewMeanEfficiency(parameters & param);
+    void calcBarnetLowJRadii(parameters & param);
     void calcBarnetHighJRadii(parameters & param);
     void calcDGRadii(parameters & param);
     void calcDG10Radii(parameters & param);
@@ -342,7 +346,7 @@ class CRadiativeTransfer
         }
     }
 
-    void convertTempInQB(double min_gas_density, bool use_gas_temp);
+    void convertTempInQB(double min_gas_density, bool use_gas_temp, parameters & param);
 
   private:
     string pathOutput;

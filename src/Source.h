@@ -474,9 +474,9 @@ class CSourceDust : public CSourceBasic
             delete[] cell_prob;
     }
 
-    bool initSource(uint w);
+    bool initSource(uint w, parameters & param);
 
-    bool initSource(uint id, uint max, bool use_energy_density);
+    bool initSource(uint id, uint max, bool use_energy_density, parameters & param);
 
     void createNextRay(photon_package * pp, ullong i_pos);
     void createDirectRay(photon_package * pp, Vector3D dir_obs);

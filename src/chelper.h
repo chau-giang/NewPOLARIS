@@ -48,6 +48,13 @@ class cell_basic
         data[i] = d;
     }
 
+    void resetData(uint i)
+    {
+#pragma omp atomic write
+        data[i] = 0;
+    }
+
+
     void updateData(uint i, double d)
     {
 #pragma omp atomic update

@@ -444,6 +444,29 @@ bool CRadiativeTransfer::doMRWStepBW(photon_package * pp)
     return true;
 }
 
+void CRadiativeTransfer::resetRadiationField()
+{
+    ulong max_cells = grid->getMaxDataCells();
+
+    ullong per_counter = 0;
+    float last_percentage = 0;
+
+    cout << CLR_LINE;
+
+#pragma omp parallel for schedule(dynamic)
+    for(long c_i = 0; c_i < long(max_cells); c_i++)
+    {
+    	double nr_of_wavelength = dust->getNrOfWavelength();
+    	cell_basic * cell = grid->getCellFromIndex(c_i);
+    	for(uint wID = 0; wID < nr_of_wavelength; wID++)
+        	grid->resetRadiationField(cell, wID);
+    }
+
+    cout << CLR_LINE;
+    cout << "- Reset temporary radiation field strength     : done" << endl;
+}
+
+
 bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
  						      parameters & param,
                                                       bool use_energy_density,
@@ -483,11 +506,6 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
         cout << CLR_LINE;
         switch(command)
         {
-            case CMD_TEMP_RAT_DISR:
-                cout << "-> MC temp., RAT and RATD distribution: 0 [%], max. temp. " << dust->getMaxDustTemp()
-                     << " [K]      \r" << flush;
-                break;
-
             case CMD_TEMP_RAT:
                 cout << "-> MC temp. and RAT distribution: 0 [%], max. temp. " << dust->getMaxDustTemp()
                      << " [K]      \r" << flush;
@@ -530,14 +548,8 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
 #pragma omp critical
                     {
                         switch(command)
-                        {
-                            case CMD_TEMP_RAT_DISR:
-                                cout << "-> MC temp., RAT and RATD distribution: " << percentage
-                                     << " [%], max. temp. " << dust->getMaxDustTemp() << " [K]      \r"
-                                     << flush;
-                                break;
-
-                            case CMD_TEMP_RAT:
+                        { 
+                           case CMD_TEMP_RAT:
                                 cout << "-> MC temp. and RAT distribution: " << percentage
                                      << " [%], max. temp. " << dust->getMaxDustTemp() << " [K]      \r"
                                      << flush;
@@ -612,7 +624,7 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
 
 		    
                     // Get necessary quantities
-                    dens = dust->getNumberDensity(grid, pp);
+                    dens = dust->getNumberDensity(grid, pp, param);
 
                     // skip cells without density
                     if(dens == 0)
@@ -627,12 +639,13 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
 		    if (loop == 1)
             	    {
                 	// Calculate the dust cross sections (for random alignment)
-                	Cext = dust->getCextMeanGrid(grid, pp);
+                	Cext = dust->getCextMeanGrid(grid, pp, param);
             	    }
 		    else
             	    {
                 	// Take the new dust cross section saved in grid  
-                	Cext = dust->getNewMeanCextGrid(grid, pp);
+                	//Cext = dust->getCextMeanGrid(grid, pp, param);
+                	Cext = dust->getNewMeanCextGrid(grid, pp, param);
             	    }
  
 		    
@@ -657,12 +670,13 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
                             if (loop == 1)
                             {
                                 // Calculate the dust scattering cross sections (for random alignment)
-                                Csca = dust->getCscaMeanGrid(grid, pp);
+                                Csca = dust->getCscaMeanGrid(grid, pp, param);
                             }
 		    	    else
                             {
-                                // Take the new dust scattering cross section saved in grid  
-                                Csca = dust->getNewMeanCscaGrid(grid, pp);
+                                // Take the new dust scattering cross section saved in grid 
+                                //Csca = dust->getCscaMeanGrid(grid, pp, param); 
+                                Csca = dust->getNewMeanCscaGrid(grid, pp, param);
                             }
 
                             // Calculate albedo and check if absorption or
@@ -673,14 +687,15 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
                             {
                                 // Perform simple photon scattering without
                                 // changing the Stokes vectors
-                                dust->scatter(grid, pp, loop);
+                                dust->scatter(grid, pp, param, loop);
+
                             }
                             else
                             {
                                 // Calculate the temperature of the absorbing cell
                                 // and change the wavelength of the photon
                                 if(!disable_reemission &&
-                                   dust->adjustTempAndWavelengthBW(grid, pp, use_energy_density))
+                                   dust->adjustTempAndWavelengthBW(grid, pp, use_energy_density, param, loop))
                                 {
                                     // Send this photon into a new random direction
                                     pp->calcRandomDirection();
@@ -730,12 +745,6 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
 
     switch(command)
     {
-        case CMD_TEMP_RAT_DISR:
-            cout << "- MC calc. of temperatures, RATs, and RATD : done                          "
-                    "      "
-                 << endl;
-            break;
-
         case CMD_TEMP_RAT:
             cout << "- MC calc. of temperatures and RATs : done                          "
                     "      "
@@ -763,7 +772,7 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
     return true;
 }
 
-bool CRadiativeTransfer::setTemperatureDistribution()
+bool CRadiativeTransfer::setTemperatureDistribution(parameters & param)
 {
     ulong per_counter = 0;
     ulong max_cells = grid->getMaxDataCells();
@@ -786,7 +795,7 @@ bool CRadiativeTransfer::setTemperatureDistribution()
         int l = 0;
         double error = 0.0001;
 
-        double rho = dust->getNumberDensity(grid, cell) * 1e-16; // dens_data[c];
+        double rho = dust->getNumberDensity(grid, cell, param) * 1e-16; // dens_data[c];
         double tdust = 1000; // grid->getGasTemperature(cell); //tdust_orig;
         double tdust_orig = grid->getGasTemperature(cell);
         double chi, tnew, tau, lambda_dust, det, eqfunc, kappa;
@@ -866,7 +875,7 @@ bool CRadiativeTransfer::setTemperatureDistribution()
     return true;
 }
 
-bool CRadiativeTransfer::calcPolMapsViaMC()
+bool CRadiativeTransfer::calcPolMapsViaMC(parameters & param)
 {
     // Init variables
     ullong nr_of_photons;
@@ -987,7 +996,7 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
                         if(b_forced)
                         {
                             // Get tau for first interaction, if the interaction is forced
-                            end_tau = getEscapeTauForced(rays);
+                            end_tau = getEscapeTauForced(rays, param);
 
                             // If optical depth is exactly zero, send only one photon
                             // package as without enfsca
@@ -1030,7 +1039,7 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
                         }
 
                         // Get dust number density of the current cell
-                        dens = dust->getNumberDensity(grid, pp);
+                        dens = dust->getNumberDensity(grid, pp, param);
 
                         // If the dust density is too low, skip this cell
                         if(dens < 1e-200)
@@ -1041,7 +1050,7 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
 
                         // Calculate the dust absorption cross section (for random
                         // alignment)
-                        Cext = dust->getCextMeanGrid(grid, pp);
+                        Cext = dust->getCextMeanGrid(grid, pp, param);
 
                         // Get path length through current cell
                         len = pp->getTmpPathLength();
@@ -1101,7 +1110,7 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
                                             // Create an escaping photon into the
                                             // direction of the detector
                                             photon_package tmp_pp = dust->getEscapePhoton(
-                                                grid, pp, detector[d].getEX(), detector[d].getDirection());
+                                                grid, pp, detector[d].getEX(), detector[d].getDirection(), param);
 
                                             // Convert the flux into Jy and consider
                                             // the distance to the observer
@@ -1133,7 +1142,7 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
                             }
 
                             // Perform scattering interaction into a new direction
-                            dust->scatter(grid, pp, true);
+                            dust->scatter(grid, pp, param, 1, true); // 1 in the third position means loop = 1 (see the function scatter in Dust.h)
 
                             // Calculate new optical depth for next interaction
                             end_tau = -log(1.0 - pp->getRND());
@@ -1259,8 +1268,8 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
                         {
                             // Get necessary information about the current cell
                             double len = tmp_pp.getTmpPathLength();
-                            double dens = dust->getNumberDensity(grid, &tmp_pp);
-                            double Cext = dust->getCextMeanGrid(grid, &tmp_pp);
+                            double dens = dust->getNumberDensity(grid, &tmp_pp, param);
+                            double Cext = dust->getCextMeanGrid(grid, &tmp_pp, param);
 
                             // Increase the optical depth by the current cell
                             tau_obs += Cext * len * dens;
@@ -1322,7 +1331,7 @@ bool CRadiativeTransfer::calcPolMapsViaMC()
     return true;
 }
 
-void CRadiativeTransfer::convertTempInQB(double min_gas_density, bool use_gas_temp)
+void CRadiativeTransfer::convertTempInQB(double min_gas_density, bool use_gas_temp, parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
     ulong pos_counter = 0;
@@ -1339,7 +1348,7 @@ void CRadiativeTransfer::convertTempInQB(double min_gas_density, bool use_gas_te
         if(gas_dens < min_gas_density)
             continue;
 
-        dust->convertTempInQB(grid, cell, min_gas_density, use_gas_temp);
+        dust->convertTempInQB(grid, cell, min_gas_density, use_gas_temp, param);
 
         pos_counter++;
 
@@ -1354,7 +1363,7 @@ void CRadiativeTransfer::convertTempInQB(double min_gas_density, bool use_gas_te
     }
 
     cout << CLR_LINE;
-    // cout << "- Converting emissivities             : done" << endl;
+    cout << "- Converting emissivities             : done" << endl;
 }
 
 void CRadiativeTransfer::calcAlignedRadii(parameters & param)
@@ -1516,7 +1525,7 @@ void CRadiativeTransfer::calcMaxDisruptRadii(parameters & param)
 }
 
 
-void CRadiativeTransfer::calcSizeParamModify()
+void CRadiativeTransfer::calcSizeParamModify(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1530,7 +1539,7 @@ void CRadiativeTransfer::calcSizeParamModify()
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcSizeParamModify(grid, cell);
+        dust->calcSizeParamModify(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1555,7 +1564,7 @@ void CRadiativeTransfer::calcSizeParamModify()
          << float(dust->getMaxSizeParamModify()) << "] [m]" << endl;
 }
 
-void CRadiativeTransfer::calcNewMeanEfficiency()
+void CRadiativeTransfer::calcNewMeanEfficiency(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1568,9 +1577,8 @@ void CRadiativeTransfer::calcNewMeanEfficiency()
 #pragma omp parallel for schedule(dynamic)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
-    	//cout << "are you here? " << endl;
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcNewMeanEfficiency(grid, cell);
+        dust->calcNewMeanEfficiency(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1591,7 +1599,7 @@ void CRadiativeTransfer::calcNewMeanEfficiency()
     cout << "- Calc. new <Cext> and <Csca>      : done" << endl;
 }
 
-void CRadiativeTransfer::calcBarnetLowJRadii()
+void CRadiativeTransfer::calcBarnetLowJRadii(parameters & param)
 {
     ulong max_cells = grid->getMaxDataCells();
 
@@ -1605,7 +1613,7 @@ void CRadiativeTransfer::calcBarnetLowJRadii()
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcBarnetLowJRadii(grid, cell);
+        dust->calcBarnetLowJRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1867,7 +1875,7 @@ void CRadiativeTransfer::calckRAThighJRadii(parameters & param)
 }
 
 
-void CRadiativeTransfer::calcFinalTemperature(bool use_energy_density)
+void CRadiativeTransfer::calcFinalTemperature(bool use_energy_density, parameters & param)
 {
     ullong per_counter = 0;
     float last_percentage = 0;
@@ -1881,10 +1889,10 @@ void CRadiativeTransfer::calcFinalTemperature(bool use_energy_density)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcTemperature(grid, cell, use_energy_density);
+        dust->calcTemperature(grid, cell, use_energy_density, param);
 
         if(adjTgas > 0)
-            grid->setGasTemperature(cell, adjTgas * dust->getDustTemperature(grid, cell));
+            grid->setGasTemperature(cell, adjTgas * dust->getDustTemperature(grid, cell, param));
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1946,7 +1954,7 @@ void CRadiativeTransfer::calcStochasticHeating()
     cout << "- Calculation of stochastic heating    : done" << endl;
 }
 
-double CRadiativeTransfer::getEscapeTauForced(photon_package * rays)
+double CRadiativeTransfer::getEscapeTauForced(photon_package * rays, parameters & param)
 {
     double len, dens, Cext, enf_tau = 0;
     double rnd = rays[0].getRND();
@@ -1960,8 +1968,8 @@ double CRadiativeTransfer::getEscapeTauForced(photon_package * rays)
     while(grid->next(&rays[0]))
     {
         len = rays[0].getTmpPathLength();
-        dens = dust->getNumberDensity(grid, &rays[0]);
-        Cext = dust->getCextMeanGrid(grid, &rays[0]);
+        dens = dust->getNumberDensity(grid, &rays[0], param);
+        Cext = dust->getCextMeanGrid(grid, &rays[0], param);
         enf_tau += Cext * len * dens;
     }
 
@@ -2542,7 +2550,7 @@ bool CRadiativeTransfer::calcPolMapsViaRaytracing(parameters & param)
 
             // Include stellar emission, if chosen
             if(tracer[i_det]->considerPointSources())
-                calcStellarEmission(i_det);
+                calcStellarEmission(i_det, param);
 
             // Show final progress
             cout << "-> Raytracing dust maps (Seq. " << i_det + 1 << ", source: " << sID + 1
@@ -2659,7 +2667,7 @@ void CRadiativeTransfer::getDustIntensity(photon_package * pp,
         {
             // Get necessary quantities from current cell
             double dens_gas = grid->getGasNumberDensity(pp);
-            double dens_dust = dust->getNumberDensity(grid, pp);
+            double dens_dust = dust->getNumberDensity(grid, pp, param);
 
             // If the dust density is far too low, skip the current cell
             if(dens_dust >= 1e-200)
@@ -2860,7 +2868,7 @@ void CRadiativeTransfer::getDustIntensity(photon_package * pp,
     }
 }
 
-void CRadiativeTransfer::calcStellarEmission(uint i_det)
+void CRadiativeTransfer::calcStellarEmission(uint i_det, parameters & param)
 {
     // Init variables for photon positioning on detector
     int i_pix;
@@ -2921,8 +2929,8 @@ void CRadiativeTransfer::calcStellarEmission(uint i_det)
             {
                 // Get necessary information about the current cell
                 double len = pp->getTmpPathLength();
-                double dens = dust->getNumberDensity(grid, pp);
-                double Cext = dust->getCextMeanGrid(grid, pp);
+                double dens = dust->getNumberDensity(grid, pp, param);
+                double Cext = dust->getCextMeanGrid(grid, pp, param);
 
                 // Increase the optical depth by the current cell
                 tau_obs += Cext * len * dens;
@@ -3039,7 +3047,7 @@ bool CRadiativeTransfer::calcChMapsViaRaytracing(parameters & param)
                         last_percentage = percentage;
                     }
                 }
-                getLinePixelIntensity(tmp_source, cx, cy, i_det, i_species, i_line, uint(0), i_pix);
+                getLinePixelIntensity(tmp_source, cx, cy, i_det, i_species, i_line, uint(0), i_pix, param);
             }
 
             // post-process raytracing simulation
@@ -3067,7 +3075,8 @@ void CRadiativeTransfer::getLinePixelIntensity(CSourceBasic * tmp_source,
                                                uint i_line,
                                                uint i_det,
                                                uint subpixel_lvl,
-                                               int i_pix)
+                                               int i_pix, 
+                                               parameters & param)
 {
     bool subpixel = false;
     photon_package * pp;
@@ -3086,7 +3095,7 @@ void CRadiativeTransfer::getLinePixelIntensity(CSourceBasic * tmp_source,
         tracer[i_det]->preparePhoton(pp, cx, cy);
 
         // Calculate line emission along one path
-        getLineIntensity(pp, tmp_source, cx, cy, i_det, subpixel_lvl, i_species, i_line);
+        getLineIntensity(pp, tmp_source, cx, cy, i_det, subpixel_lvl, i_species, i_line, param);
 
         tracer[i_det]->addToDetector(pp, i_pix);
 
@@ -3107,7 +3116,7 @@ void CRadiativeTransfer::getLinePixelIntensity(CSourceBasic * tmp_source,
                 // Calculate radiative transfer of the current pixel
                 // and add it to the detector at the corresponding position
                 getLinePixelIntensity(
-                    tmp_source, tmp_cx, tmp_cy, i_species, i_line, i_det, (subpixel_lvl + 1), i_pix);
+                    tmp_source, tmp_cx, tmp_cy, i_species, i_line, i_det, (subpixel_lvl + 1), i_pix, param);
             }
         }
     }
@@ -3124,7 +3133,8 @@ void CRadiativeTransfer::getLineIntensity(photon_package * pp,
                                           uint i_det,
                                           uint subpixel_lvl,
                                           uint i_species,
-                                          uint i_line)
+                                          uint i_line,
+                                          parameters & param)
 {
     // Set amount of radiation coming from this pixel
     double subpixel_fraction = pow(4.0, -double(subpixel_lvl));
@@ -3224,7 +3234,7 @@ void CRadiativeTransfer::getLineIntensity(photon_package * pp,
                 double dens_species = gas->getNumberDensity(grid, pp, i_species);
 
                 // Calculate the emission of the dust grains
-                StokesVector S_dust = dust->calcEmissivitiesHz(grid, pp);
+                StokesVector S_dust = dust->calcEmissivitiesHz(grid, pp, param);
 
                 // Calculate the emission of the gas particles
                 StokesVector S_gas;
