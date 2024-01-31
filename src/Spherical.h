@@ -65,7 +65,6 @@ class CGridSpherical : public CGridBasic
 
         conv_length_in_SI = 1;
         conv_dens_in_SI = 1;
-        conv_Smax_in_SI = 1;
         conv_Bfield_in_SI = 1;
         conv_Vfield_in_SI = 1;
 

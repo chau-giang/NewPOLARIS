@@ -157,7 +157,7 @@ class CPipeline
         cout << "- Conv. length in SI           : " << param.getSIConvLength() << endl;
         cout << "- Conv. vel. field in SI.      : " << param.getSIConvVField() << endl;
         cout << "- Conv. mag. field in SI.      : " << param.getSIConvBField() << endl;
-        cout << "- Conv. tensile. strength in SI.      : " << param.getSIConvSmax() << endl;
+ 
         if(param.getIndividualDustMassFractions())
 
             cout << "- Mass fraction (Mdust/Mgas)   : set by the dust components" << endl;

@@ -3,13 +3,13 @@
 #include "Grid.h"
 #include "MathFunctions.h"
 
-bool CSourceStar::initSource(uint id, uint max, bool use_energy_density)
+bool CSourceStar::initSource(uint id, uint max, bool use_energy_density, parameters & param, uint loop=1)
 {
     // Initial output
     cout << CLR_LINE << flush;
     cout << "-> Initiating source star         \r" << flush;
 
-    if(use_energy_density)
+    if ((use_energy_density) || (loop != 1))
     {
         // For using energy density, only the photon number is required
         cout << "- Source (" << id + 1 << " of " << max << ") STAR: " << float(L / L_sun)
@@ -259,7 +259,7 @@ void CSourceStar::createDirectRay(photon_package * pp, Vector3D dir_obs)
     pp->setStokesVector(tmp_stokes_vector);
 }
 
-bool CSourceStarField::initSource(uint id, uint max, bool use_energy_density)
+bool CSourceStarField::initSource(uint id, uint max, bool use_energy_density, parameters & param, uint loop=1)
 {
     // Initial output
     cout << CLR_LINE << flush;
@@ -501,7 +501,7 @@ void CSourceStarField::createDirectRay(photon_package * pp, Vector3D dir_obs)
     pp->setStokesVector(tmp_stokes_vector);
 }
 
-bool CSourceBackground::initSource(uint id, uint max, bool use_energy_density)
+bool CSourceBackground::initSource(uint id, uint max, bool use_energy_density, parameters & param, uint loop=1)
 {
     lam_pf = new spline[max_len];
     L = new double[max_len];
@@ -728,7 +728,7 @@ StokesVector CSourceBackground::getStokesVector(photon_package * pp)
     return res;
 }
 
-bool CSourceISRF::initSource(uint id, uint max, bool use_energy_density)
+bool CSourceISRF::initSource(uint id, uint max, bool use_energy_density, parameters & param, uint loop=1)
 {
     double * star_emi = new double[getNrOfWavelength()];
 
@@ -964,7 +964,7 @@ void CSourceISRF::createDirectRay(photon_package * pp, Vector3D dir_obs)
     pp->setStokesVector(tmp_stokes_vector);
 }
 
-bool CSourceDust::initSource(uint id, uint max, bool use_energy_density, parameters & param)
+bool CSourceDust::initSource(uint id, uint max, bool use_energy_density, parameters & param, uint loop = 1)
 {
     if(!use_energy_density)
     {
@@ -973,6 +973,7 @@ bool CSourceDust::initSource(uint id, uint max, bool use_energy_density, paramet
         return false;
     }
 
+	cout  << "enter init source of dust source" << endl;
     // Init variables
     ulong nr_of_cells = grid->getMaxDataCells();
     ulong nr_of_wavelengths = getNrOfWavelength();
@@ -1022,7 +1023,7 @@ bool CSourceDust::initSource(uint id, uint max, bool use_energy_density, paramet
             pp->setPositionCell(grid->getCellFromIndex(i_cell));
 
             // Get total energy of thermal emission
-            total_energy[w] += dust->getCellEmission(grid, pp, param);
+            total_energy[w] += dust->getCellEmission(grid, pp, param, loop);
 
             // Add energy to probability distribution
             cell_prob[w].setValue(i_cell + 1, total_energy[w]);
@@ -1042,7 +1043,7 @@ bool CSourceDust::initSource(uint id, uint max, bool use_energy_density, paramet
     return true;
 }
 
-bool CSourceDust::initSource(uint w, parameters & param)
+bool CSourceDust::initSource(uint w, parameters & param) // use in calcpolmapviaMC [source: dust]
 {
     // Init variables
     ulong nr_of_cells = grid->getMaxDataCells();
@@ -1090,7 +1091,7 @@ bool CSourceDust::initSource(uint w, parameters & param)
         pp->setPositionCell(grid->getCellFromIndex(i_cell));
 
         // Get total energy of thermal emission
-        total_energy[w] += dust->getCellEmission(grid, pp, param);
+        total_energy[w] += dust->getCellEmission(grid, pp, param, 1); // use loop = 1, they will call get_rel_weight [alrealdy have RATD inside]
 
         // Add energy to probability distribution
         cell_prob[w].setValue(i_cell + 1, total_energy[w]);
@@ -1167,7 +1168,7 @@ void CSourceDust::createDirectRay(photon_package * pp, Vector3D dir_obs)
     }
 }
 
-bool CSourceLaser::initSource(uint id, uint max, bool use_energy_density)
+bool CSourceLaser::initSource(uint id, uint max, bool use_energy_density,parameters & param, uint loop=1)
 {
     // Initial output
     cout << CLR_LINE << flush;

@@ -503,14 +503,14 @@ bool CGridOcTree::loadGridFromBinrayFile(parameters & param, uint _data_len)
 
             updateVelocity(cell_oc_pos, param);
 
-            if(uint(cell_oc_pos->getData(data_pos_id)) < 0 ||
-               uint(cell_oc_pos->getData(data_pos_id)) > param.getMaxDustComponentChoice())
-            {
-                cout << "\nERROR: Dust ID in grid exceeds maximum number of dust choices "
-                        "available! "
-                     << endl;
-                return false;
-            }
+            //if(uint(cell_oc_pos->getData(data_pos_id)) < 0 ||
+            //   uint(cell_oc_pos->getData(data_pos_id)) > param.getMaxDustComponentChoice())
+           // {
+           //     cout << "\nERROR: Dust ID in grid exceeds maximum number of dust choices "
+           //             "available! "
+           //          << endl;
+           //     return false;
+           // }
 
             // assignOpiateID(&cell_oc_pos->getChildren()[cube_pos]);
             updateDataRange(&cell_oc_pos->getChildren()[cube_pos], param);

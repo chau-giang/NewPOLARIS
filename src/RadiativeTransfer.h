@@ -153,7 +153,7 @@ class CRadiativeTransfer
 
     // Temperature calculation and RATs
     bool calcMonteCarloRadiationField(uint command, parameters & param, bool use_energy_density, bool disable_reemission = false, uint loop = 1);
-    void resetRadiationField();
+ 
     
     // Set temperature (old!)
     bool setTemperatureDistribution(parameters & param);
@@ -219,12 +219,14 @@ class CRadiativeTransfer
     // Calc radiation pressure
     // bool calcRadiativePressure(parameter & param);
 
-    void updateRadiationField(photon_package * pp, parameters & param)
+    void updateRadiationField(photon_package * pp, parameters & param, uint loop)
     {
+    	//cout << "update radiation field" << endl;
         double energy = pp->getTmpPathLength() * pp->getStokesVector().I();  //L(lambda) & delta_l?
 
         if(stokes_dust_rad_field)
         {
+        	//cout << "stokes_dust_rad_field" << endl;
             // Rotate vector of radiation field to cell center
             Vector3D rad_field_dir = grid->rotateToCenter(pp, pp->getDirection());
 
@@ -254,7 +256,8 @@ class CRadiativeTransfer
         }
         else
         {
-            grid->updateSpecLength(pp, energy);
+        	//cout << "or enter here???"<< endl;
+            grid->updateSpecLength(pp, energy, loop);
         }
     }
 
@@ -289,20 +292,20 @@ class CRadiativeTransfer
     bool doMRWStepBW(photon_package * pp);
     bool doMRWStepBWWithoutHeating(photon_package * pp);
 
-    void calcFinalTemperature(bool use_energy_density, parameters & param);
-    void calcStochasticHeating();
-    void calcAlignedRadii(parameters & param);
-    void calcMaxAlignedRadii();
-    void calcDisruptRadii(parameters & param);
-    void calcMaxDisruptRadii(parameters & param);
+    void calcFinalTemperature(bool use_energy_density, parameters & param, uint loop);
+    void calcStochasticHeating(uint loop);
+    void calcAlignedRadii(parameters & param, uint loop);
+    void calcMaxAlignedRadii(parameters & param);
+    void calcDisruptRadii(parameters & param, uint loop);
+    void calcMaxDisruptRadii(parameters & param, uint loop);
     void calcSizeParamModify(parameters & param);
-    void calcNewMeanEfficiency(parameters & param);
+    void calcNewMeanEfficiency(parameters & param );
     void calcBarnetLowJRadii(parameters & param);
-    void calcBarnetHighJRadii(parameters & param);
-    void calcDGRadii(parameters & param);
-    void calcDG10Radii(parameters & param);
-    void calckRATlowJRadii(parameters & param);
-    void calckRAThighJRadii(parameters & param);
+    void calcBarnetHighJRadii(parameters & param, uint loop);
+    void calcDGRadii(parameters & param, uint loop);
+    void calcDG10Radii(parameters & param, uint loop);
+    void calckRATlowJRadii(parameters & param, uint loop);
+    void calckRAThighJRadii(parameters & param, uint loop);
 
     bool isInvalid(double val)
     {

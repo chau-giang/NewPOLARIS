@@ -63,8 +63,8 @@ using namespace std;
 // Default parameters of the global wavelength grid
 #define WL_MIN 0.1e-6
 #define WL_MAX 2000.0e-6
-//#define WL_STEPS 30  //[for MHD simulation with NxN = 256x256]
-#define WL_STEPS 100 //[default value]
+#define WL_STEPS 35 //[for MHD simulation with NxN = 256x256]
+//#define WL_STEPS 100 //[default value]
 #endif
 
 // Parameter for numerical limitations
@@ -100,8 +100,8 @@ using namespace std;
 
 #define TEMP_MIN 2.728
 #define TEMP_MAX 3000
-//#define TEMP_STEP 500  // for MHD simulation with NxN = 256x256
-#define TEMP_STEP 1000 //[default value]
+#define TEMP_STEP 500  // for MHD simulation with NxN = 256x256
+//#define TEMP_STEP 1000 //[default value]
 
 // detector ids
 #define DET_PLANE 0
@@ -208,8 +208,10 @@ using namespace std;
 #define GRIDadg_10_upper 46
 #define GRIDabs_ini 47
 #define GRIDamaxJB_Lar 48
-#define GRIDakrat_lowJ 49
-#define GRIDakrat_highJ 50
+#define GRIDakrat_lowJ_min 49
+#define GRIDakrat_lowJ_max 50
+#define GRIDakrat_highJ_min 51
+#define GRIDakrat_highJ_max 52
 
 #define minGRID GRIDgas_dens
 #define maxGRID GRIDavg_dir
@@ -281,9 +283,9 @@ using namespace std;
 #define MIE_ACCURACY 1e-20
 
 // Projections for midplane files
-#define PROJ_XY 1
-#define PROJ_XZ 2
-#define PROJ_YZ 3
+#define PROJ_XY 1  //they cut along x axis. Data will be in the form [x, y, z]
+#define PROJ_XZ 2  //they cut along y axis. Data will be in the form [y, x, z]
+#define PROJ_YZ 3  //they cut along z axis, data will be in the form [z, x, y]
 
 #define SEP_LINE                                                                                             \
     "**********************************************************************************"                     \

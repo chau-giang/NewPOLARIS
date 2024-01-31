@@ -6,8 +6,11 @@
 
 bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
 {
-    // _data_len: urad, ux, uy, uz [ if using save_energy], or only urad [ if dont save energy]
-    //cout << "_data_len" << _data_len << endl;
+    // _data_len: urad, ux, uy, uz [ if using save_energy]
+    // _data_len: urad [ if dont save energy], 
+    // _data_len: 0 [if only calculate RAT and RATD from grid_temp.dat]
+
+
     ushort tmpID, tmpOffset;
     string filename = param.getPathGrid();
 
@@ -41,8 +44,8 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
     bin_reader.read((char *)&tmpOffset, 2); // number of parameter in grid
 
     dataID = tmpID; // grid_ID
-    data_offset = (uint)tmpOffset; // number of parameter in grid
-    data_len = _data_len + data_offset; // Nparameter + parameter for use_energy_density?
+    data_offset = (uint)tmpOffset; // data_offset: number of parameter in input grid file
+    data_len = _data_len + data_offset; // data_len: Nparameter (input file) + parameter for radiation field.
 
     if(dataID == GRID_ID_SPH)
     {
@@ -361,14 +364,14 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
 
         updateVelocity(tmp_cell, param);
 
-        if(uint(tmp_cell->getData(data_pos_id)) < 0 ||
-           uint(tmp_cell->getData(data_pos_id)) > param.getMaxDustComponentChoice())
-        {
-            cout << "\nERROR: Cannot write to:\n Dust ID in grid exceeds maximum number "
-                    "of dust choices available! "
-                 << endl;
-            return false;
-        }
+        //if(uint(tmp_cell->getData(data_pos_id)) < 0 ||
+        //   uint(tmp_cell->getData(data_pos_id)) > param.getMaxDustComponentChoice())
+        //{
+        //    cout << "\nERROR: Cannot write to:\n Dust ID in grid exceeds maximum number "
+        //            "of dust choices available! "
+        //         << endl;
+        //    return false;
+        //}
 
         updateDataRange(tmp_cell, param);
 
@@ -388,8 +391,8 @@ bool CGridSpherical::loadGridFromBinrayFile(parameters & param, uint _data_len)
         return false;
     }
 
-    data_len += tmp_data_offset;
-    data_offset += tmp_data_offset;
+    data_len += tmp_data_offset; // data_len = Nparameter [input file] + wavelength [for radiation field] + parameter [calculation]
+    data_offset += tmp_data_offset; // data_offset: Nparameter [input file] +  parameter [calculation]
 
     max_len = 2 * Rmax;
     // min_len = listR[1] - listR[0];
@@ -1156,6 +1159,7 @@ bool CGridSpherical::saveBinaryGridFile(string filename, ushort id, ushort data_
         for(uint i_th = 1; i_th < N_th; i_th++)
             bin_writer.write((char *)&listTh[i_th], 8);
 
+	// Save data in all cells, except central cell
     for(uint i_r = 0; i_r < N_r; i_r++)
     {
         cout << "-> Writing binary spherical grid file: " << float(100.0 * double(i_r) / double(N_r))
@@ -1174,6 +1178,7 @@ bool CGridSpherical::saveBinaryGridFile(string filename, ushort id, ushort data_
         }
     }
 
+	// For a single cell in the center
     for(uint i = 0; i < data_offset; i++)
     {
         double tmp_data = center_cell->getData(i);

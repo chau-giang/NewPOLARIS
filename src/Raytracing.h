@@ -347,8 +347,8 @@ class CRaytracingBasic
         if(!detector->writeMap(dID, ray_result_type))
             return false;
 
-        if(!detector->writeSed(dID, ray_result_type))
-            return false;
+        //if(!detector->writeSed(dID, ray_result_type))
+        //    return false;
 
         return true;
     }

@@ -1794,6 +1794,16 @@ class CMathFunctions
         return vel / sqrt(con_kB * Tg / (mu * m_H));
     }
 
+    static inline double calc_larm_limit(double B, double Td, double Tg, double ng, double s, double larm_f)
+    {
+        double den = 1.0 * ng * Td * sqrt(Tg);
+
+        if(den == 0)
+            return 1;
+
+        return s * s * B / den / larm_f;
+    }
+    
     static inline double calc_amaxJB_Lar_default(double B, double Td, double Tg, double ng, double s, double larm_f)
     {
         // This is in SI unit
@@ -2223,7 +2233,8 @@ class CMathFunctions
             LinearList(start, stop, list, N);
         }
     }
-
+    
+ 
     static inline void LogList(double start, double stop, dlist & list, double base)
     {
         uint N = list.size();
@@ -2955,8 +2966,13 @@ class CMathFunctions
         double dang = PI2 / float(NANG - 1);
         double factor = 1e250;
 
+		//cout << "MIN_MIE_SIZE_PARAM" << MIN_MIE_SIZE_PARAM << endl;
         if(x <= MIN_MIE_SIZE_PARAM)
+        {
+     		cout << "enter here" << endl;
             return false;
+        }
+       
 
         double ax = 1 / x;
         double b = 2 * pow(ax, 2);
@@ -2974,8 +2990,10 @@ class CMathFunctions
         else if(y >= 50000)
             num = 1.005 * y + 50.5;
 
+ 
         if(num >= MAX_MIE_ITERATIONS - 1)
         {
+        	cout << "num > MAX_MIE_ITERATIONS" << endl;
             return false;
             // return calcGeometricOptics(x, refractive_index, qext, qabs,
             //    qabs, gsca, S11, S12, S33, S34);
@@ -3120,12 +3138,13 @@ class CMathFunctions
             s1 = s * (besJ2 / factorial(iu2)) - besJ1 / factorial(iu1);
             s2 = s * (besY2 * factorial(iu2)) - besY1 * factorial(iu1);
             ra1 = s1 / (s1 - s3 * s2); // coefficient a_n, (n=iterm)
-
+ 
             s = ru_tmp * refractive_index + r_iterm * ax;
             s1 = s * (besJ2 / factorial(iu2)) - besJ1 / factorial(iu1);
             s2 = s * (besY2 * factorial(iu2)) - besY1 * factorial(iu1);
             rb1 = s1 / (s1 - s3 * s2); // coefficient b_n, (n=iterm)
 
+ 
             // efficiency factors
             z = -z;
             rr = z * (iterm + 0.5) * (ra1 - rb1);
@@ -3134,12 +3153,16 @@ class CMathFunctions
                  an2 / iterm / (iterm - 1) * (ra0 * conj(rb0));
             qq = an * real(ra1 + rb1);
             qext = qext + qq;
+            
             qsca = qsca + an * (norm(ra1) + norm(rb1));
 
             // leaving-the-loop with error criterion
             if(isnan(qext))
+            {
+            	cout << "error because of nan qext" << endl;
                 return false;
-
+			}
+			
             // leaving-the-loop criterion
             if(abs(qq / qext) < MIE_ACCURACY)
                 break;
@@ -3187,7 +3210,10 @@ class CMathFunctions
             }
 
             if(iterm == MAX_MIE_ITERATIONS)
+            {
+            	cout << "error because of exceed maximum mie iteration" << endl;
                 return false;
+ 			}
         }
 
         // efficiency factors (final calculations)

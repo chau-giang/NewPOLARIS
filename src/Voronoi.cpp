@@ -191,13 +191,13 @@ bool CGridVoronoi::loadGridFromBinrayFile(parameters & param, uint _data_len)
 
         updateVelocity(tmp_cell, param);
 
-        if(uint(tmp_cell->getData(data_pos_id)) < 0 ||
-           uint(tmp_cell->getData(data_pos_id)) > param.getMaxDustComponentChoice())
-        {
-            cout << "\nERROR: Dust ID in grid exceeds maximum number of dust choices "
-                    "available!   \n";
-            return false;
-        }
+        //if(uint(tmp_cell->getData(data_pos_id)) < 0 ||
+        //   uint(tmp_cell->getData(data_pos_id)) > param.getMaxDustComponentChoice())
+        //{
+        //    cout << "\nERROR: Dust ID in grid exceeds maximum number of dust choices "
+        //            "available!   \n";
+        //    return false;
+        //}
 
         updateDataRange(tmp_cell, param);
 

@@ -451,12 +451,11 @@ class parameters
         phID = PH_HG;
         conv_l_in_SI = 1;
         conv_dH_in_SI = 1;
-        conv_Smax_in_SI = 1;
         conv_B_in_SI = 1;
         conv_V_in_SI = 1;
         conv_mass_fraction = 0.01;
         align = 0;
-	adisr = 0;
+	    disrupt = 0;
         nr_ofThreads = 1;
 
         mu = 2.0;
@@ -514,6 +513,7 @@ class parameters
         save_radiation_field = false;
         scattering_to_raytracing = false;
         sublimate = false;
+        spheroidal_size = false;
         individual_dust_fractions = false;
         change_f_highJ = false;
 
@@ -668,14 +668,14 @@ class parameters
 
     bool isRatSimulation()
     {
-        if(getCommand() == CMD_RAT || getCommand() == CMD_TEMP_RAT ||  getCommand() == CMD_RAT_DISR || getCommand() == CMD_TEMP_RAT_DISR)
+        if(getCommand() == CMD_RAT || getCommand() == CMD_RAT_DISR || getCommand() == CMD_TEMP_RAT || getCommand() == CMD_TEMP_RAT_DISR)
             return true;
         return false;
     }
 
     bool isRATDSimulation()
     {
-        if(getCommand() == CMD_DISR || getCommand() == CMD_TEMP_DISR || getCommand() == CMD_RAT_DISR || getCommand() == CMD_TEMP_RAT_DISR)
+        if(getCommand() == CMD_DISR || getCommand() == CMD_RAT_DISR || getCommand() == CMD_TEMP_DISR || getCommand() == CMD_TEMP_RAT_DISR)
 	    return true;
 	return false;
     }
@@ -851,12 +851,7 @@ class parameters
     {
         return iron_fraction;
     }
-
-    double getSIConvSmax()
-    {
-        return conv_Smax_in_SI;
-    }
-
+ 
     double getSIConvBField()
     {
         return conv_B_in_SI;
@@ -935,7 +930,7 @@ class parameters
 
     uint getDisr()
     {
-        return adisr;
+        return disrupt;
     }
 
     bool getAligRANDOM()
@@ -945,7 +940,7 @@ class parameters
 
     bool getnoRATD() const
     {
-        return adisr == 0;
+        return disrupt == 0;
     }
     
     bool getAligPA()
@@ -975,7 +970,7 @@ class parameters
     
     bool getDisrRATD()
     {
-        return (adisr & RATD) == RATD;
+        return (disrupt & RATD) == RATD;
     }
 
     bool getAligGOLD()
@@ -1103,7 +1098,7 @@ class parameters
 
     uint getDisruptionMechanism()
     {
-        return adisr;
+        return disrupt;
     }
 
     double getMinObserverDistance()
@@ -1385,6 +1380,9 @@ class parameters
         // If the dust component choice of a dust component is already loaded,
         // add the "dust_component_choice" to the list of component_id_to_choice but not
         // to the dust_choices.
+        //cout << "hi" << dust_component_choice << endl;
+        
+        
         if(!component_id_to_choice.empty())
             for(uint a = 0; a < component_id_to_choice.size(); a++)
                 if(component_id_to_choice[a] == dust_component_choice)
@@ -1397,7 +1395,7 @@ class parameters
         // available choices.
         component_id_to_choice.push_back(dust_component_choice);
         dust_choices.push_back(dust_component_choice);
-
+        
         // Sort dust choices
         sort(dust_choices.begin(), dust_choices.end());
 
@@ -1704,10 +1702,7 @@ class parameters
         conv_dH_in_SI = val;
     }
 
-    void setSIConvSmax(double val)
-    {
-        conv_Smax_in_SI = val;
-    }
+ 
     void setSIConvBField(double val)
     {
         conv_B_in_SI = val;
@@ -1734,13 +1729,7 @@ class parameters
         conv_dH_in_SI *= val;
     }
 
-    void updateSIConvSmax(double val)
-    {
-        if(conv_Smax_in_SI != 1 && val != 1)
-            cout << "\nHINT: <conv_tensile> may not be used multiple times!" << endl
-		 << "       -> No problem if <path_grid_cgs> was used!" << endl;
-	conv_Smax_in_SI *= val;
-    }
+ 
     void updateSIConvBField(double val)
     {
         if(conv_B_in_SI != 1 && val != 1)
@@ -1774,7 +1763,7 @@ class parameters
 
     void addDisruptionMechanism(uint val)
     {
-        adisr |= val;
+        disrupt |= val;
     }
 
     void updateObserverDistance(double val)
@@ -2191,6 +2180,7 @@ class parameters
 
     void addDustMCDetector(dlist & val)
     {
+    	cout << "enter here" << endl;
         // Minimum wavelength (in SI)
         dust_mc_detectors.push_back(val[0]);
         // Maximum wavelength (in SI)
@@ -2414,6 +2404,11 @@ class parameters
     {
         sublimate = val;
     }
+    
+    void setSpheroidalSize(bool val)
+    {
+        spheroidal_size = val;
+    }
 
     void setHealpixOrientation(uint val)
     {
@@ -2486,6 +2481,11 @@ class parameters
     bool isSublimate()
     {
         return sublimate;
+    }
+    
+    bool isSpheroidalSize()
+    {
+        return spheroidal_size;
     }
 
     double getDustFraction(uint i)
@@ -2648,7 +2648,6 @@ class parameters
 
     double conv_l_in_SI;
     double conv_dH_in_SI;
-    double conv_Smax_in_SI;
     double conv_B_in_SI;
     double conv_V_in_SI;
     double conv_mass_fraction;
@@ -2665,7 +2664,7 @@ class parameters
     double max_ray_map_shift_x, max_ray_map_shift_y;
 
     uint align;
-    uint adisr;
+    uint disrupt;
     uint min_detector_pixel_x, max_detector_pixel_x;
     uint min_detector_pixel_y, max_detector_pixel_y;
     uint nr_ofInpAMIRAPoints;
@@ -2753,6 +2752,7 @@ class parameters
     string xylabel;
     bool autoscale;
     bool sublimate;
+    bool spheroidal_size;
 
     Vector3D axis1, axis2;
 
