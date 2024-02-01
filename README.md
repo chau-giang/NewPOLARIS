@@ -1,5 +1,5 @@
 # New POLArized RadIative Simulator NewPOLARIS
-** --------------------------- --------------------------- POLARIS code  ---------------------------  ---------------------------  --------------------------- 
+** --------------------------- --------------------------- POLARIS code  ---------------------------  ---------------------------  ------------------- 
 
 POLARIS is the 3D radiative transfer code developed by Dr. Stefan Reissl, which is used to: 
     
@@ -14,7 +14,10 @@ https://github.com/polaris-MCRT/POLARIS
 
 
 
-** --------------------------- --------------------------- What is updated in NewPOLARIS  ---------------------------  ---------------------------  --------------------------- 
+
+
+** --------------------------- --------------------------- What is updated in NewPOLARIS  ---------------------------  ---------------------------  -------- 
+
 NewPOLARIS is the extended version from POLARIS including the detailed calculations of the grain alignment by RATs/enhanced Magnetic RAdiative Torques (MRAT) and grain disruption by RAdiative Torque Disruption (RATD). NewPOLARIS sets the platform for connecting grain magnetic properties/internal structure - theory of grain alignment/disruption - synthetic modeling of polarized dust emission - observations of dust polarization.
 
 Properties of aligned dust grains in NewPOLARIS are self-consistently determined based on the grain magnetic properties and conditions of gas density and magnetic fields from input environments. NewPOLARIS will determine:
@@ -35,13 +38,13 @@ The Radiative Torques Disruption (RATD) is implemented fully in NewPOLARIS. Give
 
 
 
-** --------------------------- --------------------------- Reference  ---------------------------  ---------------------------  --------------------------- 
+** --------------------------- --------------------------- Reference  ---------------------------  ---------------------------  ------------------------ 
 POLARIS+ is built based on the theory of grain alignment by RATs (https://academic.oup.com/mnras/article/378/3/910/1052479), MRAT (https://iopscience.iop.org/article/10.3847/0004-637X/831/2/159)), and RATD (https://www.nature.com/articles/s41550-019-0763-6). The first revisit grain alignment theory is done for protostellar cores and disk by Hoang et al.(2022)(https://iopscience.iop.org/article/10.3847/1538-3881/ac9af5). And detailed calculations in POLARIS+ and their applications for understanding the grain alignment and dust polarization in protostellar environments can be found in Giang et al. (2023): https://academic.oup.com/mnras/article/520/3/3788/7044629
 
 
 
 
- ** --------------------------- --------------------------- How to use it?  ---------------------------  ---------------------------  --------------------------- 
+ ** --------------------------- --------------------------- How to use it?  ---------------------------  ---------------------------  -------------------- 
 To use NewPOLARIS, users need to replace /src and /lib from the original version of POLARIS by /src and /lib of NewPOLARIS, then type:
 ./compile.sh -u
 to compile the new src code.
