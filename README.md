@@ -1,4 +1,4 @@
-# Updated POLArized RadIative Simulator POLARIS+
+# New POLArized RadIative Simulator NewPOLARIS
 ** --------------------------- --------------------------- POLARIS code  ---------------------------  ---------------------------  --------------------------- 
 
 POLARIS is the 3D radiative transfer code developed by Dr. Stefan Reissl, which is used to: 
@@ -14,18 +14,18 @@ https://github.com/polaris-MCRT/POLARIS
 
 
 
-** --------------------------- --------------------------- What is new in POLARIS+  ---------------------------  ---------------------------  --------------------------- 
-POLARIS+ is the extended version from POLARIS. It is used to accurately model in detail the grain alignment and disruption process by RATs in all astrophysical environments, and it sets the platform for connecting grain magnetic properties - theory of grain alignment - synthetic modeling of polarized dust emission - observations of dust polarization.
+** --------------------------- --------------------------- What is updated in NewPOLARIS  ---------------------------  ---------------------------  --------------------------- 
+NewPOLARIS is the extended version from POLARIS including the detailed calculations of the grain alignment by RATs/enhanced Magnetic RAdiative Torques (MRAT) and grain disruption by RAdiative Torque Disruption (RATD). NewPOLARIS sets the platform for connecting grain magnetic properties/internal structure - theory of grain alignment/disruption - synthetic modeling of polarized dust emission - observations of dust polarization.
 
-Properties of aligned dust grains in POLARIS+ are self-consistently determined based on the grain magnetic properties and conditions of gas density and magnetic fields from input environments. POLARIS+ will determine:
+Properties of aligned dust grains in NewPOLARIS are self-consistently determined based on the grain magnetic properties and conditions of gas density and magnetic fields from input environments. NewPOLARIS will determine:
   
       .  Internal alignment state by Barnett relaxation mechanism
 
       .  Minimum and maximum alignment size based on the suprathermal rotation and Larmor precession condition
 
-      .  Alignment mechanism (RATs or enhanced Magnetically RAdiative Torques, MRAT) and the corresponding fraction of grains aligning with magnetic fields at high-J attractors  
+      .  Alignment mechanism (RATs or MRAT) and the corresponding fraction of grains aligning with magnetic fields at high-J attractors  
 
-The Radiative Torques Disruption (RATD) is implemented fully in POLARIS+. Given the grain compactness and grain magnetic properties, POLARIS+ determines:
+The Radiative Torques Disruption (RATD) is implemented fully in NewPOLARIS. Given the grain compactness and grain magnetic properties, NewPOLARIS determines:
   
       . Minimum and maximum disruption size
   
@@ -42,7 +42,7 @@ POLARIS+ is built based on the theory of grain alignment by RATs (https://academ
 
 
  ** --------------------------- --------------------------- How to use it?  ---------------------------  ---------------------------  --------------------------- 
-To use POLARIS+, users need to replace /src and /lib from the original version of POLARIS by /src and /lib of POLARIS+, then typing:
+To use NewPOLARIS, users need to replace /src and /lib from the original version of POLARIS by /src and /lib of NewPOLARIS, then type:
 ./compile.sh -u
 to compile the new src code.
 
