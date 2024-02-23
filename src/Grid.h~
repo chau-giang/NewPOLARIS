@@ -1023,7 +1023,7 @@ class CGridBasic
 #else
         // If the radiation field is needed after temp calculation, use the SpecLength
         // instead
-        if(data_pos_rf_list.empty()) // using CMD_TEMP 
+        if(data_pos_rf_list.empty() || loop != 1) // using CMD_TEMP 
         {
         	if(spec_length_as_vector)
             	return getSpecLength(cell, wID, loop) / getVolume(cell);  
@@ -4406,6 +4406,7 @@ class CGridBasic
         }
 
         if(param.getSaveRadiationField() && param.getMCRTloop() == 1)
+        {
             if(data_pos_rx_list.size() != 0 || data_pos_ry_list.size() != 0 || data_pos_rz_list.size() != 0 ||
                data_pos_rf_list.size() != 0)
             {
@@ -4416,7 +4417,8 @@ class CGridBasic
                 cout << "       No dust temperature calculation possible." << endl;
                 return MAX_UINT;
             }
-
+		}
+	
         if(data_pos_tg == MAX_UINT)
         {
             if(param.getAdjTgas() != 0)

@@ -3262,8 +3262,9 @@ uint CDustComponent::getInteractingDust(CGridBasic * grid, photon_package * pp, 
 	    }
     }
     
+    
     // Init pointer array for integration
-    double * rel_weight = getRelWeight(grid, pp, i_density, param, false);
+    double * rel_weight = getRelWeight(grid, pp, i_density, param, true);
     double * amount = new double[nr_of_dust_species];
 
     // Add relative amount of dust grains in each size bin
@@ -3276,14 +3277,17 @@ uint CDustComponent::getInteractingDust(CGridBasic * grid, photon_package * pp, 
                 case CROSS_ABS:
                 {
                     amount[a] = rel_weight[a] * getCabsMean(a, w);
+                    //amount[a] = getCabsMean(a, w);
                     break;
 		}
                 case CROSS_SCA:
-                    amount[a] = rel_weight[a] * getCscaMean(a, w);
+               	    amount[a] = rel_weight[a] * getCscaMean(a, w);
+                    //amount[a] =  getCabsMean(a, w);
                     break;
  
                 default:
-                    amount[a] = rel_weight[a];
+                	amount[a] = rel_weight[a];
+                    //amount[a] = 1;
                     break;
             }
         }
@@ -3706,7 +3710,8 @@ bool CDustComponent::adjustTempAndWavelengthBW(CGridBasic * grid,
     double rnd1 = pp->getRND();
 
     // Get the interacting dust grain size
-    uint a = getInteractingDust(grid, pp, i_density, param);
+    //uint a = getInteractingDust(grid, pp, i_density, param);
+	uint a = 0;
 
     // Get dust temperature of the emitting grains in current cell
     t_dust_new = updateDustTemperature(grid, pp, i_density, a, use_energy_density, loop);
@@ -5190,7 +5195,7 @@ void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint
 
 
     // Boundary grain size between small compact and large porous grains
-    double a_transition = 1e-7;
+    double a_transition = 5e-7;
 	
     // Find the disruption size
     double a_disr;
@@ -5246,9 +5251,6 @@ void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint
 		double * ddir = new double[nr_of_wavelength];
 		double * dth = new double[nr_of_wavelength];
 
-
- 
-        
 		for(uint w = 0; w < nr_of_wavelength; w++)
 		{
 			// Init variabl                     es

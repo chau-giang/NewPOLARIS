@@ -486,18 +486,6 @@ typedefs.h
 complex
 -
 
-/home/chaugiang/Dropbox/POLARIS-/src/GasSpecies.cpp
-GasSpecies.h
-/home/chaugiang/Dropbox/POLARIS-/src/GasSpecies.h
-CommandParser.h
-/home/chaugiang/Dropbox/POLARIS-/src/CommandParser.h
-Grid.h
-/home/chaugiang/Dropbox/POLARIS-/src/Grid.h
-MathFunctions.h
-/home/chaugiang/Dropbox/POLARIS-/src/MathFunctions.h
-typedefs.h
-/home/chaugiang/Dropbox/POLARIS-/src/typedefs.h
-
 /home/chaugiang/Dropbox/POLARIS-/src/GasSpecies.h
 Faddeeva.hh
 /home/chaugiang/Dropbox/POLARIS-/src/Faddeeva.hh
@@ -511,16 +499,6 @@ typedefs.h
 /home/chaugiang/Dropbox/POLARIS-/src/typedefs.h
 complex
 -
-
-/home/chaugiang/Dropbox/POLARIS-/src/Grid.cpp
-Grid.h
-/home/chaugiang/Dropbox/POLARIS-/src/Grid.h
-CCfits/CCfits
--
-cmath
--
-chelper.h
-/home/chaugiang/Dropbox/POLARIS-/src/chelper.h
 
 /home/chaugiang/Dropbox/POLARIS-/src/Grid.h
 Vector.h
@@ -739,22 +717,6 @@ Matrix2D.h
 /home/chaugiang/Dropbox/POLARIS-/src/Matrix2D.h
 typedefs.h
 /home/chaugiang/Dropbox/POLARIS-/src/typedefs.h
-
-/home/chaugiang/Dropbox/POLARIS-/src/Voronoi.cpp
-Voronoi.h
-/home/chaugiang/Dropbox/POLARIS-/src/Voronoi.h
-CommandParser.h
-/home/chaugiang/Dropbox/POLARIS-/src/CommandParser.h
-GasSpecies.h
-/home/chaugiang/Dropbox/POLARIS-/src/GasSpecies.h
-MathFunctions.h
-/home/chaugiang/Dropbox/POLARIS-/src/MathFunctions.h
-typedefs.h
-/home/chaugiang/Dropbox/POLARIS-/src/typedefs.h
-limits.h
--
-limits
--
 
 /home/chaugiang/Dropbox/POLARIS-/src/Voronoi.h
 Grid.h

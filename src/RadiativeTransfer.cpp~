@@ -693,6 +693,10 @@ bool CRadiativeTransfer::calcMonteCarloRadiationField(uint command,
                             {
                                 // Calculate the temperature of the absorbing cell
                                 // and change the wavelength of the photon
+                                //if(disable_reemission)
+                                //	cout << "true" << endl;
+                                //else
+                                //	cout << "false" << endl;
                                 if(!disable_reemission &&
                                    dust->adjustTempAndWavelengthBW(grid, pp, use_energy_density, param, loop))
                                 {

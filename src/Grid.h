@@ -1023,7 +1023,7 @@ class CGridBasic
 #else
         // If the radiation field is needed after temp calculation, use the SpecLength
         // instead
-        if(data_pos_rf_list.empty()) // using CMD_TEMP 
+        if(data_pos_rf_list.empty() || loop != 1) // using CMD_TEMP 
         {
         	if(spec_length_as_vector)
             	return getSpecLength(cell, wID, loop) / getVolume(cell);  

@@ -2259,7 +2259,7 @@ class CDustComponent
 	        double * sp_energy = new double[nr_of_wavelength];
 	        for(uint w = 0; w < nr_of_wavelength; w++)
 	            sp_energy[w] = (grid->getSpecLength(cell, w, loop) * getCabsMean(a, w));
-	        	//sp_energy[w] = (getCabsMean(a, w));
+	        	//sp_energy[w] = (getCabsMean(a, w)); 
 	        abs_rate = CMathFunctions::integ(wavelength_list, sp_energy, 0, nr_of_wavelength - 1);
 
 	        delete[] sp_energy;
@@ -2487,9 +2487,9 @@ class CDustComponent
 	            			}
 	            		}
 	       				else if ((a_eff[a] >= amax_DG_50) && (a_eff[a] <= amax_JB_Lar))
-	            			f_highJ = 0.25;
+	            			f_highJ = param.getFHighJ();
 	            		else if ((a_eff[a] >= a_min) && (a_eff[a] <= amin_DG_50))
-	            			f_highJ = 0.25;	
+	            			f_highJ = param.getFHighJ();	
             			else if (a_eff[a] > amax_JB_Lar)
             				f_highJ = 0;
  

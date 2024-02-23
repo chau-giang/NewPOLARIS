@@ -63,7 +63,7 @@ using namespace std;
 // Default parameters of the global wavelength grid
 #define WL_MIN 0.1e-6
 #define WL_MAX 2000.0e-6
-#define WL_STEPS 70 //[for MHD simulation with NxN = 256x256]
+#define WL_STEPS 100 //[for MHD simulation with NxN = 256x256]
 //#define WL_STEPS 100 //[default value]
 #endif
 
