@@ -2112,7 +2112,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
                     break;
 
                 case 1:
-                    plt_u_rad = (cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_RAT_DISR || cmd == CMD_TEMP_RAT_DISR);
+                    plt_u_rad = (cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_RAT_DISR || cmd == CMD_TEMP_RAT_DISR || cmd == CMD_DUST_EMISSION);
                     plt_rad_field1 = false;
                     break;
 
@@ -2244,7 +2244,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
 
             case 1: // this is my case :??, plt_u_rad = true, plt_rad_field1 = false?
             	//cout << "Are you enter here? " << endl;
-                plt_u_rad = (cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_RAT_DISR ||  cmd == CMD_TEMP_RAT_DISR);
+                plt_u_rad = (cmd == CMD_RAT || cmd == CMD_TEMP_RAT || cmd == CMD_DISR || cmd == CMD_TEMP_DISR || cmd == CMD_RAT_DISR ||  cmd == CMD_TEMP_RAT_DISR || cmd == CMD_DUST_EMISSION);
                 plt_rad_field1 = false; 
                 break;
 

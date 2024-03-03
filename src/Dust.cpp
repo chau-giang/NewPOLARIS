@@ -5211,9 +5211,9 @@ void CDustComponent::calcDisruptRadii(CGridBasic * grid, cell_basic * cell, uint
 	}
 
     // Check whether the disruption size calculated in the second loop is smaller than the previous ones
-    double a_disr_old = grid->getDisruptRadius(cell, i_density);
-    if ((a_disr_old != 0) && (a_disr > a_disr_old))
-    	a_disr = a_disr_old;
+    //double a_disr_old = grid->getDisruptRadius(cell, i_density);
+    //if ((a_disr_old != 0) && (a_disr > a_disr_old))
+    //	a_disr = a_disr_old;
     
     
     if (param.getAligMRAT())
