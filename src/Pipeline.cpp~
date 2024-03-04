@@ -382,12 +382,12 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     { 
         if (param.getQfactor() == 0)
         {
-            cout << "\nCAUSION: Please provide the quality factor of grain material Q. Ex: <Q_factor> 100" << endl;
+            cout << "\nCAUSION: Please provide the quality factor of grain material Q. Ex: <Q_factor> 100"
             return false;
         }
         if (param.getShearModulus() == 0)
         {
-            cout << "\nCAUSION: Please provide the shear modulus of grains. Ex: <shear_modulus> 1e7" << endl;
+            cout << "\nCAUSION: Please provide the shear modulus of grains. Ex: <shear_modulus> 1e7"
             return false;
         }
     }

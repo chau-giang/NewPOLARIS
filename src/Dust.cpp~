@@ -6515,7 +6515,7 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
 				//**************************************************************************************************
 			    			
 				// Thermal angular speed
-				omega_rat_highJ = calcRATSpeed(grid, cell, i_density, a, param, loop);
+				omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a, param, loop);
 				
 				// Geometrical factor
 				g_s = pow(2, 3/2)*7/8 * pow((1+pow(s,2)),4) / (pow(s,4) + 1/(1+sigma_inelastic));

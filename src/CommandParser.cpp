@@ -788,8 +788,8 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
 
     if(cmd.compare("<MCRT_loop>") == 0)
     {
-	double val = atof(data.c_str());
-	param->setMCRTloop(val);
+    	double val = atof(data.c_str());
+    	param->setMCRTloop(val);
     }
 	
     if(cmd.compare("<number_cluster>") == 0)
@@ -808,6 +808,18 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
     {
 		double val = atof(data.c_str());
         param->setIronFraction(val);
+    }  
+
+    if(cmd.compare("<Q_factor>") == 0)
+    {
+        double val = atof(data.c_str());
+        param->setQfactor(val);
+    }  
+
+    if(cmd.compare("<shear_modulus>") == 0)
+    {
+        double val = atof(data.c_str());
+        param->setShearModulus(val);
     }    
     
 
@@ -2428,6 +2440,12 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
         if(data.compare("ALIG_MRAT") == 0)
         {
             param->addAlignmentMechanism(ALIG_MRAT);
+            return true;
+        }
+
+        if(data.compare("ALIG_INELASTIC") == 0)
+        {
+            param->addAlignmentMechanism(ALIG_INELASTIC);
             return true;
         }
 

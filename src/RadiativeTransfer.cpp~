@@ -1712,7 +1712,7 @@ void CRadiativeTransfer::calcInelasticLowJRadii(parameters & param, uint loop)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcInelasticLowJRadii(grid, cell, param, loop);
+        dust->calcInelasticLowJRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);
@@ -1752,7 +1752,7 @@ void CRadiativeTransfer::calcInelasticHighJRadii(parameters & param, uint loop)
     for(long c_i = 0; c_i < long(max_cells); c_i++)
     {
         cell_basic * cell = grid->getCellFromIndex(c_i);
-        dust->calcInelasticHighJRadii(grid, cell, param, loop);
+        dust->calcInelasticHighJRadii(grid, cell, param);
 
         per_counter++;
         float percentage = 100.0 * float(per_counter) / float(max_cells);

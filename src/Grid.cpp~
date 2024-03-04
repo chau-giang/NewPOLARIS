@@ -2155,7 +2155,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
     		    plt_dg_10_lower = (!data_pos_dg_10_lower_list.empty()) && param.isInPlotList(GRIDadg_10_lower);
     		    plt_dg_10_upper = (!data_pos_dg_10_upper_list.empty()) && param.isInPlotList(GRIDadg_10_upper);
             }
-            if (param.getAligInelastic())
+            if (param.getALigInelastic())
             {
                 plt_aine_lowJ = (!data_pos_aine_lowJ_list.empty()) && param.isInPlotList(GRIDaine_lowJ);
                 plt_aine_highJ_lower = (!data_pos_aine_highJ_lower_list.empty()) && param.isInPlotList(GRIDaine_highJ_lower); 

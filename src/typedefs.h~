@@ -123,7 +123,6 @@ using namespace std;
 #define ALIG_GOLD 16
 #define ALIG_MRAT 32
 #define ALIG_kRAT 64
-#define ALIG_INELASTIC 128
 
 // Disruption mechanisms
 #define RATD 128

@@ -296,12 +296,17 @@ class CRadiativeTransfer
     void calcStochasticHeating(uint loop);
     void calcAlignedRadii(parameters & param, uint loop);
     void calcMaxAlignedRadii(parameters & param);
+    
     void calcDisruptRadii(parameters & param, uint loop);
     void calcMaxDisruptRadii(parameters & param, uint loop);
     void calcSizeParamModify(parameters & param);
     void calcNewMeanEfficiency(parameters & param );
+    
     void calcBarnetLowJRadii(parameters & param);
     void calcBarnetHighJRadii(parameters & param, uint loop);
+    void calcInelasticLowJRadii(parameters & param, uint loop);
+    void calcInelasticHighJRadii(parameters & param, uint loop);
+
     void calcDGRadii(parameters & param, uint loop);
     void calcDG10Radii(parameters & param, uint loop);
     void calckRATlowJRadii(parameters & param, uint loop);

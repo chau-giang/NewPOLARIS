@@ -1538,7 +1538,7 @@ class parameters
 
     void setShearModulus(double val)
     {
-        shear_modulus = val;
+        shear_modulus = val
     }
 
     void setMRW(bool val)
