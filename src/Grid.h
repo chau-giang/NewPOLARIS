@@ -417,20 +417,20 @@ class CGridBasic
         adg_10_upper_max = -1e300;
         adg_10_upper_min = 1e300;
         
-        min_amaxJB_Lar = -1e300;
-        max_amaxJB_Lar = 1e300;
+        min_amaxJB_Lar = 1e300;
+        max_amaxJB_Lar = -1e300;
 
-        min_akrat_lowJ_min = -1e300;
-        max_akrat_lowJ_min = 1e300;
+        min_akrat_lowJ_min = 1e300;
+        max_akrat_lowJ_min = -1e300;
         
-        min_akrat_lowJ_max = -1e300;
-        max_akrat_lowJ_max = 1e300;
+        min_akrat_lowJ_max = 1e300;
+        max_akrat_lowJ_max = -1e300;
 
-        min_akrat_highJ_min = -1e300;
-        max_akrat_highJ_min = 1e300;
+        min_akrat_highJ_min = 1e300;
+        max_akrat_highJ_min = -1e300;
         
-        min_akrat_highJ_max = -1e300;
-        max_akrat_highJ_max = 1e300;
+        min_akrat_highJ_max = 1e300;
+        max_akrat_highJ_max = -1e300;
         
         a_min_min = 1e300;
         a_min_max = -1e300;
@@ -2976,10 +2976,10 @@ class CGridBasic
                     buffer_aine_lowJ[i_cell][i_id] = getInelasticLowJRadius(pp, i_id);
             if(plt_aine_highJ_lower)
                 for(uint i_id = 0; i_id < data_pos_aine_highJ_lower_list.size(); i_id++)
-                    buffer_aine_lowJ[i_cell][i_id] = getInelasticHighJLowerRadius(pp, i_id);
+                    buffer_aine_highJ_lower[i_cell][i_id] = getInelasticHighJLowerRadius(pp, i_id);
             if(plt_aine_highJ_upper)
                 for(uint i_id = 0; i_id < data_pos_aine_highJ_upper_list.size(); i_id++)
-                    buffer_aine_lowJ[i_cell][i_id] = getInelasticHighJUpperRadius(pp, i_id);
+                    buffer_aine_highJ_upper[i_cell][i_id] = getInelasticHighJUpperRadius(pp, i_id);
        
             if(plt_dg_lower)
                 for(uint i_id = 0; i_id < data_pos_dg_lower_list.size(); i_id++)

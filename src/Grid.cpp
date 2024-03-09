@@ -145,13 +145,15 @@ void CGridBasic::updateDataRange(cell_basic * cell, parameters & param)
     {
         for(uint i_dens = 0; i_dens < data_pos_amaxJB_Lar_list.size(); i_dens++)
         {
+        	//cout << "do you update me?" << endl;
             amaxJB_Lar = cell->getData(data_pos_amaxJB_Lar_list[i_dens]);
-
+ 
             if(amaxJB_Lar > float(max_amaxJB_Lar))
                 max_amaxJB_Lar = (double)amaxJB_Lar;
-
+ 
             if(amaxJB_Lar < float(min_amaxJB_Lar))
                 min_amaxJB_Lar = (double)amaxJB_Lar;
+ 
         }
     }
 
@@ -389,10 +391,10 @@ void CGridBasic::updateDataRange(cell_basic * cell, parameters & param)
         {
             aine_lowJ = cell->getData(data_pos_aine_lowJ_list[i_dens]);
 
-            if(aine_lowJ > float(aine_lowJ_min))
+            if(aine_lowJ > float(aine_lowJ_max))
                 aine_lowJ_max = (double)aine_lowJ;
 
-            if(aine_lowJ < float(aine_lowJ_max))
+            if(aine_lowJ < float(aine_lowJ_min))
                 aine_lowJ_min = (double)aine_lowJ;
         }
     }
@@ -2304,6 +2306,7 @@ bool CGridBasic::writeMidplaneFits(string data_path, parameters & param, uint bi
  	    	}
             if (param.getAligInelastic())
             {
+            	cout << "do you enter here?" << endl;
                 plt_aine_lowJ  = param.isInPlotList(GRIDaine_lowJ);
                 plt_aine_highJ_lower = param.isInPlotList(GRIDaine_highJ_lower);
                 plt_aine_highJ_upper = param.isInPlotList(GRIDaine_highJ_upper);

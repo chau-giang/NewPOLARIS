@@ -63,8 +63,7 @@ class CDustComponent
         number_cluster = 0;
         volume_filling_cluster = 0;
         iron_fraction = 0;
-        Q_factor = 0;
-        shear_modulus = 0;
+        inelascity = 0;
         aspect_ratio = 0;
         Qe3 = 0.01;
         sub_temp = 1600;
@@ -2012,14 +2011,9 @@ class CDustComponent
         iron_fraction = val;
     }
     
-    void setQfactor(double val)
+    void setInelascity(double val)
     {
-        Q_factor = val;
-    }
- 
-    void setShearModulus(double val)
-    {
-        shear_modulus = val;
+        inelascity = val;
     }
 
     double getAspectRatio()
@@ -2868,14 +2862,9 @@ class CDustComponent
         return iron_fraction;
     }
     
-    double getQfactor() 
+    double getInelascity() 
     {
-        return Q_factor;
-    }
-    
-    double getShearModulus() 
-    {
-        return shear_modulus;
+        return inelascity;
     }
     
     double getTensileStrength() 
@@ -3217,9 +3206,8 @@ class CDustComponent
     double volume_filling_cluster;
     double iron_fraction;
     
-    double Q_factor;
-    double shear_modulus;
-
+    double inelascity;
+ 
     double delta_rat;
     double mu;
     double fraction;

@@ -380,16 +380,11 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
 
     if (param.getAligInelastic())
     { 
-        if (param.getQfactor() == 0)
+        if (param.getInelascity() == 0)
         {
-            cout << "\nCAUSION: Please provide the quality factor of grain material Q. Ex: <Q_factor> 100" << endl;
+            cout << "\nCAUSION: Please provide the inelascity of grains mu.Q. Ex: <inelascity> 1e9" << endl;
             return false;
-        }
-        if (param.getShearModulus() == 0)
-        {
-            cout << "\nCAUSION: Please provide the shear modulus of grains. Ex: <shear_modulus> 1e7" << endl;
-            return false;
-        }
+        } 
     }
 
     //********************************************************************************************************************************
@@ -425,21 +420,28 @@ bool CPipeline::calcMonteCarloRadiationField(parameters & param)
     // Calculation of alignment
     if(param.isRatSimulation())
 	{
-   	    rad.calcAlignedRadii(param, mcrt_loop);
-	    rad.calcMaxAlignedRadii(param);
-	
+		if(param.getAligRAT())
+		{
+   	    	rad.calcAlignedRadii(param, mcrt_loop);
+	   		rad.calcMaxAlignedRadii(param);
+		}
+		
 		if (param.getAligMRAT())
     	{
+    	   	rad.calcAlignedRadii(param, mcrt_loop);
+	   		rad.calcMaxAlignedRadii(param);
     	    rad.calcBarnetLowJRadii(param);
     	    rad.calcBarnetHighJRadii(param, mcrt_loop);
     	    rad.calcDGRadii(param, mcrt_loop);
     	    rad.calcDG10Radii(param, mcrt_loop);
     	}
+    	
         if (param.getAligInelastic())
         {
             rad.calcInelasticLowJRadii(param, mcrt_loop);
             rad.calcInelasticHighJRadii(param, mcrt_loop);
         }
+        
 		if (param.getAligkRAT())
     	{
             rad.calckRATlowJRadii(param, mcrt_loop);

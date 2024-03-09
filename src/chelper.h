@@ -491,9 +491,8 @@ class parameters
     	mcrt_loop = 1;
     	volume_filling_cluster = 0;
     	iron_fraction = 0;
-
-        Q_factor = 100;
-        shear_modulus = 1e7;
+ 
+        inelascity = 0;
 
         kepler_star_mass = 0;
         turbulent_velocity = 0;
@@ -855,14 +854,9 @@ class parameters
         return iron_fraction;
     }
 
-    double getQfactor()
+    double getInelascity()
     {
-        return Q_factor;
-    }
-
-    double getShearModulus()
-    {
-        return shear_modulus;
+        return inelascity;
     }
  
     double getSIConvBField()
@@ -1530,15 +1524,11 @@ class parameters
     {
         iron_fraction = val;
     }
+ 
 
-    void setQfactor(double val)
+    void setInelascity(double val)
     {
-        Q_factor = val;
-    }
-
-    void setShearModulus(double val)
-    {
-        shear_modulus = val;
+        inelascity = val;
     }
 
     void setMRW(bool val)
@@ -2736,8 +2726,7 @@ class parameters
     double number_cluster;
     double volume_filling_cluster;
     double iron_fraction;
-    double Q_factor;
-    double shear_modulus;
+    double inelascity;
     double acceptance_angle;
     double offset_min_gas_dens;
 

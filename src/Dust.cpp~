@@ -2140,10 +2140,9 @@ bool CDustComponent::writeComponent(string path_data, string path_plot)
     data_writer << "Volume filling factor of Iron clusters inside grains:" << endl;
     data_writer << volume_filling_cluster << endl;
     
-    data_writer << "Q factor of material" << endl;
-    data_writer << Q_factor << endl;
-    data_writer << "Shear modulus" << endl;
-    data_writer << shear_modulus << endl;
+    data_writer << "Inelascity of material" << endl;
+    data_writer << inelascity << endl;
+ 
     
     data_writer << "#min. ID\tmax. ID" << endl;
     data_writer << a_min_global + 1 << "\t" << a_max_global + 1 << endl;
@@ -2487,11 +2486,9 @@ bool CDustComponent::writeComponentInfo(string path_data, string path_plot)
     data_writer << "Volume filling factor of Iron clusters inside grains:" << endl;
     data_writer << volume_filling_cluster << endl;
     
-    data_writer << "Q factor of material" << endl;
-    data_writer << Q_factor << endl;
-    data_writer << "Shear modulus" << endl;
-    data_writer << shear_modulus << endl;
-    
+    data_writer << "Inelascity of material" << endl;
+    data_writer << inelascity << endl;
+ 
     data_writer << "#min. ID\tmax. ID" << endl;
     data_writer << a_min_global + 1 << "\t" << a_max_global + 1 << endl;
     data_writer << "#min. radius\tmax. radius [m]" << endl;
@@ -3047,9 +3044,8 @@ bool CDustComponent::add(double ** size_fraction, CDustComponent * comp)
         larm_f = comp->getLarmF();
         number_cluster = comp->getNumberIronCluster();
         volume_filling_cluster = comp->getVolumeFillingFactor();
-        iron_fraction = comp->getIronFraction();
-        Q_factor = comp->getQfactor();
-        shear_modulus = comp->getShearModulus();
+        iron_fraction = comp->getIronFraction(); 
+        inelascity = comp->getInelascity();
 
         // Init dust properties to be filled with grain properties
         initDustProperties();
@@ -3383,12 +3379,16 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
 
     // Init variables
     double Rrat = 0, Rgold = 0, Ridg = 0, Rent = 1;
-    double Rrat_low_J = 0, Rrat_high_J = 0;
+    double RlowJ_rat = 0, RhighJ_rat = 0;
+    double RlowJ_mrat = 0, RhighJ_mrat = 0;
+    double RlowJ_Bar = 0, RhighJ_Bar = 0;
+    double RlowJ_Ine = 0, RhighJ_Ine = 0;
     double delta = 1;
     double a_alig;
     double amaxJB_Lar;
     double abar_lowJ_lower, abar_lowJ_upper;
     double abar_highJ_lower, abar_highJ_upper;
+    double aine_lowJ, aine_highJ_lower, aine_highJ_upper;
     double adg_lower, adg_upper;
     double adg_10_lower, adg_10_upper;
     double f_highJ;
@@ -3408,7 +3408,7 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     double ng = grid->getGasNumberDensity(pp);
 
 	// Get inormation of disruption size inside grid 
-	    // Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor  
+	// Total Rayleigh reduction factor of both aligned dust grains at high and low J attractor  
     double adisr = grid->getDisruptRadius(pp, i_density);
     double adisr_max = grid->getMaxDisruptRadius(pp, i_density);    
  
@@ -3416,69 +3416,113 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
     double Cext, Cpol, Cabs, Cpabs, Csca, Ccirc;
 
 
-    // Calculate the parameters for radiative torque alignment
+    // Alignment degree in the standard RAT model
     if((alignment & ALIG_RAT) == ALIG_RAT)
     {
         a_alig = grid->getAlignedRadius(pp, i_density);
         //a_alig = 3e-7;
         if(a_eff[a] > a_alig)
         {
-        	Rrat_low_J = getInternalRAT();         // Qx_lowJ
-        	Rrat_high_J = 1;                       // Qx_highJ
+        	RlowJ_rat = getInternalRAT();         // Qx_lowJ
+        	RhighJ_rat = 1;                       // Qx_highJ
             f_highJ = getFHighJ();
             
             if ((adisr == 0) && (adisr_max == 0)) // if no disruption
     		{
 				//cout << "f_highJ" << f_highJ << endl;
-				Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
+				Rrat = f_highJ * RhighJ_rat + (1 - f_highJ) * RlowJ_rat;
    			}
     		else // with disruption
     		{
 				//cout << "fhighJ" << f_highJ << endl;
 				if ((a_eff[a] >= adisr) && (a_eff[a] <= adisr_max))
-					Rrat = (1-f_highJ) * Rrat_low_J; 
+					Rrat = (1 - f_highJ) * RlowJ_rat; 
 				else
-					Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
+					Rrat = f_highJ * RhighJ_rat + (1 - f_highJ) * RlowJ_rat;
 			}	   
         }      
     }
 
-    if((alignment & ALIG_MRAT) == ALIG_MRAT)
+	// Alignment degree with MRAT model, Barnet relaxation, and Inelastic relaxation
+    if((alignment & ALIG_MRAT) == ALIG_MRAT || (alignment & ALIG_INELASTIC) == ALIG_INELASTIC)
     {
         a_alig = grid->getAlignedRadius(pp, i_density);
         if(a_eff[a] > a_alig)
         {
+        	//cout << "are you enter here" << endl;
             // Qx at low-J attractors
-            if(getWrongInternalRATlowJ() != 0)
+            if(getWrongInternalRATlowJ() != 0) // If we account for fast and slow internal relaxation at lowJ
             {
                 abar_lowJ_lower = grid->getBarnetLowLowerRadius(pp, i_density);
                 abar_lowJ_upper = grid->getBarnetLowUpperRadius(pp, i_density);
+                aine_lowJ = grid->getInelasticLowJRadius(pp, i_density);
                 
-                if (a_eff[a] >= abar_lowJ_lower && a_eff[a] <= abar_lowJ_upper) 
-                    Rrat_low_J = getInternalRAT();
-                else
-                    Rrat_low_J = getWrongInternalRATlowJ();
-            }
+                //cout << "are you enter here [1]" << endl;
+                if ((abar_lowJ_lower != 0) && (abar_lowJ_upper != 0))
+                {
+		            if (a_eff[a] >= abar_lowJ_lower && a_eff[a] <= abar_lowJ_upper) 
+		                RlowJ_Bar = getInternalRAT();
+		            else
+		                RlowJ_Bar = getWrongInternalRATlowJ();
+		        }
+		        
+		        else if (aine_lowJ != 0)
+		        {
+		        	//cout << "are you enter here [2]" << endl;
+		        	if (a_eff[a] < aine_lowJ)
+		        		RlowJ_Ine = getInternalRAT();
+		        	else
+		        		RlowJ_Ine = getWrongInternalRATlowJ();
+		        }
+		        
+		        // Compare alignment degree from barnett relaxation and inelastic relaxation
+		        if (RlowJ_Bar <= RlowJ_Ine)
+		        	RlowJ_mrat = RlowJ_Ine;
+		        else
+		        	RlowJ_mrat = RlowJ_Bar;
+		        	
+            } // if only consider fast internal relaxation
             else    
-                Rrat_low_J = getInternalRAT();
+                RlowJ_mrat = getInternalRAT();
                     
+                    
+            // ****************************************************************************        
             // Qx at high-J attractors
-            if(getWrongInternalRAThighJ() != 0)
+            if(getWrongInternalRAThighJ() != 0) // if account for slow and fast internal relaxation at highJ
             {
-                //cout << "Slow internal relaxation at high-J" << endl;
-                // Internal alignment at high J attractor
                 abar_highJ_lower = grid->getBarnetHighLowerRadius(pp, i_density);
                 abar_highJ_upper = grid->getBarnetHighUpperRadius(pp, i_density);
+             	aine_highJ_lower = grid->getInelasticHighJLowerRadius(pp, i_density);
+             	aine_highJ_upper = grid->getInelasticHighJUpperRadius(pp, i_density);
                 
-                if (a_eff[a] >= abar_highJ_lower && a_eff[a] <= abar_highJ_upper) 
-                    Rrat_high_J = 1;
-                else
-                    Rrat_high_J = getWrongInternalRAThighJ();
+                //cout << "are you enter here [3]" << endl;
+                if ((abar_highJ_lower != 0) && (abar_highJ_upper != 0))
+                {
+		            if (a_eff[a] >= abar_highJ_lower && a_eff[a] <= abar_highJ_upper) 
+		                RhighJ_Bar = 1;
+		            else
+		                RhighJ_Bar = getWrongInternalRAThighJ();
+            	}
+            	
+            	if ((aine_highJ_lower != 0) && (aine_highJ_upper != 0))
+            	{
+            		//cout << "are you enter here [4]" << endl;
+            	    if (a_eff[a] >= aine_highJ_lower && a_eff[a] <= aine_highJ_upper) 
+		                RhighJ_Ine = 1;
+		            else
+		                RhighJ_Ine = getWrongInternalRAThighJ();
+            	}
+            	
+            	// Compare alignment degree from barnett relaxation and inelastic relaxation
+		        if (RhighJ_Bar <= RhighJ_Ine)
+		        	RhighJ_mrat = RhighJ_Ine;
+		        else
+		        	RhighJ_mrat = RhighJ_Bar; 
             }
             else
-                Rrat_high_J = 1; 
+                RhighJ_mrat = 1; 
                 
-                    
+                
             // If <change_f_highJ> is turn on, change f_highJ as the magnetic properties of grains
             if (param.getChangeFHighJ())
             {
@@ -3498,13 +3542,14 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
                 else 
                     f_highJ = getFHighJ();
             }
-       
-      	 	//cout << "fhighJ" << f_highJ << endl;
+            
+       		//cout << "fhighJ" << f_highJ << endl;
        		// Total alignemnt degree     
             if ((adisr == 0) && (adisr_max == 0)) // if no disruption
     		{
 				//cout << "f_highJ" << f_highJ << endl;
-				Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
+				Rrat = f_highJ * RhighJ_mrat + (1 - f_highJ) * RlowJ_mrat;
+				//cout << "are you enter here [5]" << Rrat << endl;
     		}
 			else // with disruption
 			{
@@ -3512,12 +3557,13 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
 				if (a_eff[a] >= adisr && a_eff[a] <= adisr_max)
 				{
 					//cout << "disruption" << endl;
-					Rrat = (1 - f_highJ) * Rrat_low_J; 
+					Rrat = (1 - f_highJ) * RlowJ_mrat; 
 				}
 				else
 				{
 					//cout << "no disruption" << endl;
-					Rrat = f_highJ * Rrat_high_J + (1 - f_highJ) * Rrat_low_J;
+					Rrat = f_highJ * RhighJ_mrat + (1 - f_highJ) * RlowJ_mrat;
+					//cout << "are you enter here [5]" << Rrat << endl;
 				}
 			}
         }
@@ -3566,11 +3612,10 @@ void CDustComponent::calcCrossSections(CGridBasic * grid,
         }
     }
 
-    if((alignment & ALIG_MRAT) == ALIG_MRAT)
-        amaxJB_Lar = grid->getMaxAlignedRadius(pp, i_density);
-    
-    if((alignment & ALIG_RAT) == ALIG_RAT)
-        amaxJB_Lar = getSizeMax(grid, pp);
+  
+   // Maximum alignment size
+    //amaxJB_Lar = grid->getMaxAlignedRadius(pp, i_density);
+  	amaxJB_Lar = 1e-4;
 
     //double a_limit = CMathFunctions::calc_larm_limit(Blen, Td, Tg, ng, aspect_ratio, larm_f);
     //cout << a_limit*1e6 << endl;
@@ -4424,7 +4469,7 @@ void CDustComponent::calcMaxAlignedRadii(CGridBasic * grid, cell_basic * cell, u
             amaxJB_Lar = CMathFunctions::calc_amaxJB_Lar_para(Blen, T_dust, T_gas, nH, s, fp);
         else // is number of iron clusters is found, dust is the super paramagnetic grains
         {
-            //cout << "enter here" << endl;
+            //cout << "calculate the maximum alignment size" << endl;
             amaxJB_Lar = CMathFunctions::calc_amaxJB_Lar_super(Blen, T_dust, T_gas, nH, s, Ncl, phi_sp);
         }
     }   
@@ -6214,12 +6259,9 @@ void CDustComponent::calcInelasticLowJRadii(CGridBasic * grid, cell_basic * cell
 
 
 	// Information of ineslaticity of dust grains
-	double Q = getQfactor(); // quality factor of grain material. 
-					   // High Q-> slower dissipation of energy . Low Q -> faster energy dissipation 
-	Q = Q*0.1; //convert Jm-3 to ergcm-3
-	double shear_modulus = getShearModulus(); // shear modulus of material. Compact grains : higher shear modulus. Porous grains: lower shear modulus
+	double inelascity = getInelascity(); // shear modulus of material. Compact grains : higher shear modulus. Porous grains: lower shear modulus
+	inelascity = inelascity * 0.1; // convert from ergcm-3 to Wm-3
 	double sigma_inelastic = 0.25; // Poison ratio. simga_inelastic=  0.25 (Molina et al. 2003)
-	
 			
 	// Parameter
 	double a_minor, a_major;  //minor and major axis (in SI)
@@ -6262,7 +6304,7 @@ void CDustComponent::calcInelasticLowJRadii(CGridBasic * grid, cell_basic * cell
 
 			// Drag by gas collision following evaporation of H2
 			tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * Gamma_par * pow(a_major, 4));
-
+			//cout << "gas damping" << tau_gas << endl;
 
 			//*************************************************************************************************
 			//*
@@ -6274,13 +6316,14 @@ void CDustComponent::calcInelasticLowJRadii(CGridBasic * grid, cell_basic * cell
 	        			
 			// Thermal angular speed
 			omega_rat_lowJ = J_th / I_p;  // at low J attractor point with J = Jth
-
+			//cout << "grain_size" << a_major << "omega_ther" << omega_rat_lowJ << endl;
+		
 			// Geometrical factor
 			g_s = pow(2, 3/2)*7/8 * pow((1+pow(s,2)),4) / (pow(s,4) + 1/(1+sigma_inelastic));
 
 			// Inelastic relaxation timescale
-			t_inelastic_lowJ = shear_modulus * Q / (getMaterialDensity(a) * pow(a,2) * pow(omega_rat_lowJ,3)) * g_s;
-
+			t_inelastic_lowJ = inelascity / (getMaterialDensity(a) * pow(a_major,2) * pow(omega_rat_lowJ,3)) * g_s;
+			//cout <<"inelastic timescale" << t_inelastic_lowJ << endl;
 			//****************************************************************************************************
 			//*
 			//*
@@ -6290,12 +6333,12 @@ void CDustComponent::calcInelasticLowJRadii(CGridBasic * grid, cell_basic * cell
 			//*****************************************************************************************************
 			t_compare = t_inelastic_lowJ / tau_gas;
 				
-			// if inelastic relaxation timescale is smaller than gas damping timescale
-	   		if(t_compare <= 1)
+			// if inelastic relaxation timescale is larger than gas damping timescale
+	   		if(t_compare >= 1)
     		{
 				// Find disruption size
 				// linear interpolation
-				if(t_compare_old == 0)//grain size > amin
+				if(t_compare_old == 0)// at the minimum sie, tier > tgas => all grains have slow internal relaxation by IR at lowJ
 				    a_ine_lowJ = a_min;
 				else
 				{
@@ -6305,7 +6348,7 @@ void CDustComponent::calcInelasticLowJRadii(CGridBasic * grid, cell_basic * cell
 				    double o1 = t_compare_old - 1;
 				    double o2 = t_compare - 1;
 
-				    a_ine_lowJ = a1 - o1 * (a2 - a1) / (o2 - o1);
+				    a_ine_lowJ = a1 - o1 * (a2 - a1) / (o2 - o1); // grains larger than aine_lowJ have slow internal relaxatio by IR
 				}
 				break;
             }
@@ -6351,7 +6394,7 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
 
 	// default value of the alignment radius
 	double a_ine_highJ_lower = a_max; //m
-	double a_ine_highJ_upper = a_min; //m
+	double a_ine_highJ_upper = a_max; //m
 
 	// Aspect ratio of the grain
 	double s = getAspectRatio();
@@ -6371,10 +6414,8 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
 
 
 	// Information of ineslaticity of dust grains
-	double Q = getQfactor(); // quality factor of grain material. 
-					   // High Q-> slower dissipation of energy . Low Q -> faster energy dissipation 
-	Q = Q*0.1; //convert Jm-3 to ergcm-3
-	double shear_modulus = getShearModulus(); // shear modulus of material. Compact grains : higher shear modulus. Porous grains: lower shear modulus
+	double inelascity = getInelascity(); // shear modulus of material. Compact grains : higher shear modulus. Porous grains: lower shear modulus
+	inelascity = inelascity * 0.1; // convert from ergcm-3 to Wm-3
 	double sigma_inelastic = 0.25; // Poison ratio. simga_inelastic=  0.25 (Molina et al. 2003)
 	
 			
@@ -6436,7 +6477,7 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
 			g_s = pow(2, 3/2)*7/8 * pow((1+pow(s,2)),4) / (pow(s,4) + 1/(1+sigma_inelastic));
 
 			// Inelastic relaxation timescale
-			t_inelastic_highJ = shear_modulus * Q / (getMaterialDensity(a) * pow(a,2) * pow(omega_rat_highJ,3)) * g_s;
+			t_inelastic_highJ = inelascity / (getMaterialDensity(a) * pow(a_major,2) * pow(omega_rat_highJ,3)) * g_s;
 
 			//****************************************************************************************************
 			//*
@@ -6472,9 +6513,6 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
     }
 
 	t_compare_old = 0;
-	
-	
-	
 	if (a_ine_highJ_lower == a_max)
 		a_ine_highJ_upper = a_max;
    	else
@@ -6502,7 +6540,7 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
 				// Thermal angular momentum
 				J_th = sqrt(I_p * con_kB * T_gas); // SI unit
 
-				// Drag by gas collision following evaporation of H2
+				// Drag by gas collision following evaporation of H
 				tau_gas = 3. / (4 * PIsq) * I_p / (mu * n_g * m_H * v_th * Gamma_par * pow(a_major, 4));
 
 
@@ -6515,13 +6553,14 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
 				//**************************************************************************************************
 			    			
 				// Thermal angular speed
-				omega_rat_high_J = calcRATSpeed(grid, cell, i_density, a, param, loop);
+				omega_rat_highJ = calcRATSpeed(grid, cell, i_density, a, param, loop);
 				
 				// Geometrical factor
 				g_s = pow(2, 3/2)*7/8 * pow((1+pow(s,2)),4) / (pow(s,4) + 1/(1+sigma_inelastic));
 
 				// Inelastic relaxation timescale
-				t_inelastic_highJ = shear_modulus * Q / (getMaterialDensity(a) * pow(a,2) * pow(omega_rat_highJ,3)) * g_s;
+				t_inelastic_highJ = inelascity / (getMaterialDensity(a) * pow(a_major,2) * pow(omega_rat_highJ,3)) * g_s;
+		
 
 				//****************************************************************************************************
 				//*
@@ -6531,7 +6570,7 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
 				//*
 				//*****************************************************************************************************
 				t_compare = t_inelastic_highJ / tau_gas;
-					
+ 				
 				// if inelastic relaxation timescale is smaller than gas damping timescale
 		   		if(t_compare <= 1)
 				{
@@ -6557,6 +6596,11 @@ void CDustComponent::calcInelasticHighJRadii(CGridBasic * grid, cell_basic * cel
 		} 
 	}
 
+
+	if (isnan(a_ine_highJ_upper) == true)
+		a_ine_highJ_upper = a_max;
+		
+		
 	// Check the range of inelastic relaxation at highJ
 	if(a_ine_highJ_lower < a_min)
 	    a_ine_highJ_lower = a_min;
@@ -8392,9 +8436,8 @@ bool CDustMixture::createDustMixtures(parameters & param, string path_data, stri
             single_component[i_comp].setDelta0(param.getDelta0());
             single_component[i_comp].setLarmF(param.getLarmF()); // for default calculation of amax,B of paramagnetic grains
             
-            // Calculation of Inelastic relaxation
-            single_component[i_comp].setQfactor(param.getQfactor()); 
-            single_component[i_comp].setShearModulus(param.getShearModulus());              
+            // Calculation of Inelastic relaxation 
+            single_component[i_comp].setInelascity(param.getInelascity());              
               
  
             single_component[i_comp].setMu(param.getMu());

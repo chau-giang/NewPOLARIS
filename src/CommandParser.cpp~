@@ -809,12 +809,17 @@ bool CCommandParser::parseLine(parameters * param, string cmd, string data, uint
 		double val = atof(data.c_str());
         param->setIronFraction(val);
     }  
- 
 
-    if(cmd.compare("<inelascity>") == 0)
+    if(cmd.compare("<Q_factor>") == 0)
     {
         double val = atof(data.c_str());
-        param->setInelascity(val);
+        param->setQfactor(val);
+    }  
+
+    if(cmd.compare("<shear_modulus>") == 0)
+    {
+        double val = atof(data.c_str());
+        param->setShearModulus(val);
     }    
     
 
