@@ -22,7 +22,7 @@ NewPOLARIS is the extended version from POLARIS including the detailed calculati
 
 Properties of aligned dust grains in NewPOLARIS are self-consistently determined based on the grain magnetic properties and conditions of gas density and magnetic fields from input environments. NewPOLARIS will determine:
   
-      .  Internal alignment state by Barnett relaxation mechanism
+      .  Internal alignment state by Barnett relaxation mechanism and Inelastic relaxation
 
       .  Minimum and maximum alignment size based on the suprathermal rotation and Larmor precession condition
 
