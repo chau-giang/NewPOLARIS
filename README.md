@@ -51,6 +51,11 @@ to compile the new src code.
 
 Please refer to README.cmd for commands used to run new features of grain alignment and disruption.
 
+To cite our updated version of POLARIS, please refer to:
+
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14199014.svg)](https://doi.org/10.5281/zenodo.14199014)
+
 
 
 
